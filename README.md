@@ -13,12 +13,12 @@ Chapter 1 of the PhD shall therefore focus on:
 ***The impact of within pixel snow cover on the vegetation indices derived from Earth Obvservation pixles (Landsat, Sentinel-2). Could within pixel snow cover be contributing to Arctic greening/browning trends?***
 
 ## Repo structure
-- [data](data): Containing all data used in the analyses
-    - [lsatTS-output](data/lsatTS-output): Output CSV from the LandsatTS script over the three field sites
-    - [sensor-info](data/sensor-info): Sensor characteristics for the MAIA S2, Mavic 3 Multispectral
-    - [uav](data/uav): Orthomosaics created from field data
-- [plots](plots): As it says on the tin
-- [scripts](scripts): Scripts related to analyses and data vis
-    - [r](scripts/r): Scripts in R
-        - [LandsatTS](scripts/r/LandsatTS): Modified functions from LandsatTS package
-    - [Python](scripts/Python): Scripts in Python
+- [**data**](data): Containing all data used in the analyses
+    - [**lsatTS-output**](data/lsatTS-output): Output CSV from the LandsatTS script over the three field sites
+    - [**sensor-info**](data/sensor-info): Sensor characteristics for the MAIA S2, Mavic 3 Multispectral
+    - [**uav**](data/uav): Orthomosaics created from field data
+- [**plots**](plots): As it says on the tin
+- [**scripts**](scripts): Scripts related to analyses and data vis
+    - [**r**](scripts/r): Scripts in R
+        - [**LandsatTS**](scripts/r/LandsatTS): Modified functions from LandsatTS package
+    - [**Python**](scripts/Python): Scripts in Python
