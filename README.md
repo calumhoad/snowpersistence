@@ -13,4 +13,12 @@ Chapter 1 of the PhD shall therefore focus on:
 ***The impact of within pixel snow cover on the vegetation indices derived from Earth Obvservation pixles (Landsat, Sentinel-2).***
 
 ## Repo structure
-- 
+- [data](data): Containing all data used in the analyses
+    - [lsatTS-output](lsatTS-output): Output CSV from the LandsatTS script over the three field sites
+    - [sensor-info](sensor-info): Sensor characteristics for the MAIA S2, Mavic 3 Multispectral
+    - [uav](uav): Orthomosaics created from field data
+- [plots](plots): As it says on the tin
+- [scripts](scripts): Scripts related to analyses and data vis
+    - [r](r): Scripts in R
+        - [LandsatTS](LandsatTS): Modified functions from LandsatTS package
+    - [Python](Python): Scripts in Python
