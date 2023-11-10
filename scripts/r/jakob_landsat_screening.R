@@ -8,18 +8,39 @@ library(tidyverse)
 # Initalise EE
 ee_Initialize()
 
-# Define test polygon
-test_poly_sf <- list(matrix(c(-138.90125, 69.58413,
-                              -138.88988, 69.58358,
-                              -138.89147, 69.58095,
-                              -138.90298, 69.57986,
-                              -138.90125, 69.58413),
-                            ncol = 2, byrow = TRUE)) %>%
-  st_polygon() %>%
-  st_sfc(crs = 4326) %>%
-  st_sf()
-# Upload test poly to GEE
-test_poly_ee <- sf_as_ee(test_poly_sf)
+# Define polygons over plots
+kl <- st_polygon(list(matrix(c(-138.4176238, 60.9693000,
+                               -138.4113274, 60.9694445, 
+                               -138.4107439, 60.9664827, 
+                               -138.4171064, 60.9663083, 
+                               -138.4176238, 60.9693000),
+                                ncol = 2, byrow = TRUE))) %>%
+                               st_polygon() %>%
+                               st_sfc(crs = 4326) %>%
+                               st_sf()  
+kh <- st_polygon(list(matrix(c(-138.4187700, 60.9644414, 
+                               -138.4118724, 60.9632543, 
+                               -138.4144941, 60.9605887, 
+                               -138.4210442, 60.9616106, 
+                               -138.4187700, 60.9644414), 
+                                ncol = 2, byrow = TRUE))) %>%
+                               st_polygon() %>%
+                               st_sfc(crs = 4326) %>%
+                               st_sf()
+bl <- st_polygon(list(matrix(c(-53.46895345, 69.30024099,
+                               -53.46135193, 69.29934175,
+                               -53.46382359, 69.29597989,
+                               -53.47081885, 69.29580664,
+                               -53.46895345, 69.30024099), 
+                                ncol = 2, byrow = TRUE))) %>%
+                               st_polygon() %>%
+                               st_sfc(crs = 4326) %>%
+                               st_sf()
+
+# Upload poygon to GEE
+kl_poly_ee <- sf_as_ee(kl)
+kh_poly_ee <- sf_as_ee(kh)
+bl_poly_ee <- sf_as_ee(bl)
 
 # Get Landsat C2 ICs
 ls5_1 <- rgee::ee$ImageCollection("LANDSAT/LT05/C02/T1_L2")
@@ -72,7 +93,7 @@ for(i in index[1:3] # remove indices [] here to run through full list
   image <- LS_COLL_filtered$filter(ee$Filter$eq("L1_LANDSAT_PRODUCT_ID", scene_ID))$first()
   
   # Centre map on Scene (alternatively centre on AOI)
-  Map$centerObject(image)
+  Map$centerObject(test_poly_ee)
   
   # Add image
   print(Map$addLayer(image,
@@ -89,7 +110,7 @@ for(i in index[1:3] # remove indices [] here to run through full list
     quality_score <- readline("Invalid input!\nAssign quality score [1,2,3]:\n")
   }
   if(quality_score == "e") stop("User aborted. Scnene not assigned")
-  LS_IDs_sf$quality_score[i] 
+  LS_IDs_sf$quality_score[i] <- quality_score
 }
 
 # Need to add a line down here to assign the quality score back to the 
