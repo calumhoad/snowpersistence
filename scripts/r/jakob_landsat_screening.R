@@ -53,7 +53,7 @@ ls8_2 <- rgee::ee$ImageCollection("LANDSAT/LC08/C02/T2_L2")
 ## Merge into one collection and pre-filter by year and date
 # Start and end date (year)
 start_date <- "2000-01-01"
-end_date <- "2023-01-01" # Add an extra day here as filtering is exclusive of last day
+end_date <- "2023-10-01" # Add an extra day here as filtering is exclusive of last day
 # Add start and end DoY for within year
 start_doy <- 152
 end_doy <- 243
@@ -71,7 +71,7 @@ LS_COLL <- ls5_1$
   filter(ee$Filter$lte("CLOUD_COVER", 70))
          
 # Filter scenes by aoi (test_poly)
-LS_COLL_filtered <- LS_COLL$filterBounds(test_poly_ee)
+LS_COLL_filtered <- LS_COLL$filterBounds(bl_poly_ee)
 
 # Get SCENE IDs and store in tibble
 LS_IDs_sf <- ee$FeatureCollection(LS_COLL_filtered$map(function(x){
@@ -81,9 +81,12 @@ LS_IDs_sf <- ee$FeatureCollection(LS_COLL_filtered$map(function(x){
   # Add column for quality score (to be assigned manually later)
   mutate(quality_score = NA)
 
-# Loop over IDs, plot scene, promt for 
+# Loop over IDs, plot scene, prompt for 
+
+# *** 1 = Good, 2 = Marginal, 3 = Bad
+
 index <- seq_along(LS_IDs_sf$ID)
-for(i in index[1:3] # remove indices [] here to run through full list
+for(i in index[] # remove indices [] here to run through full list
     ){
   # Get Scene ID
   scene_ID <- LS_IDs_sf$ID[i]
@@ -93,7 +96,7 @@ for(i in index[1:3] # remove indices [] here to run through full list
   image <- LS_COLL_filtered$filter(ee$Filter$eq("L1_LANDSAT_PRODUCT_ID", scene_ID))$first()
   
   # Centre map on Scene (alternatively centre on AOI)
-  Map$centerObject(test_poly_ee)
+  Map$centerObject(bl_poly_ee)
   
   # Add image
   print(Map$addLayer(image,
@@ -102,7 +105,7 @@ for(i in index[1:3] # remove indices [] here to run through full list
                                 max = round(0.3*65535)) 
                                 # Also consider adding gamma strecth (google)
                ) +
-          Map$addLayer(test_poly_ee, 
+          Map$addLayer(bl_poly_ee, 
                        visParams = list(color = "red", fillColor = "00000000")))
   
   quality_score <- readline("Assign quality score [1,2,3, e = exit]:\n")
@@ -115,3 +118,10 @@ for(i in index[1:3] # remove indices [] here to run through full list
 
 # Need to add a line down here to assign the quality score back to the 
 # row in the dataframe
+
+# go back over from the beginning of Landsat 8,
+# need to change the vis params,
+# terrain is hazy, ice + snow bright with purple fringeing
+
+# Save out the LS_IDs_sf to be continued later
+write.csv(LS_IDs_sf, "../../data/lsat-manual-screening/blaesedalen-screen.csv")
