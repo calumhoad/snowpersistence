@@ -34,10 +34,9 @@ Sys.getenv('PATH')
 library(LandsatTS)
 
 #ee_install_set_pyenv('C:/Users/s1437405/Anaconda3')
-``` 
 
 
-# Try loading packages ----
+# Load packages ----
 
 # Load packages for data handling etc.
 library(sf)
@@ -106,9 +105,9 @@ task_list <- lsat_export_ts(kluane_low_only)
 ee_monitoring()
 
 # Copy to R temp location
-data_path <- 'data/lsatTS_export_chunk_1.csv'
-kluane_high_path <- 'data/lsatTS_export_kluane_high.csv'
-kluane_low_path <- 'data/lsatTS_export_kluane_low.csv'
+data_path <- 'data/lsatTS-output/lsatTS_export_blaesedalen.csv'
+kluane_high_path <- 'data/lsatTS-output/lsatTS_export_kluane_high.csv'
+kluane_low_path <- 'data/lsatTS-output/lsatTS_export_kluane_low.csv'
 
 # Read in the files
 lsat.dt <- do.call("rbind", lapply(kluane_low_path, fread))

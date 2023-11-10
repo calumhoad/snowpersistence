@@ -51,4 +51,5 @@ rsconnect/
 # Large files
 *.tif
 *.tif.enp
+*.tif*
 *.zip
