@@ -47,7 +47,15 @@ ch_lsat_clean_data <- function(dt,
     # be ignored.
 #  dt[, clear := mapply(clear_value, qa.pixel)]
 #  dt <- dt[clear == 1]
-
+  
+  # write new function here for clearning data using manual values
+  manual_screen <- read.csv("../../data/lsat-manual-screening/blaesedalen-screen.csv") %>%
+    filter(quality_score == '1')
+  
+  dt <- dt[LANDSAT_PRODCT_ID %in% manual_screen$ID]
+  
+  ###### RE-WRITE FORMAT SCRIPT TO PREVENT IT REMOVING LANDSAT PRODUCT ID ####
+  
   # pixel flags for snow
   if (filter.cfmask.snow == T){
     dt[, snow := mapply(snow_flag, qa.pixel)]

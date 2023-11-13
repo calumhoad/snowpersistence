@@ -52,7 +52,7 @@ library(leaflet)
 library(LandsatTS)
 
 # Load in the edited LandsatTS clean script (included reflectance values > 1)
-source('scripts/r/LandsatTS/ch_lsat_clean_data.R')
+source('../../scripts/r/LandsatTS/ch_lsat_clean_data.R')
 
 # Intialize the Earth Engine with rgee
 ee_Initialize()
@@ -105,9 +105,9 @@ task_list <- lsat_export_ts(kluane_low_only)
 ee_monitoring()
 
 # Copy to R temp location
-data_path <- 'data/lsatTS-output/lsatTS_export_blaesedalen.csv'
-kluane_high_path <- 'data/lsatTS-output/lsatTS_export_kluane_high.csv'
-kluane_low_path <- 'data/lsatTS-output/lsatTS_export_kluane_low.csv'
+data_path <- '../../data/lsatTS-output/lsatTS_export_blaesedalen.csv'
+kluane_high_path <- '../../data/lsatTS-output/lsatTS_export_kluane_high.csv'
+kluane_low_path <- '../../data/lsatTS-output/lsatTS_export_kluane_low.csv'
 
 # Read in the files
 lsat.dt <- do.call("rbind", lapply(kluane_low_path, fread))
@@ -116,7 +116,7 @@ lsat.dt <- do.call("rbind", lapply(kluane_low_path, fread))
 lsat.dt <- lsat_format_data(lsat.dt)
 
 # Clean the surface reflectance data
-lsat.dt <- ch_lsat_clean_data(lsat.dt, geom.max = 50, cloud.max = 60, sza.max = 60, filter.cfmask.snow = F, filter.cfmask.water = F, filter.jrc.water = F)
+lsat.dt <- ch_lsat_clean_data(lsat.dt, geom.max = 50, cloud.max = 80, sza.max = 60, filter.cfmask.snow = F, filter.cfmask.water = F, filter.jrc.water = F)
 
 # Summarise the data availability
 data.summary.dt <- lsat_summarize_data(lsat.dt)
