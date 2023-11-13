@@ -41,8 +41,12 @@ ch_lsat_clean_data <- function(dt,
   n.orig <- nrow(dt)
 
   # pixel flags for clear sky
-  dt[, clear := mapply(clear_value, qa.pixel)]
-  dt <- dt[clear == 1]
+# clear_value function is commented out here:
+    # Filtering has been done manually in order to better resolve difference
+    # between snow and cloud. The pixel-based QA bit filter here can therefore
+    # be ignored.
+#  dt[, clear := mapply(clear_value, qa.pixel)]
+#  dt <- dt[clear == 1]
 
   # pixel flags for snow
   if (filter.cfmask.snow == T){
