@@ -81,12 +81,16 @@ LS_IDs_sf <- ee$FeatureCollection(LS_COLL_filtered$map(function(x){
   # Add column for quality score (to be assigned manually later)
   mutate(quality_score = NA)
 
+# Pick up from CSV previously worked on 
+LS_IDs_sf <- read.csv("../../data/lsat-manual-screening/blaesedalen-screen.csv") %>%
+             mutate(X = NULL)
+
 # Loop over IDs, plot scene, prompt for 
 
 # *** 1 = Good, 2 = Marginal, 3 = Bad
 
 index <- seq_along(LS_IDs_sf$ID)
-for(i in index[] # remove indices [] here to run through full list
+for(i in index[173:273] # remove indices [] here to run through full list
     ){
   # Get Scene ID
   scene_ID <- LS_IDs_sf$ID[i]
@@ -100,9 +104,10 @@ for(i in index[] # remove indices [] here to run through full list
   
   # Add image
   print(Map$addLayer(image,
-               visParams = list(bands = c("SR_B3", "SR_B2", "SR_B3"),
+               visParams = list(bands = c("SR_B4", "SR_B3", "SR_B2"),
                                 min = 0, # Might have to tweak these values here a little
-                                max = round(0.3*65535)) 
+                                max = round(0.3*65535),
+                                gamma = 1.4) 
                                 # Also consider adding gamma strecth (google)
                ) +
           Map$addLayer(bl_poly_ee, 
