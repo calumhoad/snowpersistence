@@ -90,7 +90,7 @@ LS_IDs_sf <- read.csv("../../data/lsat-manual-screening/blaesedalen-screen.csv")
 # *** 1 = Good, 2 = Marginal, 3 = Bad
 
 index <- seq_along(LS_IDs_sf$ID)
-for(i in index[173:273] # remove indices [] here to run through full list
+for(i in index[177:273] # remove indices [] here to run through full list
     ){
   # Get Scene ID
   scene_ID <- LS_IDs_sf$ID[i]
