@@ -2,40 +2,6 @@
 # Landsat TS package on GitHub
 # Calum Hoad, 20230910
 
-# Things I attempted to get install working -------
-# install.packages("devtools")
-devtools::install_github("logan-berner/LandsatTS", build_vignettes = TRUE)
-
-#devtools::install_github('r-lib/systemfonts')
-#install.packages("systemfonts", dependencies = TRUE)
-#library(systemfonts)
-#tinytex::reinstall_tinytex()  # can't find tlmgr
-
-#devtools::install_local("C:/Users/s1437405/Documents/PhD_Local/c1-analyses/TinyTeX-1-v2023.10.zip")
-#tinytex::install_tinytex()
-
-# install.packages('tinytex') < ----- this one worked
-library(tinytex)
-install.packages('pdflatex')
-
-Sys.which('pdflatex')
-.libPaths()
-
-Sys.getenv('PATH')
-
-Sys.setenv(PATH=paste(Sys.getenv("PATH"),"C:/Users/s1437405/AppData/Local/Programs/MiKTeX2/miktex/bin/x64",sep=";"))
-
-Sys.which('pdflatex')
-
-Sys.getenv('PATH')
-
-Sys.getenv('PATH')
-
-library(LandsatTS)
-
-#ee_install_set_pyenv('C:/Users/s1437405/Anaconda3')
-
-
 # Load packages ----
 
 # Load packages for data handling etc.
@@ -53,6 +19,8 @@ library(LandsatTS)
 
 # Load in the edited LandsatTS clean script (included reflectance values > 1)
 source('../../scripts/r/LandsatTS/ch_lsat_clean_data.R')
+# Load in the edited LandsatTS format data script (keeps product ID column)
+source('../../scripts/r/LandsatTS/ch_lsat_format_data.R')
 
 # Intialize the Earth Engine with rgee
 ee_Initialize()
@@ -105,16 +73,54 @@ task_list <- lsat_export_ts(kluane_low_only)
 ee_monitoring()
 
 # Copy to R temp location
-data_path <- '../../data/lsatTS-output/lsatTS_export_blaesedalen.csv'
+blaesedalen_path <- '../../data/lsatTS-output/lsatTS_export_blaesedalen.csv'
 kluane_high_path <- '../../data/lsatTS-output/lsatTS_export_kluane_high.csv'
 kluane_low_path <- '../../data/lsatTS-output/lsatTS_export_kluane_low.csv'
 
 # Read in the files
-lsat.dt <- do.call("rbind", lapply(kluane_low_path, fread))
+lsat.dt <- do.call("rbind", lapply(blaesedalen_path, fread))
 
 # setnames(lsat.dt, 'my_unique_location_column','sample.id') 
 lsat.dt <- lsat_format_data(lsat.dt)
 
+# Testing function
+manual_screen <- read.csv("../../data/lsat-manual-screening/blaesedalen-screen.csv") #%>%
+  #filter(quality_score == '1')
+
+
+# Get IDs that have 1s next to them
+ids <- unique(filter(manual_screen, quality_score == 1)$ID)
+
+# Trimmed down masive thing
+trimmed <- filter(lsat.dt, substring(landsat.product.id, 10, 40) %in% substring(ids, 10, 40))
+
+str(lsat.dt)
+
+
+
+attempt2 <- lsat.dt[, landsat.product.id %in% manual_screen$ID]
+lsat.dt
+
+attempt2
+
+lsat.dt$landsat.product.id %in% manual_screen$ID
+
+attempt3 <- left_join(lsat.dt, manual_screen, by = join_by(landsat.product.id == ID))
+
+attempt <- filter(lsat.dt, landsat.product.id %in% id.list)
+
+str(manual_screen)
+str(lsat.dt)
+'LT05_L2SP_010011_19850608_20200918_02_T1' %in% prod.list
+
+id.list = as.list(manual_screen$ID)
+
+prod.list = as.list(unique(lsat.dt$landsat.product.id))
+
+tf.list = as.list(prod.list %in% id.list)
+
+manual_screen$ID
+lsat.dt$landsat.product.id
 # Clean the surface reflectance data
 lsat.dt <- ch_lsat_clean_data(lsat.dt, geom.max = 50, cloud.max = 80, sza.max = 60, filter.cfmask.snow = F, filter.cfmask.water = F, filter.jrc.water = F)
 

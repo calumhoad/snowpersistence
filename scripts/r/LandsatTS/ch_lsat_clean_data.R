@@ -52,7 +52,11 @@ ch_lsat_clean_data <- function(dt,
   manual_screen <- read.csv("../../data/lsat-manual-screening/blaesedalen-screen.csv") %>%
     filter(quality_score == '1')
   
-  dt <- dt[LANDSAT_PRODCT_ID %in% manual_screen$ID]
+  # Get IDs that have 1s next to them
+  ids <- unique(filter(manual_screen, quality_score == 1)$ID)
+  
+  # Dataset with rows != 1 in manual screening dropped
+  dt <- filter(dt, substring(landsat.product.id, 10, 40) %in% substring(ids, 10, 40))
   
   ###### RE-WRITE FORMAT SCRIPT TO PREVENT IT REMOVING LANDSAT PRODUCT ID ####
   
