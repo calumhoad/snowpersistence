@@ -83,46 +83,20 @@ lsat.dt <- do.call("rbind", lapply(blaesedalen_path, fread))
 # setnames(lsat.dt, 'my_unique_location_column','sample.id') 
 lsat.dt <- lsat_format_data(lsat.dt)
 
-# Testing function
-manual_screen <- read.csv("../../data/lsat-manual-screening/blaesedalen-screen.csv") #%>%
-  #filter(quality_score == '1')
-
-
-# Get IDs that have 1s next to them
-ids <- unique(filter(manual_screen, quality_score == 1)$ID)
-
-# Trimmed down masive thing
-trimmed <- filter(lsat.dt, substring(landsat.product.id, 10, 40) %in% substring(ids, 10, 40))
-
-str(lsat.dt)
-
-
-
-attempt2 <- lsat.dt[, landsat.product.id %in% manual_screen$ID]
-lsat.dt
-
-attempt2
-
-lsat.dt$landsat.product.id %in% manual_screen$ID
-
-attempt3 <- left_join(lsat.dt, manual_screen, by = join_by(landsat.product.id == ID))
-
-attempt <- filter(lsat.dt, landsat.product.id %in% id.list)
-
-str(manual_screen)
-str(lsat.dt)
-'LT05_L2SP_010011_19850608_20200918_02_T1' %in% prod.list
-
-id.list = as.list(manual_screen$ID)
-
-prod.list = as.list(unique(lsat.dt$landsat.product.id))
-
-tf.list = as.list(prod.list %in% id.list)
-
-manual_screen$ID
-lsat.dt$landsat.product.id
 # Clean the surface reflectance data
 lsat.dt <- ch_lsat_clean_data(lsat.dt, geom.max = 50, cloud.max = 80, sza.max = 60, filter.cfmask.snow = F, filter.cfmask.water = F, filter.jrc.water = F)
+
+# "removed 57921 of 77810 observations (74.44%)"
+
+# Check for removal numbers using original script
+lsat.dt.orig <- do.call("rbind", lapply(blaesedalen_path, fread))
+lsat.dt.orig <- lsat_format_data(lsat.dt.orig)
+lsat.dt.orig <- lsat_clean_data(lsat.dt.orig)
+
+# "removed 52913 of 77810 observations (68%)"
+
+### The script with manual filtering is around 6.44% stricter (less data) than 
+  # the sript which uses manual filtering.
 
 # Summarise the data availability
 data.summary.dt <- lsat_summarize_data(lsat.dt)
