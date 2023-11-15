@@ -133,14 +133,18 @@ data.summary.dt
 reduced.lsat.dt <- distinct(lsat.dt, sample.id, .keep_all = TRUE) # Reduce to unique sample.id
 data.summary.dt <- inner_join(data.summary.dt, reduced.lsat.dt %>% # Join to get lat and lon
                                 select(sample.id, latitude, longitude), by = "sample.id")
+
+# Data to sf
+bl_data_sf <- st_as_sf(data.summary.dt, coords = c("longitude","latitude"))
+
 # Create colour palette
 color_palette <- colorNumeric(palette = viridis(10), domain = bl_data_sf$n.obs.tot)
 # Plot map
 bl_data_map <- leaflet() %>%
   addProviderTiles('OpenStreetMap.Mapnik') %>%
   addCircleMarkers(data = bl_data_sf,
-                   color = ~color_palette(n.obs.tot))
-
+                   color = ~color_palette(bl_data_sf$n.obs.tot))
+bl_data_map
 
 
 # NDVI, CROSS-CALIBRATION, TREND ANALYSIS
@@ -157,11 +161,15 @@ lsat.dt <- LandsatTS::lsat_calibrate_rf(lsat.dt,
                              overwrite.col = T, 
                              write.output = F,
                              train.with.highlat.data = T)
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# ERROR: object 'fig.list' not found
+# Why is this happening? The dataframe being fed in should be the same format
+# a in the original functions/script.
 
 # Fit phenological models (cubic splines) to each time series
 lsat.pheno.dt <- lsat_fit_phenological_curves(lsat.dt, 
                                               si = 'ndvi', 
-                                              window.yrs = 5, 
+                                              window.yrs = 10, # Previously 5, changed to bring back pixels 
                                               window.min.obs = 10, 
                                               spl.fit.outfile = F, 
                                               progress = T) # removed vi.min = 0, unused argument error
@@ -187,19 +195,22 @@ lsat.trnds.dt <- lsat_calc_trend(lsat.gs.dt, si = 'ndvi.max', 2000:2020, sig = 0
 
 # Make the trend data into an sf
 bl_trend_sf <- st_as_sf(lsat.trnds.dt, coords = c("longitude","latitude"))
-kl_trend_sf <- st_as_sf(lsat.trnds.dt, coords = c("longitude","latitude"))
-klLow_trend_Sf <- st_as_sf(lsat.trnds.dt, coords = c("longitude", "latitude"))
-klLow_trend_Sf_geom <- st_as_sf(lsat.trnds.dt, coords = c("longitude", "latitude"))
+#kl_trend_sf <- st_as_sf(lsat.trnds.dt, coords = c("longitude","latitude"))
+#klLow_trend_Sf <- st_as_sf(lsat.trnds.dt, coords = c("longitude", "latitude"))
+#klLow_trend_Sf_geom <- st_as_sf(lsat.trnds.dt, coords = c("longitude", "latitude"))
+
 
 # Plotting data at various processing steps as map
 #   to investigate at which step data is going missing
-bl_data_sf <- st_as_sf(lsat.trnds.dt, coords = c("longitude", "latitude"))
-bl_data_map <- leaflet() %>%
-  addProviderTiles('OpenStreetMap.Mapnik') %>%
-  addCircleMarkers(data = bl_data_sf,
-                   color = bl_data_sf$n.obs.tot)
-bl_data_map
+#   choose from:
+#     - lsat.pheno.dt (Fitted phenological curves)
+#     - lsat.gs.dt    (Derived seasonal metrics)
 
+bl_datastep_sf <- st_as_sf(lsat.pheno.dt, coords = c("longitude", "latitude"))
+bl_datastep_map <- leaflet() %>%
+  addProviderTiles('OpenStreetMap.Mapnik') %>%
+  addCircleMarkers(data = bl_datastep_sf)
+bl_datastep_map
 
 
 # Plot trends as maps
@@ -231,3 +242,9 @@ kl_map
 # Export csv
 write.csv(lsat.trnds.dt, 'data/kluaneLow_trends_noSnoworWaterFilters.csv')
 write.csv(lsat.gs.dt, 'data/kluaneLow_metrics_noSnoworWaterFilters.csv')
+
+# Questions to be answered:
+#   1) There should be the same number of obs in all pixels, given that
+#       filtering of the data is now manual and is for the whole scene. What am
+#       I missing that is causing some pixels to have less obs than others?
+

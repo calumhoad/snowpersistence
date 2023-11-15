@@ -14,7 +14,7 @@
 #' lsat.dt <- lsat_format_data(lsat.example.dt)
 #' lsat.dt
 
-lsat_format_data <- function(dt){
+ch_lsat_format_data <- function(dt){
 
   # type cast
   dt <- data.table::data.table(dt)
