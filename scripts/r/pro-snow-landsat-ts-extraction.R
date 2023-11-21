@@ -15,6 +15,7 @@ library(rgee)
 library(googledrive)
 library(leaflet)
 library(viridis)
+library(ggplot2)
 
 # Load LandsatTS package
 library(LandsatTS)
@@ -30,7 +31,7 @@ source('../../scripts/r/LandsatTS/ch_lsat_clean_data.R')
 source('../../scripts/r/LandsatTS/ch_lsat_format_data.R')
 # LansatTS calibrate rf script, edited to try and find which objects are missing,
 #   such as the fig.list object, after alteration to the other functions above. 
-source('../../scripts/r/LandsatTS/ch_lsat_calibrate_rf.R')
+#source('../../scripts/r/LandsatTS/ch_lsat_calibrate_rf.R')
 
 # Intialize the Earth Engine with rgee
 ee_Initialize()
@@ -101,6 +102,32 @@ lsat.dt <- do.call("rbind", lapply(blaesedalen_path, fread))
 # Format data
 lsat.dt <- ch_lsat_format_data(lsat.dt)
 
+# Plot the number of obs per pixel
+reduced.lsat.dt <- distinct(lsat.dt, sample.id, .keep_all = TRUE) # Reduce to unique sample.id
+reduced.lsat.dt$sample.id
+
+# Create empty dataframe to store results
+columns <- c("sample.id", "initial.obs")
+obs.per.sample <- data.frame(matrix(nrow = 0, ncol = length(columns)))
+colnames(obs.per.sample) <- columns
+obs.per.sample$sample.id <- as.character(obs.per.sample$sample.id)
+obs.per.sample$initial.obs <- as.integer(obs.per.sample$initial.obs)
+
+obs.per.sample <- obs.per.sample %>% add_row(sample.id = 'test', initial.obs = 0)
+
+for(sample in reduced.lsat.dt$sample.id) {
+  lsat.dt.sample <- filter(lsat.dt, lsat.dt$sample.id == sample)
+  print(sample)
+  obs <- length(lsat.dt.sample$sample.id)
+  obs.per.sample <- obs.per.sample %>% add_row(sample.id = sample, initial.obs = obs)
+  print(obs.per.sample)
+  }  
+
+obs.hist <- ggplot(obs.per.sample, aes(x = sample.id, y = initial.obs)) +
+    geom_histogram(stat = "identity")
+
+obs.hist
+
 # Clean the surface reflectance data
 lsat.dt <- ch_lsat_clean_data(lsat.dt, 
                               geom.max = 50, 
@@ -110,6 +137,14 @@ lsat.dt <- ch_lsat_clean_data(lsat.dt,
                               filter.cfmask.water = F, 
                               filter.jrc.water = F)
 
+# Each pixel has sampleID, for every sampleID should have pixels for every scene
+# plot hist of #obs per sample id, if drop off then will be visible.
+# before filtering there should be equal numbers per sampleID, after is there a 
+# change? Try bar plot in ggplot2
+
+# What might be happening: later in the process pixels being filtered out,
+# years before and after, for each year estimates peak
+# there are thresholds in ^^, these may be filtering the data
 
 
 # Check for removal numbers using original script
@@ -169,7 +204,7 @@ lsat.dt <- LandsatTS::lsat_calibrate_rf(lsat.dt,
 # Fit phenological models (cubic splines) to each time series
 lsat.pheno.dt <- lsat_fit_phenological_curves(lsat.dt, 
                                               si = 'ndvi', 
-                                              window.yrs = 10, # Previously 5, changed to bring back pixels 
+                                              window.yrs = 5, # Previously 5, changed to bring back pixels 
                                               window.min.obs = 10, 
                                               spl.fit.outfile = F, 
                                               progress = T) # removed vi.min = 0, unused argument error
@@ -219,7 +254,7 @@ bl_datastep_map
 bl_map <- leaflet() %>%
   addProviderTiles('OpenStreetMap.Mapnik') %>%
   addCircleMarkers(data = bl_trend_sf,
-                   color = ~ifelse(trend.cat == 'no_trend', 'blue', 'green'))
+                   color = ~ifelse(trend.cat == 'no_trend', 'blue', 'brown'))
 
 bl_map
 

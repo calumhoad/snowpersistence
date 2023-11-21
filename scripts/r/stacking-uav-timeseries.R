@@ -127,7 +127,7 @@ df_t <- as.data.frame(t) %>%
 xts_df_t <- xts(df_t, order.by = as.Date(rownames(df_t)))
 
 # Get a subset of the time series by sampling pixels at a given interval
-interval <- 100000
+interval <- 1
 samples <- seq.int(20069309, 33453309, interval)
 length(samples)
 
