@@ -75,6 +75,12 @@ rclmat <- matrix(m, ncol=3, byrow=TRUE)
 rast1snow <- classify(rast1$Band_1, rclmat, include.lowest=TRUE)
 plot(rast1snow)
 
+# Add snow raster to all NDVI rasters as extra band
+rast1ndvi <- c(rast1ndvi, rast1snow)
+# names(rast1ndvi) <- ("ndvi",  "snow") why doesn't this work?
+rast2ndvi <- c(rast2ndvi, rast1snow)
+rast3ndvi <- c(rast3ndvi, rast1snow)
+rast4ndvi <- c(rast4ndvi, rast1snow)
 
 # Create list of all rasters
 all_rasters <- rast(list(rast1, rast2, rast3, rast4))
@@ -102,28 +108,26 @@ rt <- rts(ts.stack, d)                                      # Make raster time s
 # Plot raster time series
 plot(rt)
 
-# Try to find a cell close to the middle of the plot
-cellFromRowCol(rt, 5000, 5000)
+# Get location for cell close to centre of plot
+location <- cellFromRowCol(rt, 3000, 3000)
 
 # Extract time series for a given cell location
-t <- rt[20069309]
-head(t)
-plot(t)
+pixel <- rt[location]
+pixelsnow <- rast1snow[location]
+pixelsnowval <- pixelsnow$Band_1
+head(pixel)
+plot(pixel)
 
-# Try this again
-t <- rt[20079309]
-head(t)
-plot(t)
-
-t
-
+pixelsnow$Band_1
+# Convert extracted pixel to dataframe
 df_t <- as.data.frame(t) %>%
-  mutate(ID = c(0,0,0,0))
+  mutate(ID = c(0,0,0,0)) %>% # Add ID variable
+  mutate(snow = c(pixelsnowval, pixelsnowval, pixelsnowval, pixelsnowval))             # Add snow variable
 
 xts_df_t <- xts(df_t, order.by = as.Date(rownames(df_t)))
 
 # Get a subset of the time series by sampling pixels at a given interval
-interval <- 10000
+interval <- 100000
 samples <- seq.int(20069309, 33453309, interval)
 length(samples)
 
@@ -133,8 +137,11 @@ sampleID <- 1                                             # Assign start sample 
 for(sample in samples) {                                  # 
   print(sample)
   pixTS <- rt[sample]
+  pixelsnow <- rast1snow[sample]
+  pixelsnowval <- pixelsnow$Band_1
   df_pixTS <- as.data.frame(pixTS) %>% 
-    mutate(ID = c(sampleID, sampleID, sampleID, sampleID))
+    mutate(ID = c(sampleID, sampleID, sampleID, sampleID)) %>%
+    mutate(snow = c(pixelsnowval, pixelsnowval, pixelsnowval, pixelsnowval)) 
   sampleID <- sampleID + 1
   pixTS <- xts(df_pixTS, order.by = as.Date(rownames(df_pixTS)))
   xts_df_t <- c(xts_df_t, pixTS)
@@ -142,12 +149,12 @@ for(sample in samples) {                                  #
 
 # Create a df for plotting with ggplot2
 plot_df <- fortify(xts_df_t) %>%
-  rename(NDVI = V1, date = Index) %>%
+  rename(NDVI = V1, date = Index, ) %>%
   mutate(date = as.Date(date))
 
 
 # Plot line graph of values
-ggplot(plot_df, aes(x = date, y = NDVI, color = ID, group = ID)) +
+ggplot(plot_df, aes(x = date, y = NDVI, color = snow, group = ID)) +
   geom_line() +
   scale_colour_gradient2(low = "red", mid = "yellow", high = "blue") + 
   geom_smooth(method="auto", se=TRUE, fullrange=FALSE, level=0.95)
