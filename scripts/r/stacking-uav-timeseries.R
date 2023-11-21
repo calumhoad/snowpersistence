@@ -2,12 +2,13 @@
 # Calum Hoad, 16/11/2023
 
 # Installs
-install.packages('rts')
+#install.packages('rts')
 
 # Library imports
 library(terra)
 library(dplyr)
 library(rts)
+library(ggplot2)
 
 # Paths to the data
 one <- ('../../data/uav/MAIA-exports/20220629/20220629-div32768_clipped.tif')
@@ -21,12 +22,17 @@ rast2 <- rast(two)
 rast3 <- rast(three)
 rast4 <- rast(four)
 
-# Resample the raster data, to the same spatial resolution
+# Resample the raster data, to the same spatial resolution as rast3 ----
 rast1 <- resample(rast1, rast3, method = "bilinear")
 rast2 <- resample(rast2, rast3, method = "bilinear")
 rast4 <- resample(rast4, rast3, method = "bilinear")
 
-# For each raster, calculate the spectral indices
+### What spatial resolution makes sense for the data?
+  # Should go back to Agisoft and re-export the data at a logical resolution.
+  # Something like 5 or 10cm which can be scaled easily to the native resolution
+  # of the EO imagery?
+
+# For each raster, calculate the spectral indices ----
 rast1ndvi <- (rast1$Band_8-rast1$Band_4)/((rast1$Band_8+rast1$Band_4)+.0001)
 names(rast1ndvi) <- "ndvi"
 
@@ -56,6 +62,20 @@ terra.ndvi <- function(raster) {
 
 lapply(rast.list, terra.ndvi)
 
+
+# Basic attempt at classifying snow pixels ----
+plot(rast1$Band_1)
+## from-to-becomes
+# classify the values into three groups 
+# all values >= 0 and <= 0.6 become 0,
+# all values >= 0.6 become 1, where 1 is snow and 0 is no snow
+m <- c(0, 0.6, 0, 
+       0.6, 2, 1)
+rclmat <- matrix(m, ncol=3, byrow=TRUE)
+rast1snow <- classify(rast1$Band_1, rclmat, include.lowest=TRUE)
+plot(rast1snow)
+
+
 # Create list of all rasters
 all_rasters <- rast(list(rast1, rast2, rast3, rast4))
 
@@ -83,7 +103,7 @@ rt <- rts(ts.stack, d)                                      # Make raster time s
 plot(rt)
 
 # Try to find a cell close to the middle of the plot
-cellFromRowCol(rt, 3000, 3000)
+cellFromRowCol(rt, 5000, 5000)
 
 # Extract time series for a given cell location
 t <- rt[20069309]
@@ -95,3 +115,41 @@ t <- rt[20079309]
 head(t)
 plot(t)
 
+t
+
+df_t <- as.data.frame(t) %>%
+  mutate(ID = c(0,0,0,0))
+
+xts_df_t <- xts(df_t, order.by = as.Date(rownames(df_t)))
+
+# Get a subset of the time series by sampling pixels at a given interval
+interval <- 10000
+samples <- seq.int(20069309, 33453309, interval)
+length(samples)
+
+# Loop to iterate through pixels and extract values to xts
+sampleTS <- xts()                                         # Create empty xts obj
+sampleID <- 1                                             # Assign start sample id
+for(sample in samples) {                                  # 
+  print(sample)
+  pixTS <- rt[sample]
+  df_pixTS <- as.data.frame(pixTS) %>% 
+    mutate(ID = c(sampleID, sampleID, sampleID, sampleID))
+  sampleID <- sampleID + 1
+  pixTS <- xts(df_pixTS, order.by = as.Date(rownames(df_pixTS)))
+  xts_df_t <- c(xts_df_t, pixTS)
+}
+
+# Create a df for plotting with ggplot2
+plot_df <- fortify(xts_df_t) %>%
+  rename(NDVI = V1, date = Index) %>%
+  mutate(date = as.Date(date))
+
+
+# Plot line graph of values
+ggplot(plot_df, aes(x = date, y = NDVI, color = ID, group = ID)) +
+  geom_line() +
+  scale_colour_gradient2(low = "red", mid = "yellow", high = "blue") + 
+  geom_smooth(method="auto", se=TRUE, fullrange=FALSE, level=0.95)
+
+length(plot_df)
