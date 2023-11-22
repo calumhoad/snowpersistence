@@ -16,6 +16,7 @@ library(googledrive)
 library(leaflet)
 library(viridis)
 library(ggplot2)
+library(tidyverse)
 
 # Load LandsatTS package
 library(LandsatTS)
@@ -115,6 +116,7 @@ obs.per.sample$initial.obs <- as.integer(obs.per.sample$initial.obs)
 
 obs.per.sample <- obs.per.sample %>% add_row(sample.id = 'test', initial.obs = 0)
 
+# Iterate through sample.id and calculate the number of obs, output to df
 for(sample in reduced.lsat.dt$sample.id) {
   lsat.dt.sample <- filter(lsat.dt, lsat.dt$sample.id == sample)
   print(sample)
@@ -123,8 +125,10 @@ for(sample in reduced.lsat.dt$sample.id) {
   print(obs.per.sample)
   }  
 
-obs.hist <- ggplot(obs.per.sample, aes(x = sample.id, y = initial.obs)) +
-    geom_histogram(stat = "identity")
+# Plot obs per sample.id as barplot
+obs.hist <- ggplot(obs.per.sample, aes(x = sample.id, y = initial.obs, color = sample.id)) +
+    geom_bar(width = 0.2, stat = "identity", show.legend = FALSE) +
+    scale_fill_brewer(palette = "Set1")
 
 obs.hist
 
@@ -152,7 +156,30 @@ lsat.dt.orig <- do.call("rbind", lapply(blaesedalen_path, fread))
 lsat.dt.orig <- lsat_format_data(lsat.dt.orig)
 lsat.dt.orig <- lsat_clean_data(lsat.dt.orig)
 
+# Could create a new df and then join with the first, or just keep as multiple df?
+columns <- c("sample.id", "clean.obs")
+clobs.per.sample <- data.frame(matrix(nrow = 0, ncol = length(columns)))
+colnames(clobs.per.sample) <- columns
+clobs.per.sample$sample.id <- as.character(clobs.per.sample$sample.id)
+clobs.per.sample$clean.obs <- as.integer(clobs.per.sample$clean.obs)
 
+clobs.per.sample <- clobs.per.sample %>% add_row(sample.id = 'test', clean.obs = 0)
+
+# Iterate through sample.id and calculate the number of obs, output to df
+  for(sample in reduced.lsat.dt$sample.id) {
+  lsat.dt.sample <- filter(lsat.dt, lsat.dt$sample.id == sample)
+  print(sample)
+  obs <- length(lsat.dt.sample$sample.id)
+  clobs.per.sample <- clobs.per.sample %>% add_row(sample.id = sample, clean.obs = obs)
+  print(clobs.per.sample)
+}  
+
+# Plot obs per sample.id as barplot
+clobs.hist <- ggplot(clobs.per.sample, aes(x = sample.id, y = clean.obs, color = sample.id)) +
+  geom_bar(width = 0.2, stat = "identity", show.legend = FALSE) +
+  scale_fill_brewer(palette = "Set1")
+
+clobs.hist
 # For Blaesedalen, edited script "removed 57921 of 77810 observations (74.44%)"
 #                original script"removed 52913 of 77810 observations (68%)"
 #
@@ -201,6 +228,31 @@ lsat.dt <- LandsatTS::lsat_calibrate_rf(lsat.dt,
 # Why is this happening? The dataframe being fed in should be the same format
 # a in the original functions/script.
 
+# Check number of obs again
+columns <- c("sample.id", "cal.obs")
+calobs.per.sample <- data.frame(matrix(nrow = 0, ncol = length(columns)))
+colnames(calobs.per.sample) <- columns
+calobs.per.sample$sample.id <- as.character(calobs.per.sample$sample.id)
+calobs.per.sample$cal.obs <- as.integer(calobs.per.sample$cal.obs)
+
+calobs.per.sample <- calobs.per.sample %>% add_row(sample.id = 'test', cal.obs = 0)
+
+# Iterate through sample.id and calculate the number of obs, output to df
+for(sample in reduced.lsat.dt$sample.id) {
+  lsat.dt.sample <- filter(lsat.dt, lsat.dt$sample.id == sample)
+  print(sample)
+  obs <- length(lsat.dt.sample$sample.id)
+  calobs.per.sample <- calobs.per.sample %>% add_row(sample.id = sample, cal.obs = obs)
+  print(calobs.per.sample)
+}  
+
+# Plot obs per sample.id as barplot
+calobs.hist <- ggplot(calobs.per.sample, aes(x = sample.id, y = cal.obs, color = sample.id)) +
+  geom_bar(width = 0.2, stat = "identity", show.legend = FALSE) +
+  scale_fill_brewer(palette = "Set1")
+
+calobs.hist
+
 # Fit phenological models (cubic splines) to each time series
 lsat.pheno.dt <- lsat_fit_phenological_curves(lsat.dt, 
                                               si = 'ndvi', 
@@ -209,12 +261,64 @@ lsat.pheno.dt <- lsat_fit_phenological_curves(lsat.dt,
                                               spl.fit.outfile = F, 
                                               progress = T) # removed vi.min = 0, unused argument error
 
+# Check number of obs again
+columns <- c("sample.id", "pheno.obs")
+pheno.per.sample <- data.frame(matrix(nrow = 0, ncol = length(columns)))
+colnames(pheno.per.sample) <- columns
+pheno.per.sample$sample.id <- as.character(pheno.per.sample$sample.id)
+pheno.per.sample$pheno.obs <- as.integer(pheno.per.sample$pheno.obs)
+
+pheno.per.sample <- pheno.per.sample %>% add_row(sample.id = 'test', pheno.obs = 0)
+
+# Iterate through sample.id and calculate the number of obs, output to df
+for(sample in reduced.lsat.dt$sample.id) {
+  lsat.dt.sample <- filter(lsat.pheno.dt, lsat.pheno.dt$sample.id == sample)
+  print(sample)
+  obs <- length(lsat.dt.sample$sample.id)
+  pheno.per.sample <- pheno.per.sample %>% add_row(sample.id = sample, pheno.obs = obs)
+  print(pheno.per.sample)
+}  
+
+# Plot obs per sample.id as barplot
+pheno.hist <- ggplot(pheno.per.sample, aes(x = sample.id, y = pheno.obs, color = sample.id)) +
+  geom_bar(width = 0.2, stat = "identity", show.legend = FALSE) +
+  scale_fill_brewer(palette = "Set1")
+
+pheno.hist 
+
+
 # Derived annual growing season metrics
 lsat.gs.dt <- lsat_summarize_growing_seasons(lsat.pheno.dt, 
                                              si = 'ndvi', 
                                              min.frac.of.max = 0.75)
+# Check number of obs again ----
+columns <- c("sample.id", "met.obs")
+met.per.sample <- data.frame(matrix(nrow = 0, ncol = length(columns)))
+colnames(met.per.sample) <- columns
+met.per.sample$sample.id <- as.character(met.per.sample$sample.id)
+met.per.sample$met.obs <- as.integer(met.per.sample$met.obs)
 
-# Evaluate raw and modeled
+met.per.sample <- met.per.sample %>% add_row(sample.id = 'test', met.obs = 0)
+
+# Iterate through sample.id and calculate the number of obs, output to df
+for(sample in reduced.lsat.dt$sample.id) {
+  lsat.dt.sample <- filter(lsat.gs.dt, lsat.gs.dt$sample.id == sample)
+  print(sample)
+  obs <- length(lsat.dt.sample$sample.id)
+  met.per.sample <- met.per.sample %>% add_row(sample.id = sample, met.obs = obs)
+  print(met.per.sample)
+}  
+
+# Plot obs per sample.id as barplot
+met.hist <- ggplot(met.per.sample, aes(x = sample.id, y = met.obs, color = sample.id)) +
+  geom_bar(width = 0.2, stat = "identity", show.legend = FALSE) +
+  scale_fill_brewer(palette = "Set1")
+
+met.hist 
+
+
+
+# Evaluate raw and modeled ----
 lsat.gs.eval.dt <- lsat_evaluate_phenological_max(lsat.pheno.dt, 
                                                   si = 'ndvi', 
                                                   min.obs = 10, 
@@ -225,6 +329,54 @@ lsat.gs.eval.dt <- lsat_evaluate_phenological_max(lsat.pheno.dt,
 # Calculate trends
 lsat.trnds.dt <- lsat_calc_trend(lsat.gs.dt, si = 'ndvi.max', 2000:2020, sig = 0.1)
 
+# Check number of obs again
+columns <- c("sample.id", "trend.obs")
+trend.per.sample <- data.frame(matrix(nrow = 0, ncol = length(columns)))
+colnames(trend.per.sample) <- columns
+trend.per.sample$sample.id <- as.character(trend.per.sample$sample.id)
+trend.per.sample$trend.obs <- as.integer(trend.per.sample$trend.obs)
+
+trend.per.sample <- trend.per.sample %>% add_row(sample.id = 'test', trend.obs = 0)
+
+# Iterate through sample.id and calculate the number of obs, output to df
+for(sample in reduced.lsat.dt$sample.id) {
+  lsat.dt.sample <- filter(lsat.trnds.dt, lsat.trnds.dt$sample.id == sample)
+  print(sample)
+  obs <- length(lsat.dt.sample$sample.id)
+  trend.per.sample <- trend.per.sample %>% add_row(sample.id = sample, trend.obs = obs)
+  print(trend.per.sample)
+}  
+
+# Plot obs per sample.id as barplot
+trend.hist <- ggplot(trend.per.sample, aes(x = sample.id, y = trend.obs, color = sample.id)) +
+  geom_bar(width = 0.2, stat = "identity", show.legend = FALSE) +
+  scale_fill_brewer(palette = "Set1")
+
+trend.hist 
+
+# Compile dataframe of obs at each point in processing, check for drop-off
+obs.df <- list(obs.per.sample, clobs.per.sample, calobs.per.sample, pheno.per.sample,
+             met.per.sample, trend.per.sample)
+obs.df <- obs.df %>% reduce(inner_join, by='sample.id')
+
+obs.df <- obs.df %>%
+          mutate(trend = ifelse(trend.obs == 0, FALSE, TRUE)) %>%
+          pivot_longer(!sample.id & !trend, names_to = "stage", values_to = "obs") %>%
+          mutate(stage.num = ifelse(stage == 'initial.obs', 1,
+                                    ifelse(stage == 'clean.obs', 2, 
+                                           ifelse(stage == 'cal.obs', 3, 
+                                                  ifelse(stage == 'pheno.obs', 4,
+                                                         ifelse(stage == 'met.obs', 5,
+                                                                ifelse(stage == 'trend.obs', 6, 7)))))))
+
+# Filter data to only given stages, for subsequent plotting
+obs.df <- obs.df %>% filter(stage.num != 6)
+
+obs.line <- ggplot(obs.df, aes(x = stage.num, y = obs, color = sample.id, group_by(trend))) +
+            geom_line(show.legend = FALSE) +
+            scale_x_discrete(c('Format', 'Clean', 'cal_rf', 'Fit phen', 'Seas met', 'test'))
+
+obs.line
 
 # Explore trends and output from LandsatTS, edited to include snow ----
 
