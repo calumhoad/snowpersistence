@@ -354,7 +354,7 @@ trend.hist <- ggplot(trend.per.sample, aes(x = sample.id, y = trend.obs, color =
 
 trend.hist 
 
-# Compile dataframe of obs at each point in processing, check for drop-off
+# Compile dataframe of obs at each point in processing, check for drop-off ----
 obs.df <- list(obs.per.sample, clobs.per.sample, calobs.per.sample, pheno.per.sample,
              met.per.sample, trend.per.sample)
 obs.df <- obs.df %>% reduce(inner_join, by='sample.id')
@@ -372,11 +372,55 @@ obs.df <- obs.df %>%
 # Filter data to only given stages, for subsequent plotting
 obs.df <- obs.df %>% filter(stage.num != 6)
 
-obs.line <- ggplot(obs.df, aes(x = stage.num, y = obs, color = sample.id, group_by(trend))) +
-            geom_line(show.legend = FALSE) +
-            scale_x_discrete(c('Format', 'Clean', 'cal_rf', 'Fit phen', 'Seas met', 'test'))
+obs.df.trend <- obs.df %>% filter(trend == TRUE)
+obs.df.notrend <- obs.df %>% filter(trend == FALSE)
 
+obs.line <- ggplot() +
+            geom_line(aes(obs.df.trend, x = stage.num, y = obs, color = 'red', group_by(sample.id)), show.legend = FALSE) +
+            geom_line(aes(obs.df.notrend, x = stage.num, y = obs, color = 'green', group_by(sample.id)), show.legend = FALSE) +
+            theme(axis.text.x = element_blank()) +
+            geom_text(label="lsat_format_data",
+                       x=1,
+                       y=50,
+                       color = "black",
+                       angle = 90) +
+            geom_text(label="lsat_clean_data",
+                       x=2,
+                       y=50,
+                       color = "black",
+                       angle = 90) +
+            geom_text(label="lsat_calibrate_rf",
+                      x=3,
+                      y=50,
+                      color = "black",
+                      angle = 90) +  
+            geom_text(label="lsat_fit_phenological_curves",
+                      x=4,
+                      y=400,
+                      color = "black",
+                      angle = 90) +
+            geom_text(label="lsat_summarize_growing_seasons",
+                      x=5,
+                      y=400,
+                      color = "black",
+                      angle = 90) +
+            ylab("Observations per sample.id") +
+            xlab("LandsatTS processing stage (functions)")
+
+# Call plot            
 obs.line
+
+# Check basic stats on the range of obs per sample.id ----
+range.init <- max(obs.per.sample$initial.obs[2:169]) - min(obs.per.sample$initial.obs[2:169])
+range.init # There is only a range of 6 in the initial (format) stage
+range.clean <- max(clobs.per.sample$clean.obs[2:169]) - min(clobs.per.sample$clean.obs[2:169])
+range.clean # Range of 15
+range.cal <- max(calobs.per.sample$cal.obs[2:169]) - min(calobs.per.sample$cal.obs[2:169])
+range.cal # Range of 15
+range.pheno <- max(pheno.per.sample$pheno.obs[2:169]) - min(pheno.per.sample$pheno.obs[2:169])
+range.pheno # Range of 166
+range.met <- max(met.per.sample$met.obs[2:169]) - min(met.per.sample$met.obs[2:169])
+range.met # Range of 12
 
 # Explore trends and output from LandsatTS, edited to include snow ----
 
