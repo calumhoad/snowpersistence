@@ -82,7 +82,7 @@ ch_lsat_clean_data <- function(dt,
   #dt <- dt[qa.radsat == 0]
 
   # filter out unrealistic band values
-  dt <- dt[blue > 0.005][green > 0.005][red > 0.005][nir > 0.005]
+  #dt <- dt[blue > 0.005][green > 0.005][red > 0.005][nir > 0.005]
   #dt <- dt[blue < 1][green < 1][red < 1][nir < 1]  # Commented out to test
                                                     # whether this is filtering
                                                     # snow pixels from imagery
@@ -96,33 +96,33 @@ ch_lsat_clean_data <- function(dt,
 }
 
 # LANDSAT CLEAR SKY BIT VALUES (returns 1 if clear and 0 if not clear)
-clear_value = function(x) {
-  # reverse order of bits so read from left to right
-  bit_str = paste(as.integer(intToBits(x)), collapse="")
-  # conditions
-  filled = substr(bit_str, 1, 1) == '1'
-  cloud_shadow = substr(bit_str, 5, 5) == '1'
-  not_clear = substr(bit_str, 7, 7) == '0'
-
-  if(filled | cloud_shadow | not_clear){
-    return(0)
-  }  else{
-    return(1)
-  }
-}
+# clear_value = function(x) {
+#   # reverse order of bits so read from left to right
+#   bit_str = paste(as.integer(intToBits(x)), collapse="")
+#   # conditions
+#   filled = substr(bit_str, 1, 1) == '1'
+#   cloud_shadow = substr(bit_str, 5, 5) == '1'
+#   not_clear = substr(bit_str, 7, 7) == '0'
+# 
+#   if(filled | cloud_shadow | not_clear){
+#     return(0)
+#   }  else{
+#     return(1)
+#   }
+# }
 
 # filter snow
-snow_flag = function(x) {
-  # reverse order of bits, left to right
-  bit_str = paste(as.integer(intToBits(x)), collapse="")
-  snow = substr(bit_str, 6, 6) == '1'
-  if(snow){return(1)}  else{return(0)}
-}
-
-# filter water
-water_flag = function(x) {
-  # reverse order of bits, left to right
-  bit_str = paste(as.integer(intToBits(x)), collapse="")
-  water = substr(bit_str, 8, 8) == '1'
-  if(water){return(1)}  else{return(0)}
-}
+# snow_flag = function(x) {
+#   # reverse order of bits, left to right
+#   bit_str = paste(as.integer(intToBits(x)), collapse="")
+#   snow = substr(bit_str, 6, 6) == '1'
+#   if(snow){return(1)}  else{return(0)}
+# }
+# 
+# # filter water
+# water_flag = function(x) {
+#   # reverse order of bits, left to right
+#   bit_str = paste(as.integer(intToBits(x)), collapse="")
+#   water = substr(bit_str, 8, 8) == '1'
+#   if(water){return(1)}  else{return(0)}
+# }

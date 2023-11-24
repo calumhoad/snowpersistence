@@ -95,7 +95,36 @@ kluane_low_path <- '../../data/lsatTS-output/lsatTS_export_kluane_low.csv'
 # Read in the files
 lsat.dt <- do.call("rbind", lapply(blaesedalen_path, fread))
 
+# Get a list of all the sample ids ----
+reduced.lsat.dt <- distinct(lsat.dt, sample_id, .keep_all = TRUE) # Reduce to unique sample.id
+reduced.lsat.dt$sample_id
 
+# Check the data obs per sample id direct from gee ----
+columns <- c("sample.id", "gee.obs")
+gee.obs.per.sample <- data.frame(matrix(nrow = 0, ncol = length(columns)))
+colnames(gee.obs.per.sample) <- columns
+gee.obs.per.sample$sample.id <- as.character(gee.obs.per.sample$sample.id)
+gee.obs.per.sample$gee.obs <- as.integer(gee.obs.per.sample$gee.obs)
+
+gee.obs.per.sample <- gee.obs.per.sample %>% add_row(sample.id = 'test', gee.obs = 0)
+
+# Iterate through sample.id and calculate the number of obs, output to df
+for(sample in reduced.lsat.dt$sample_id) {
+  lsat.dt.sample <- filter(lsat.dt, lsat.dt$sample_id == sample)
+  print(sample)
+  obs <- length(lsat.dt.sample$sample_id)
+  gee.obs.per.sample <- gee.obs.per.sample %>% add_row(sample.id = sample, gee.obs = obs)
+  print(gee.obs.per.sample)
+}  
+
+range.gee <- max(gee.obs.per.sample$gee.obs[2:169]) - min(gee.obs.per.sample$gee.obs[2:169])
+range.gee
+# Plot obs per sample.id as barplot
+gee.obs.hist <- ggplot(gee.obs.per.sample, aes(x = sample.id, y = gee.obs, color = sample.id)) +
+  geom_bar(width = 0.2, stat = "identity", show.legend = FALSE) +
+  scale_fill_brewer(palette = "Set1")
+
+gee.obs.hist
 # Step through the LandsatTS package functions, edited to keep snow ----
 
 # FORMATING AND CLEANING
@@ -131,6 +160,9 @@ obs.hist <- ggplot(obs.per.sample, aes(x = sample.id, y = initial.obs, color = s
     scale_fill_brewer(palette = "Set1")
 
 obs.hist
+
+range.format <- max(obs.per.sample$initial.obs[2:169]) - min(obs.per.sample$initial.obs[2:169])
+range.format
 
 # Clean the surface reflectance data
 lsat.dt <- ch_lsat_clean_data(lsat.dt, 
@@ -180,6 +212,9 @@ clobs.hist <- ggplot(clobs.per.sample, aes(x = sample.id, y = clean.obs, color =
   scale_fill_brewer(palette = "Set1")
 
 clobs.hist
+
+range.clobs <- max(clobs.per.sample$clean.obs[2:169]) - min(clobs.per.sample$clean.obs[2:169])
+range.clobs
 # For Blaesedalen, edited script "removed 57921 of 77810 observations (74.44%)"
 #                original script"removed 52913 of 77810 observations (68%)"
 #
@@ -259,7 +294,8 @@ lsat.pheno.dt <- lsat_fit_phenological_curves(lsat.dt,
                                               window.yrs = 5, # Previously 5, changed to bring back pixels 
                                               window.min.obs = 10, 
                                               spl.fit.outfile = F, 
-                                              progress = T) # removed vi.min = 0, unused argument error
+                                              progress = T, 
+                                              si.min = 0.01) # removed vi.min = 0, unused argument error
 
 # Check number of obs again
 columns <- c("sample.id", "pheno.obs")
@@ -375,9 +411,8 @@ obs.df <- obs.df %>% filter(stage.num != 6)
 obs.df.trend <- obs.df %>% filter(trend == TRUE)
 obs.df.notrend <- obs.df %>% filter(trend == FALSE)
 
-obs.line <- ggplot() +
-            geom_line(aes(obs.df.trend, x = stage.num, y = obs, color = 'red', group_by(sample.id)), show.legend = FALSE) +
-            geom_line(aes(obs.df.notrend, x = stage.num, y = obs, color = 'green', group_by(sample.id)), show.legend = FALSE) +
+obs.line <- ggplot(obs.df, aes(x = stage.num, y = obs, color = sample.id, group_by(trend))) +
+            geom_line(show.legend = FALSE) +
             theme(axis.text.x = element_blank()) +
             geom_text(label="lsat_format_data",
                        x=1,
