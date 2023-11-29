@@ -132,6 +132,17 @@ gee.obs.hist
 # Format data
 lsat.dt <- ch_lsat_format_data(lsat.dt)
 
+# Summarise the number of obs
+data.summary <- lsat_summarize_data(lsat.dt)
+
+# How many observations are there in each year? ----
+lsat.dt.years <- filter(lsat.dt, lsat.dt$sample.id == 'blaesedalen_1')
+lsat.dt.years <- lsat.dt.years %>% group_by(year) %>% summarise(Count = n ()) %>% dplyr::ungroup()
+ggplot(lsat.dt.years, aes(x = year, y = Count, colour = year)) +
+  geom_bar(stat = 'Identity', show.legend = FALSE) +
+  labs(title = 'sample.id = 1') +
+  theme_minimal()
+
 # Plot the number of obs per pixel
 reduced.lsat.dt <- distinct(lsat.dt, sample.id, .keep_all = TRUE) # Reduce to unique sample.id
 reduced.lsat.dt$sample.id
@@ -164,7 +175,7 @@ obs.hist
 range.format <- max(obs.per.sample$initial.obs[2:169]) - min(obs.per.sample$initial.obs[2:169])
 range.format
 
-# Clean the surface reflectance data
+# Clean the surface reflectance data ----
 lsat.dt <- ch_lsat_clean_data(lsat.dt, 
                               geom.max = 50, 
                               cloud.max = 70, 
@@ -173,22 +184,7 @@ lsat.dt <- ch_lsat_clean_data(lsat.dt,
                               filter.cfmask.water = F, 
                               filter.jrc.water = F)
 
-# Each pixel has sampleID, for every sampleID should have pixels for every scene
-# plot hist of #obs per sample id, if drop off then will be visible.
-# before filtering there should be equal numbers per sampleID, after is there a 
-# change? Try bar plot in ggplot2
-
-# What might be happening: later in the process pixels being filtered out,
-# years before and after, for each year estimates peak
-# there are thresholds in ^^, these may be filtering the data
-
-
-# Check for removal numbers using original script
-lsat.dt.orig <- do.call("rbind", lapply(blaesedalen_path, fread))
-lsat.dt.orig <- lsat_format_data(lsat.dt.orig)
-lsat.dt.orig <- lsat_clean_data(lsat.dt.orig)
-
-# Could create a new df and then join with the first, or just keep as multiple df?
+# Check how many obs per pixel.id after cleaning ----
 columns <- c("sample.id", "clean.obs")
 clobs.per.sample <- data.frame(matrix(nrow = 0, ncol = length(columns)))
 colnames(clobs.per.sample) <- columns
@@ -288,7 +284,34 @@ calobs.hist <- ggplot(calobs.per.sample, aes(x = sample.id, y = cal.obs, color =
 
 calobs.hist
 
-# Fit phenological models (cubic splines) to each time series
+
+# Explore functioning of lsat_fit_phenological_curves() ---- 
+
+# Get a selection of random sample.id numbers
+set.seed(42)  # Setting a seed for reproducibility
+sample.ids <- sample(0:100, 10, replace = FALSE)
+sample.ids <- paste('blaesedalen_', sample.ids, sep = '')
+
+# Filter to only where sample.id matches sample.ids list
+sample.lsat.dt <- filter(lsat.dt, sample.id %in% sample.ids)
+sample.dt <- lsat.dt
+
+# Check the filter worked
+sample.id.check <- distinct(sample.lsat.dt, sample.id, .keep_all = TRUE) # Reduce to unique sample.id
+sample.id.check$sample.id
+
+# PLot the data
+ggplot(data = sample.lsat.dt, aes(x = doy, y = ndvi, colour = year)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y~I(x^2)) +
+  facet_wrap(~sample.id) +
+  scale_color_viridis()
+  theme_classic()
+
+
+
+
+# Fit phenological models (cubic splines) to each time series ----
 lsat.pheno.dt <- lsat_fit_phenological_curves(lsat.dt, 
                                               si = 'ndvi', 
                                               window.yrs = 5, # Previously 5, changed to bring back pixels 
@@ -297,7 +320,7 @@ lsat.pheno.dt <- lsat_fit_phenological_curves(lsat.dt,
                                               progress = T, 
                                               si.min = 0.01) # removed vi.min = 0, unused argument error
 
-# Check number of obs again
+# Check number of obs again ----
 columns <- c("sample.id", "pheno.obs")
 pheno.per.sample <- data.frame(matrix(nrow = 0, ncol = length(columns)))
 colnames(pheno.per.sample) <- columns
@@ -362,10 +385,13 @@ lsat.gs.eval.dt <- lsat_evaluate_phenological_max(lsat.pheno.dt,
                                                   min.frac.of.max = 0.75, 
                                                   outdir = NA)
 
+
+
 # Calculate trends
 lsat.trnds.dt <- lsat_calc_trend(lsat.gs.dt, si = 'ndvi.max', 2000:2020, sig = 0.1)
 
-# Check number of obs again
+
+# Check number of obs again ----
 columns <- c("sample.id", "trend.obs")
 trend.per.sample <- data.frame(matrix(nrow = 0, ncol = length(columns)))
 colnames(trend.per.sample) <- columns
