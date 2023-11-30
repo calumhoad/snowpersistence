@@ -64,8 +64,8 @@ lsat.dt <- do.call("rbind", lapply(blaesedalen_path, fread))
 # Format data
 lsat.dt <- ch_lsat_format_data(lsat.dt)
 
-# Clean data 
-lsat.dt <- ch_lsat_clean_data(lsat.dt, 
+# Clean data with manual screening
+lsat.manual.dt <- ch_lsat_clean_data(lsat.dt, 
                               geom.max = 50, 
                               cloud.max = 70, 
                               sza.max = 60, 
@@ -73,60 +73,140 @@ lsat.dt <- ch_lsat_clean_data(lsat.dt,
                               filter.cfmask.water = F, 
                               filter.jrc.water = F)
 
+# Clean data with auto screening (bit QA based)
+lsat.auto.dt <- lsat_clean_data(lsat.dt,
+                                geom.max = 50, 
+                                cloud.max = 70,
+                                sza.max = 60, 
+                                filter.cfmask.snow = F, 
+                                filter.cfmask.water = F, 
+                                filter.jrc.water = F)
+
 
 # Calculate NDVI and cross calibrate sensors ----
 
 # Compute NDVI or other vegetation index
-lsat.dt <- lsat_calc_spectral_index(lsat.dt, si = 'ndvi')
+lsat.manual.dt <- lsat_calc_spectral_index(lsat.manual.dt, si = 'ndvi')
+lsat.auto.dt <- lsat_calc_spectral_index(lsat.auto.dt, si = 'ndvi')
 
 # Cross-calibrate NDVI among sensors using an approach based on Random Forest machine learning
-lsat.dt <- LandsatTS::lsat_calibrate_rf(lsat.dt, 
-                                        band.or.si = 'ndvi', 
-                                        doy.rng = 151:242, 
-                                        min.obs = 5,               # won't calc for 1 year
-                                        frac.train = 0.75, 
-                                        overwrite.col = T, 
-                                        write.output = F,
-                                        train.with.highlat.data = T)
+lsat.manual.dt <- lsat_calibrate_rf(lsat.manual.dt, 
+                              band.or.si = 'ndvi', 
+                              doy.rng = 151:242, 
+                              min.obs = 5,               
+                              frac.train = 0.75, 
+                              overwrite.col = T, 
+                              write.output = F,
+                              train.with.highlat.data = T)
+
+lsat.auto.dt <- lsat_calibrate_rf(lsat.auto.dt,
+                                  band.or.si = 'ndvi',
+                                  doy.rng = 151:242, 
+                                  min.obs = 5, 
+                                  frac.train = 0.75, 
+                                  overwrite.col = T, 
+                                  write.output = F, 
+                                  train.with.highlat.data = T)
+
 
 
 # Fit phenological models (cubic splines) to each time series ----
 
 # Fit phenological curves
-lsat.pheno.dt <- lsat_fit_phenological_curves(lsat.dt, 
+lsat.manual.pheno.5 <- lsat_fit_phenological_curves(lsat.manual.dt, 
                                               si = 'ndvi', 
-                                              window.yrs = 5, # Previously 5, changed to bring back pixels 
+                                              window.yrs = 5, 
                                               window.min.obs = 10, 
                                               spl.fit.outfile = F, 
                                               progress = T, 
                                               si.min = 0.15)
 
+lsat.manual.pheno.7 <- lsat_fit_phenological_curves(lsat.manual.dt, 
+                                                  si = 'ndvi', 
+                                                  window.yrs = 7, 
+                                                  window.min.obs = 10, 
+                                                  spl.fit.outfile = F, 
+                                                  progress = T, 
+                                                  si.min = 0.15)
+
+lsat.auto.pheno.5 <- lsat_fit_phenological_curves(lsat.auto.dt, 
+                                              si = 'ndvi', 
+                                              window.yrs = 5, 
+                                              window.min.obs = 10, 
+                                              spl.fit.outfile = F, 
+                                              progress = T, 
+                                              si.min = 0.15)
+
+lsat.auto.pheno.7 <- lsat_fit_phenological_curves(lsat.auto.dt, 
+                                                si = 'ndvi', 
+                                                window.yrs = 7, 
+                                                window.min.obs = 10, 
+                                                spl.fit.outfile = F, 
+                                                progress = T, 
+                                                si.min = 0.15)
+
 # Derived annual growing season metrics
-lsat.gs.dt <- lsat_summarize_growing_seasons(lsat.pheno.dt, 
+lsat.manual.gs.5 <- lsat_summarize_growing_seasons(lsat.manual.pheno.5, 
                                              si = 'ndvi', 
                                              min.frac.of.max = 0.75)
+
+lsat.manual.gs.7 <- lsat_summarize_growing_seasons(lsat.manual.pheno.7, 
+                                                   si = 'ndvi', 
+                                                   min.frac.of.max = 0.75)
+
+lsat.auto.gs.5 <- lsat_summarize_growing_seasons(lsat.auto.pheno.5, 
+                                             si = 'ndvi', 
+                                             min.frac.of.max = 0.75)
+
+lsat.auto.gs.7 <- lsat_summarize_growing_seasons(lsat.auto.pheno.7, 
+                                                 si = 'ndvi', 
+                                                 min.frac.of.max = 0.75)
 
 
 # Calculate trends ----
 
 # Calculate trends
-lsat.trnds.dt <- lsat_calc_trend(lsat.gs.dt, si = 'ndvi.max', 2000:2020, sig = 0.1)
-
+lsat.manual.trnds.5 <- lsat_calc_trend(lsat.manual.gs.5, si = 'ndvi.max', 2000:2020, sig = 0.1)
+lsat.manual.trnds.7 <- lsat_calc_trend(lsat.manual.gs.7, si = 'ndvi.max', 2000:2020, sig = 0.1)
+lsat.auto.trnds.5 <- lsat_calc_trend(lsat.auto.gs.5, si = 'ndvi.max', 2000:2020, sig = 0.1)
+lsat.auto.trnds.7 <- lsat_calc_trend(lsat.auto.gs.7, si = 'ndvi.max', 2000:2020, sig = 0.1)
 
 # Plot map of data ----
 
 # Convert to sf
-bl_trend_sf <- st_as_sf(lsat.trnds.dt, coords = c("longitude","latitude"))
+bl.manual.sf.5 <- st_as_sf(lsat.manual.trnds.5, coords = c("longitude","latitude"))
+bl.manual.sf.7 <- st_as_sf(lsat.manual.trnds.7, coords = c("longitude","latitude"))
+bl.auto.sf.5 <- st_as_sf(lsat.auto.trnds.5, coords = c("longitude", "latitude"))
+bl.auto.sf.7 <- st_as_sf(lsat.auto.trnds.7, coords = c("longitude", "latitude"))
 
 # Plot map
 # Blaesedalen
-bl_map <- leaflet() %>%
+bl.map <- leaflet() %>%
   addProviderTiles('OpenStreetMap.Mapnik') %>%
-  addCircleMarkers(data = bl.5.10,
+  addCircleMarkers(data = bl.manual.sf.5,
                    color = ~ifelse(trend.cat == 'no_trend', 'blue', 
-                                   ifelse(trend.cat == 'browning', 'brown', 'green')))
+                                   ifelse(trend.cat == 'browning', 'brown', 'green')),
+                   group = 'Manual 5') %>%
+  addCircleMarkers(data = bl.manual.sf.7,
+                   color = ~ifelse(trend.cat == 'no_trend', 'blue', 
+                                   ifelse(trend.cat == 'browning', 'brown', 'green')),
+                   group = 'Manual 7') %>%
+  addCircleMarkers(data = bl.auto.sf.5,
+                 color = ~ifelse(trend.cat == 'no_trend', 'blue', 
+                                 ifelse(trend.cat == 'browning', 'brown', 'green')),
+                 group = 'Auto 5') %>%
+  addCircleMarkers(data = bl.auto.sf.7,
+                   color = ~ifelse(trend.cat == 'no_trend', 'blue', 
+                                   ifelse(trend.cat == 'browning', 'brown', 'green')),
+                   group = 'Auto 7') %>%
+  addLayersControl(
+    baseGroups = c("basemap"),
+    overlayGroups = c("Manual 5", "Manual 7", "Auto 5", "Auto 7"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
 
-bl_map
+
+bl.map
 
 
 
