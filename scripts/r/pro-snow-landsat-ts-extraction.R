@@ -127,7 +127,7 @@ gee.obs.hist <- ggplot(gee.obs.per.sample, aes(x = sample.id, y = gee.obs, color
 gee.obs.hist
 # Step through the LandsatTS package functions, edited to keep snow ----
 
-# FORMATING AND CLEANING
+# FORMATING AND CLEANING 
 
 # Format data
 lsat.dt <- ch_lsat_format_data(lsat.dt)
@@ -183,6 +183,10 @@ lsat.dt <- ch_lsat_clean_data(lsat.dt,
                               filter.cfmask.snow = F, 
                               filter.cfmask.water = F, 
                               filter.jrc.water = F)
+
+# Could be useful to plot the range of sza, geom error, cloud
+#   prior to the cleaning script? Should inform how many obs are being 
+#   dropped?
 
 # Check how many obs per pixel.id after cleaning ----
 columns <- c("sample.id", "clean.obs")
@@ -240,7 +244,7 @@ bl_data_map <- leaflet() %>%
 bl_data_map
 
 
-# NDVI, CROSS-CALIBRATION, TREND ANALYSIS
+# NDVI, CROSS-CALIBRATION, TREND ANALYSIS ----
 
 # Compute NDVI or other vegetation index
 lsat.dt <- lsat_calc_spectral_index(lsat.dt, si = 'ndvi')
@@ -249,17 +253,13 @@ lsat.dt <- lsat_calc_spectral_index(lsat.dt, si = 'ndvi')
 lsat.dt <- LandsatTS::lsat_calibrate_rf(lsat.dt, 
                              band.or.si = 'ndvi', 
                              doy.rng = 151:242, 
-                             min.obs = 5, 
+                             min.obs = 5,               # won't calc for 1 year
                              frac.train = 0.75, 
                              overwrite.col = T, 
                              write.output = F,
                              train.with.highlat.data = T)
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# ERROR: object 'fig.list' not found
-# Why is this happening? The dataframe being fed in should be the same format
-# a in the original functions/script.
 
-# Check number of obs again
+# Check number of obs again ----
 columns <- c("sample.id", "cal.obs")
 calobs.per.sample <- data.frame(matrix(nrow = 0, ncol = length(columns)))
 colnames(calobs.per.sample) <- columns
@@ -311,14 +311,25 @@ ggplot(data = sample.lsat.dt, aes(x = doy, y = ndvi, colour = year)) +
 
 
 
-# Fit phenological models (cubic splines) to each time series ----
+
+  # Fit phenological models (cubic splines) to each time series ----
 lsat.pheno.dt <- lsat_fit_phenological_curves(lsat.dt, 
                                               si = 'ndvi', 
                                               window.yrs = 5, # Previously 5, changed to bring back pixels 
                                               window.min.obs = 10, 
                                               spl.fit.outfile = F, 
                                               progress = T, 
-                                              si.min = 0.01) # removed vi.min = 0, unused argument error
+                                              si.min = 0.15) # removed vi.min = 0, unused argument error
+  
+lsat.pheno.5.10 <- lsat.pheno.dt
+
+lsat.pheno.7.10 <- lsat_fit_phenological_curves(lsat.dt,
+                                                si = "ndvi", 
+                                                window.yrs = 7,
+                                                window.min.obs = 10, 
+                                                spl.fit.outfile = F, 
+                                                progress = T, 
+                                                si.min = 0.15)
 
 # Check number of obs again ----
 columns <- c("sample.id", "pheno.obs")
@@ -346,10 +357,18 @@ pheno.hist <- ggplot(pheno.per.sample, aes(x = sample.id, y = pheno.obs, color =
 pheno.hist 
 
 
-# Derived annual growing season metrics
+# Derived annual growing season metrics ----
 lsat.gs.dt <- lsat_summarize_growing_seasons(lsat.pheno.dt, 
                                              si = 'ndvi', 
                                              min.frac.of.max = 0.75)
+
+lsat.gs.5.10 <- lsat_summarize_growing_seasons(lsat.pheno.5.10, 
+                                               si = 'ndvi', 
+                                               min.frac.of.max = 0.75)
+
+lsat.gs.7.10 <- lsat_summarize_growing_seasons(lsat.pheno.7.10, 
+                                               si = 'ndvi', 
+                                               min.frac.of.max = 0.75)
 # Check number of obs again ----
 columns <- c("sample.id", "met.obs")
 met.per.sample <- data.frame(matrix(nrow = 0, ncol = length(columns)))
@@ -385,10 +404,27 @@ lsat.gs.eval.dt <- lsat_evaluate_phenological_max(lsat.pheno.dt,
                                                   min.frac.of.max = 0.75, 
                                                   outdir = NA)
 
+lsat.gs.eval.dt.5.10 <- lsat_evaluate_phenological_max(lsat.pheno.5.10, 
+                                                  si = 'ndvi', 
+                                                  min.obs = 10, 
+                                                  reps = 5, 
+                                                  min.frac.of.max = 0.75, 
+                                                  outdir = NA)
+
+lsat.gs.eval.dt.7.10 <- lsat_evaluate_phenological_max(lsat.pheno.7.10, 
+                                                  si = 'ndvi', 
+                                                  min.obs = 10, 
+                                                  reps = 5, 
+                                                  min.frac.of.max = 0.75, 
+                                                  outdir = NA)
 
 
 # Calculate trends
 lsat.trnds.dt <- lsat_calc_trend(lsat.gs.dt, si = 'ndvi.max', 2000:2020, sig = 0.1)
+
+lsat.trnds.5.10 <- lsat_calc_trend(lsat.gs.5.10, si = "ndvi.max", 2000:2020, sig = 0.1 )
+
+lsat.trnds.7.10 <- lsat_calc_trend(lsat.gs.7.10, si = 'ndvi.max', 2000:2020, sig = 0.1)
 
 
 # Check number of obs again ----
@@ -487,6 +523,8 @@ range.met # Range of 12
 
 # Make the trend data into an sf
 bl_trend_sf <- st_as_sf(lsat.trnds.dt, coords = c("longitude","latitude"))
+bl.5.10 <- st_as_sf(lsat.trnds.5.10, coords = c("longitude", "latitude"))
+bl.7.10 <- st_as_sf(lsat.trnds.7.10, coords = c("longitude", "latitude"))
 #kl_trend_sf <- st_as_sf(lsat.trnds.dt, coords = c("longitude","latitude"))
 #klLow_trend_Sf <- st_as_sf(lsat.trnds.dt, coords = c("longitude", "latitude"))
 #klLow_trend_Sf_geom <- st_as_sf(lsat.trnds.dt, coords = c("longitude", "latitude"))
@@ -510,8 +548,9 @@ bl_datastep_map
 # Blaesedalen
 bl_map <- leaflet() %>%
   addProviderTiles('OpenStreetMap.Mapnik') %>%
-  addCircleMarkers(data = bl_trend_sf,
-                   color = ~ifelse(trend.cat == 'no_trend', 'blue', 'brown'))
+  addCircleMarkers(data = bl.5.10,
+                   color = ~ifelse(trend.cat == 'no_trend', 'blue', 
+                                   ifelse(trend.cat == 'browning', 'brown', 'green')))
 
 bl_map
 
