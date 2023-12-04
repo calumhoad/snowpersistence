@@ -60,7 +60,7 @@ blaesedalen <- st_polygon(list(matrix(c(-53.46895345, 69.30024099,
                                  ncol = 2, byrow = TRUE)))
 
 all_regions_sf <- st_sfc(kluane_low, kluane_high, blaesedalen, crs = 4326) %>% st_sf() %>%
-  mutate(region = c("kluane_low", "kluane_high", "blaesedalen"))
+  mutate(region = c("kluanelow", "kluanehigh", "blaesedalen"))
 
 
 # Get pixel centres ----
@@ -70,6 +70,10 @@ pixel_list <- all_regions_sf %>%
   map(lsat_get_pixel_centers,
       pixel_prefix_from = "region") %>%
   bind_rows()
+
+write.csv2(pixel_list, '../../data/lsatTS-output/pixel_centres.csv')
+
+st_write(pixel_list, '../../data/lsatTS-output/pixel_centres.shp')
 
 # Subset pixel list to return pixels per AOI
 blaesedalen_only <- pixel_list[1:168, ]
