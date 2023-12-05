@@ -1,10 +1,7 @@
 # function for calculating altered NDSI
 # Calum Hoad, 04/12/2023
 
-# Install
-devtools::install_github("tlhenvironment/buffeRs")
-
-R.Version()
+install.packages('rgdal')
 
 # Import necessary libraries
 library(terra)
@@ -21,29 +18,46 @@ two <- rast('../../data/uav/MAIA-exports/20220705/20220705-div32768_clipped.tif'
 three <- rast('../../data/uav/MAIA-exports/20220718/20220718-div32768_clipped.tif')
 four <- rast('../../data/uav/MAIA-exports/20220814/20220814-div32768_clipped.tif')
 
+# Paths to blaesedalen data
+one <- rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif')
+two <- rast('../../data/uav/M3M-exports/5cm/20230712-clipped-5cm-div128.tif') 
+three <- rast('../../data/uav/M3M-exports/5cm/20230718-clipped-5cm-div128.tif')
+four <- rast('../../data/uav/M3M-exports/5cm/20230726-clipped-5cm-div128.tif')
+
+# Resample if not already same res and extent
 one <- resample(one, three, method = 'bilinear')
 two <- resample(two, three, method = 'bilinear')
 four <- resample(four, three, method = 'bilinear')
 
 # Rename bands in raster to specifications of sensor (MAIA Sentinel-2)
+
+# MAIA Sentinel-2
 names(one) <- c('violet', 'blue', 'green', 'red', 're1', 're2', 'nir1', 'nir2', 'nir3')
 names(two) <- c('violet', 'blue', 'green', 'red', 're1', 're2', 'nir1', 'nir2', 'nir3')
 names(three) <- c('violet', 'blue', 'green', 'red', 're1', 're2', 'nir1', 'nir2', 'nir3')
 names(four) <- c('violet', 'blue', 'green', 'red', 're1', 're2', 'nir1', 'nir2', 'nir3')
 
+# DJI M3M
+names(one) <- c('green', 'nir', 're', 'red', 'RGB-R', 'RGB-G', 'RGB-B')
+names(two) <- c('green', 'nir', 're', 'red', 'RGB-R', 'RGB-G', 'RGB-B')
+names(three) <- c('green', 'nir', 're', 'red', 'RGB-R', 'RGB-G', 'RGB-B')
+names(four) <- c('green', 'nir', 're', 'red', 'RGB-R', 'RGB-G', 'RGB-B')
+
+
 # Calculate the NDSI
-rast1ndsi <- (one$green-one$nir3)/(one$green+one$nir3)
+rast1ndsi <- (one$green-one$nir)/(one$green+one$nir)
 names(rast1ndsi) <- "ndsi.1"
-rast2ndsi <- (two$green-two$nir3)/(two$green+two$nir3)
+rast2ndsi <- (two$green-two$nir)/(two$green+two$nir)
 names(rast2ndsi) <- "ndsi.2"
-rast3ndsi <- (three$green-three$nir3)/(three$green+three$nir3)
+rast3ndsi <- (three$green-three$nir)/(three$green+three$nir)
 names(rast3ndsi) <- "ndsi.3"
-rast4ndsi <- (four$green-four$nir3)/(four$green+four$nir3)
+rast4ndsi <- (four$green-four$nir)/(four$green+four$nir)
 names(rast4ndsi) <- "ndsi.4"
 
 # Reclassify every pixel as 1, to facilitate pixel count via sum
 num_pixels <- terra::classify(rast1ndsi, rbind(c(-1, 1, 1)))
-names(num_pixels) <- 'pixels'
+names(num_pixels) <- c('pixels')
+
 # Classify, where < 0.1 not snow, where > 0.1 snow
 classNDSIhigher <- terra::classify(rast1ndsi, rbind(c(-1, 0.15, 0), c(0.15, 1, 1)))
 classNDSIlower <- terra::classify(rast1ndsi, rbind(c(-1, 0.1, 0), c(0.1, 1, 1)))
@@ -59,6 +73,7 @@ class_four <- terra::classify(rast4ndsi, rbind(c(-1, 0, 0), c(0, 1, 1)))
 
 # Plot RGB to check snow classification
 plotRGB(one, 4, 3, 2, scale = 0.6, stretch = 'lin')
+plot(class_one)
 
 # Get grid matching spatial resolution of EO data ----
 
@@ -66,19 +81,13 @@ plotRGB(one, 4, 3, 2, scale = 0.6, stretch = 'lin')
 pixel_centres <- st_read('../../data/lsatTS-output/pixel_centres.shp') %>%
   mutate(site = str_split(sample_id, "_") %>% 
            sapply(`[`, 1)) %>%
-  filter(site == 'kluanelow')
+  filter(site == 'blaesedalen') %>%
+  st_transform(crs = 32622)
 
-# Buffer the pixel centres to a landsat pixel size using square buffer ----
-st_buffer(pixel_centres, dist = 15, endCapStyle = 'SQUARE') # needs projection
+pixel_poly <- st_buffer(pixel_centres, 15, endCapStyle = "SQUARE")
 
-# Convert to terra vect
-pixel_centres <- vect(pixel_centres)
+ggplot() + geom_sf(data = pixel_centres) + geom_sf(data = pixel_poly)
 
-# buffer using terra
-pixel_poly <- buffer(pixel_centres, width = 15, quadsegs = 1)
-
- lines(pixel_poly)
- points(pixel_centres)
  
 # Use pixel polygons to sum the value of the reclassed snow pixels ----
 extract_sum1 <- terra::extract(class_one, pixel_poly, fun = 'sum', ID = TRUE, 
@@ -90,36 +99,37 @@ extract_sum3 <- terra::extract(class_three, extract_sum2, fun = 'sum', ID = TRUE
 extract_sum4 <- terra::extract(class_four, extract_sum3, fun = 'sum', ID = TRUE, 
                                bind = TRUE)
 
-
-
-# Repeat the above step for each time point, and add a new variable for each time
-
-# Need to get a sum of the pixels contained within each 
+# Extract sum from raster where every pixel = 1, in order to get tot.pix 
 extract_sum5 <- terra::extract(num_pixels, extract_sum4, fun = 'sum', ID = TRUE, 
                               bind = TRUE)
 
 
 # Calculation of average snow statistic ----
-# Do this as spatvector or as a raster? A dataframe. 
+# Calculate average snow coverage per pixel over whole period of obs
 extracted_data <- as.data.frame(extract_sum5) %>%
-  rename(tot.pixels = green) %>%
+  rename(tot.pixels = pixels) %>%
   mutate(snow.persist = (0.25 * (ndsi.1/tot.pixels)) +
                         (0.25 * (ndsi.2/tot.pixels)) +
                         (0.25 * (ndsi.3/tot.pixels)) +
-                        (0.25 * (ndsi.4/tot.pixels)))
-  
-  # Plot snow persistence
-ggplot(extracted_data, aes(x = sample_id, y = snow.persist)) +
-  geom_bar(stat = 'identity')
+                        (0.25 * (ndsi.4/tot.pixels))) %>%
+  mutate(ndsi.1 = (ndsi.1/tot.pixels)) %>% # And percent cover at each time point
+  mutate(ndsi.2 = (ndsi.2/tot.pixels)) %>%
+  mutate(ndsi.3 = (ndsi.3/tot.pixels)) %>%
+  mutate(ndsi.4 = (ndsi.4/tot.pixels))
 
-kl120 <- st_read('../../data/lsatTS-output/pixel_centres.shp') %>%
-  mutate(site = str_split(sample_id, "_") %>% 
-           sapply(`[`, 1)) %>%
-  filter(sample_id == 'kluanelow_120')
+# Format data for plotting
+extracted_data_long <- pivot_longer(extracted_data, 
+                                    !sample_id & !site & !tot.pixels, 
+                                    names_to = 'date', 
+                                    values_to = 'percent.cover') %>%
+  mutate(date = ifelse(date == 'ndsi.1', as_date('2023-07-02'),
+                            ifelse(date == 'ndsi.2', as_date('2023-07-12'), 
+                                   ifelse(date == 'ndsi.3', as_date('2023-07-18'), 
+                                          ifelse(date == 'ndsi.4', as_date('2023-07-26'), NaN)))))
 
-plot(class_one)
-points(kl120)
-lines(pixel_poly)
+ggplot(extracted_data_long, aes(x = as_date(date), y = percent.cover, color = sample_id, group_by(sample_id))) +
+  geom_line(show.legend = FALSE)
+
 
 # Compare Landsat imagery with pixel polygons ----
 landsat <- ('../../data/landsat-imagery/kluane_test.tif')
@@ -133,3 +143,12 @@ points(pixel_centres)
 lines(pixel_poly)
 
 # Question for Jakob - how do we get consistent pixel polys for landsat data?
+
+single_point <- st_read('../../data/lsatTS-output/pixel_centres.shp') %>%
+  mutate(site = str_split(sample_id, "_") %>% 
+           sapply(`[`, 1)) %>%
+  filter(site == 'blaesedalen')# %>%
+ # filter(sample_id == 'blaesedalen_1')
+
+single_poly <- mutate(single_point, geometry =  buffer_square(single_point, length = 30))
+plot(single_poly)
