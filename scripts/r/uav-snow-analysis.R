@@ -12,6 +12,8 @@ library(dplyr)
 library(rts)
 library(ggplot2)
 library(buffeRs)
+library(sf)
+library(tidyverse)
 
 # Paths to the data, read in as SpatRast
 one <- rast('../../data/uav/MAIA-exports/20220629/20220629-div32768_clipped.tif')
@@ -97,7 +99,7 @@ extract_sum5 <- terra::extract(num_pixels, extract_sum4, fun = 'sum', ID = TRUE,
                               bind = TRUE)
 
 
-# Calculation of average snow statistic
+# Calculation of average snow statistic ----
 # Do this as spatvector or as a raster? A dataframe. 
 extracted_data <- as.data.frame(extract_sum5) %>%
   rename(tot.pixels = green) %>%
@@ -106,9 +108,7 @@ extracted_data <- as.data.frame(extract_sum5) %>%
                         (0.25 * (ndsi.3/tot.pixels)) +
                         (0.25 * (ndsi.4/tot.pixels)))
   
-  mutate(percent_cover = ndsi/green)
-  
-# Plot snow persistence
+  # Plot snow persistence
 ggplot(extracted_data, aes(x = sample_id, y = snow.persist)) +
   geom_bar(stat = 'identity')
 
@@ -120,3 +120,16 @@ kl120 <- st_read('../../data/lsatTS-output/pixel_centres.shp') %>%
 plot(class_one)
 points(kl120)
 lines(pixel_poly)
+
+# Compare Landsat imagery with pixel polygons ----
+landsat <- ('../../data/landsat-imagery/kluane_test.tif')
+
+landsat <- rast(landsat)
+
+landsat <- crop(landsat, one)
+
+plotRGB(landsat, 4, 3, 2, scale = 1.1, stretch = 'lin', smooth = FALSE)
+points(pixel_centres)
+lines(pixel_poly)
+
+# Question for Jakob - how do we get consistent pixel polys for landsat data?
