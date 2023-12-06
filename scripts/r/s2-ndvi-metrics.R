@@ -11,8 +11,13 @@ library(sf)
 library(tidyverse)
 
 # Path to directory containing S2 images
-s2.path <- ('')
+date.dir <- list.files('../../data/sentinel-2/2023-08-17/', full.names = TRUE)
+s2.stacked <- rast(date.dir) %>%
+  project('epsg:32621')
 
+plot(s2.stacked)
+
+s2.stacked
 # OR
 
 # S2 paths

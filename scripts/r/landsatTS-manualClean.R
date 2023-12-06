@@ -208,5 +208,7 @@ bl.map <- leaflet() %>%
 
 bl.map
 
+# Output to csv
+write.csv2(lsat.auto.trnds.7, '../../data/lsatTS-output/blaesedalen/blaesedalen_auto_7yr_trnds.csv')
 
 
