@@ -1,12 +1,10 @@
 # function for calculating altered NDSI
 # Calum Hoad, 04/12/2023
 
-install.packages('rgdal')
-
 # Import necessary libraries
 library(terra)
 library(dplyr)
-library(rts)
+# library(rts)
 library(ggplot2)
 library(buffeRs)
 library(sf)
@@ -30,6 +28,7 @@ two <- resample(two, three, method = 'bilinear')
 four <- resample(four, three, method = 'bilinear')
 
 # Rename bands in raster to specifications of sensor (MAIA Sentinel-2)
+
 
 # MAIA Sentinel-2
 names(one) <- c('violet', 'blue', 'green', 'red', 're1', 're2', 'nir1', 'nir2', 'nir3')
@@ -55,7 +54,9 @@ rast4ndsi <- (four$green-four$nir)/(four$green+four$nir)
 names(rast4ndsi) <- "ndsi.4"
 
 # Reclassify every pixel as 1, to facilitate pixel count via sum
-num_pixels <- terra::classify(rast1ndsi, rbind(c(-1, 1, 1)))
+num_pixels <- terra::classify(rast1ndsi, rbind(c(-1, 1, 1))) %>%
+  project('epsg:32621')
+
 names(num_pixels) <- c('pixels')
 
 # Classify, where < 0.1 not snow, where > 0.1 snow
@@ -66,10 +67,14 @@ plot(classNDSIhigher)
 plot(classNDSIlower)
 plot(classNDSIlowerst)
 
-class_one <- terra::classify(rast1ndsi, rbind(c(-1, 0, 0), c(0, 1, 1)))
-class_two <- terra::classify(rast2ndsi, rbind(c(-1, 0, 0), c(0, 1, 1)))
-class_three <- terra::classify(rast3ndsi, rbind(c(-1, 0, 0), c(0, 1, 1)))
-class_four <- terra::classify(rast4ndsi, rbind(c(-1, 0, 0), c(0, 1, 1)))
+class_one <- terra::classify(rast1ndsi, rbind(c(-1, 0, 0), c(0, 1, 1))) %>%
+  project('epsg:32621')
+class_two <- terra::classify(rast2ndsi, rbind(c(-1, 0, 0), c(0, 1, 1))) %>%
+  project('epsg:32621')
+class_three <- terra::classify(rast3ndsi, rbind(c(-1, 0, 0), c(0, 1, 1))) %>%
+  project('epsg:32621')
+class_four <- terra::classify(rast4ndsi, rbind(c(-1, 0, 0), c(0, 1, 1))) %>%
+  project('epsg:32621')
 
 # Plot RGB to check snow classification
 plotRGB(one, 4, 3, 2, scale = 0.6, stretch = 'lin')
@@ -82,7 +87,7 @@ pixel_centres <- st_read('../../data/lsatTS-output/pixel_centres.shp') %>%
   mutate(site = str_split(sample_id, "_") %>% 
            sapply(`[`, 1)) %>%
   filter(site == 'blaesedalen') %>%
-  st_transform(crs = 32622)
+  st_transform(crs = 32621)
 
 pixel_poly <- st_buffer(pixel_centres, 15, endCapStyle = "SQUARE")
 
@@ -103,6 +108,10 @@ extract_sum4 <- terra::extract(class_four, extract_sum3, fun = 'sum', ID = TRUE,
 extract_sum5 <- terra::extract(num_pixels, extract_sum4, fun = 'sum', ID = TRUE, 
                               bind = TRUE)
 
+# Plot extracted data
+ggplot() + geom_sf(data = extract_sum5, aes(color = extract_sum5$ndsi.1))
+
+plot(extract_sum5, col = extract_sum5$ndsi.1)
 
 # Calculation of average snow statistic ----
 # Calculate average snow coverage per pixel over whole period of obs
@@ -115,7 +124,14 @@ extracted_data <- as.data.frame(extract_sum5) %>%
   mutate(ndsi.1 = (ndsi.1/tot.pixels)) %>% # And percent cover at each time point
   mutate(ndsi.2 = (ndsi.2/tot.pixels)) %>%
   mutate(ndsi.3 = (ndsi.3/tot.pixels)) %>%
-  mutate(ndsi.4 = (ndsi.4/tot.pixels))
+  mutate(ndsi.4 = (ndsi.4/tot.pixels)) %>%
+  rename('2023-07-02' = ndsi.1,
+         '2023-07-12' = ndsi.2,
+         '2023-07-18' = ndsi.3,
+         '2023-07-26' = ndsi.4)
+
+# Output the data to csv
+write.csv2(extracted_data, '../../data/uav/snow-metrics/blaesedalen_30m_snowcover.csv')
 
 # Format data for plotting
 extracted_data_long <- pivot_longer(extracted_data, 
@@ -152,3 +168,5 @@ single_point <- st_read('../../data/lsatTS-output/pixel_centres.shp') %>%
 
 single_poly <- mutate(single_point, geometry =  buffer_square(single_point, length = 30))
 plot(single_poly)
+
+options(scipen = 999)
