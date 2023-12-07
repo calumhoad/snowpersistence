@@ -27,3 +27,6 @@ joined.manual <- left_join(trends.manual, snow, by = "sample.id")
 gs.auto <- gs.auto %>% filter(year == 2023 & ndvi.max.doy > 175)
 gs.auto.joined <- left_join(gs.auto, snow, by = 'sample.id')
 
+ggplot(gs.auto.joined, aes(x = ndvi.max, y = snow.persist)) +
+  geom_point() +
+  geom_smooth(method = 'lm')
