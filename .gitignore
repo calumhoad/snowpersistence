@@ -53,3 +53,6 @@ rsconnect/
 *.tif.enp
 *.tif*
 *.zip
+*.SAFE/*
+*.xml
+sentinel-2/

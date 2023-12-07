@@ -210,5 +210,6 @@ bl.map
 
 # Output to csv
 write.csv2(lsat.auto.trnds.7, '../../data/lsatTS-output/blaesedalen/blaesedalen_auto_7yr_trnds.csv')
-
-
+write.csv2(lsat.manual.trnds.7, '../../data/lsatTS-output/blaesedalen/blaesedalen_manual_7yr_trnds.csv')
+write.csv2(lsat.manual.gs.7, '../../data/lsatTS-output/blaesedalen/blaesedalen_manual_7yr_gs_metric.csv')
+write.csv2(lsat.auto.gs.7, '../../data/lsatTS-output/blaesedalen/blaesedalen_auto_7yr_gs_metric.csv')
