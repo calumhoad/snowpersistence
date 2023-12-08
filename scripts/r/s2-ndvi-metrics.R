@@ -22,25 +22,35 @@ d20230923 <- list.files('../../data/sentinel-2/20230923/S2A_MSIL2A_20230922T1549
 
 # Get the Sentinel-2 10m bands as raster stack, project + crop to extent of UAV imagery
 # As function?
+
+# Create list where each item in the list is another list,
+#   containing the filepath to each imagery band
+s2.data <- list(d20230626, d20230708)
+
+
+# Get uAV imagery over plot to use for cropping
+uav <- project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif'), 'epsg:32621')
+
+d20230726
+
+# Create function for stacking rasters from lists of filepaths, then cropping to extent of UAV imagery
 import_s2 <- function(x) {
-  for(date in x) {
-    date <- rast(date) %>%
-      project('epsg:32621') %>%
-      crop(project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif'), 'epsg:32621'))
-  }
+    x <- rast(x) %>%
+      #project('epsg:32621') %>%
+      crop(uav)
 }
 
-s2.data <- c(d20230626, d20230708)
+# Try applying the function 
+s2.data.import <- lapply(s2.data, import_s2)
 
-s2.data <- import_s2(s2.data) # This doesn't work, returns NULL
-
+plot(s2.data.import[[2]])
 
 # Attempt outside of function
 s2.stacked <- rast(d20230726) %>%
-  project('epsg:32621') %>%
+  #project('epsg:32621') %>%
   crop(project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif'), 'epsg:32621'))
 
-
+plot(s2.stacked)
 # Rename bands to make reading logical
 names(s2.stacked) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
 
@@ -64,4 +74,6 @@ plot(s2.ndvi)
 
 # Convert raster to points
 s2.ndvi.points <- st_as_sf(as.points(s2.ndvi, values = TRUE))
+
+# Use lapply to iterate through the dataframe by row (pixel.id) and
 
