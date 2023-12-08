@@ -20,60 +20,78 @@ d20230808 <- list.files('../../data/sentinel-2/20230808/S2B_MSIL2A_20230808T1548
 d20230817 <- list.files('../../data/sentinel-2/20230817/S2A_MSIL2A_20230817T152941_N0509_R111_T21WXT_20230817T214159.SAFE/GRANULE/L2A_T21WXT_A042579_20230817T153311/IMG_DATA/R10m/', full.names = TRUE)
 d20230923 <- list.files('../../data/sentinel-2/20230923/S2A_MSIL2A_20230922T154951_N0509_R054_T21WXT_20230922T234400.SAFE/GRANULE/L2A_T21WXT_A043094_20230922T155005/IMG_DATA/R10m/', full.names = TRUE)
 
+# List of imagery dates, for later use
+dates <- c('2023-06-26', 
+           '2023-07-08',
+           '2023-07-26', 
+           '2023-07-29', 
+           '2023-08-07', 
+           '2023-08-08', 
+           '2023-08-17', 
+           '2023-09-23')
+
 # Get the Sentinel-2 10m bands as raster stack, project + crop to extent of UAV imagery
 # As function?
 
 # Create list where each item in the list is another list,
 #   containing the filepath to each imagery band
-s2.data <- list(d20230626, d20230708)
+s2.data <- list(d20230626, 
+                d20230708, 
+                d20230726, 
+                d20230729, 
+                d20230807, 
+                d20230808, 
+                d20230817, 
+                d20230923)
 
-
-# Get uAV imagery over plot to use for cropping
+# Get uAV imagery over plot to use for cropping - RE-EXPORT UAV IMAGERY SO RE-PROJECT IS AVOIDED
 uav <- project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif'), 'epsg:32621')
-
-d20230726
 
 # Create function for stacking rasters from lists of filepaths, then cropping to extent of UAV imagery
 import_s2 <- function(x) {
     x <- rast(x) %>%
       #project('epsg:32621') %>%
       crop(uav)
+    #x <- set.names(object = x, nm = c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp'))
 }
 
-# Try applying the function 
+# Import the data
 s2.data.import <- lapply(s2.data, import_s2)
 
-plot(s2.data.import[[2]])
+# Check the function worked by plotting rasters from list
+plot(s2.data.import[[6]])
 
-# Attempt outside of function
-s2.stacked <- rast(d20230726) %>%
-  #project('epsg:32621') %>%
-  crop(project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif'), 'epsg:32621'))
-
-plot(s2.stacked)
 # Rename bands to make reading logical
-names(s2.stacked) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-
-
-# Check the data
-plot(s2.stacked)
+names(s2.data.import[[1]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[2]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[3]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[4]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[5]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[6]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[7]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[8]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
 
 
 # Apply function to calculate NDVI ----
 s2_ndvi <- function(x) {
-  x <- (x$green-x$nir)/(x$green+x$nir)
+  x <- (x$nir-x$red)/(x$nir+x$red)
   # names(x) <- c('ndvi')
 }
 
-s2.ndvi <- s2_ndvi(s2.stacked)
+s2.ndvi <- lapply(s2.data.import, s2_ndvi)
 
-# Rename band to 'ndvi'
-names(s2.ndvi) <- c('ndvi')
+# Stack NDVI rasters into single spatRast
+s2.ndvi <- rast(s2.ndvi)
+
+# Name spatRaster layers with dates
+names(s2.ndvi) <- dates
 
 plot(s2.ndvi)
 
-# Convert raster to points
+# Extract raster time series to points
 s2.ndvi.points <- st_as_sf(as.points(s2.ndvi, values = TRUE))
 
-# Use lapply to iterate through the dataframe by row (pixel.id) and
+
+# Apply parabolic 2nd order polynomial to every pixel in the df
+
 
