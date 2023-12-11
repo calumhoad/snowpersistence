@@ -102,55 +102,15 @@ s2.ndvi.points <- st_as_sf(as.points(s2.ndvi, values = TRUE)) %>%
 # Get a dataframe of points from the raster
 s2.ndvi.long <- s2.ndvi.points %>%
   pivot_longer(!geometry & !id, names_to = 'doy', values_to = 'ndvi') %>%
-  mutate(doy = as.Date(doy))
-
-# Group dataframe by id
-s2.ndvi.long <- s2.ndvi.long %>%
+  mutate(doy = as.Date(doy)) %>%
   group_by(id)
 
-# Use group map to apply functions to each group in dataframe
-s2.ndvi.long.test <- group_map(data = s2.ndvi.long, )
-
-# to subsample the df, add this to first line ([sample(nrow(s2.ndvi.points), 3), ])
-
-s2.ndvi.sample <- s2.ndvi.points[sample(nrow(s2.ndvi.points), 1), ] %>%
-  pivot_longer(!geometry & !id, names_to = 'doy', values_to = 'ndvi') %>%
-  mutate(doy = as.Date(doy))
-
-# plot to check what the data looks like
-ggplot(s2.ndvi.long, aes(x = doy, y = ndvi)) +
-         geom_point(aes(color = id)) +# +
-         geom_line(aes(group = id)) 
-         
-s2.ndvi.long.nest <- s2.ndvi.long %>%
-  nest()
-
-
-
-# Jakob's code ----
-# Generate some random data
-x <- rnorm(100)
-my_data <- data.frame(
-  x = x,
-  y = -x**2 - x + rnorm(100)
-)
-
-
-# Fit second order polynomial
-# f(x) = ax^2 + bx + c
-model_fit <- lm(ndvi ~ poly(doy, 2, raw = T), data = s2.ndvi.sample)
-
-model_fit <- function(df) {
-  broom::tidy(lm(data = df, ndvi ~ poly(doy, 2, raw = T)))
-}
-
+# Function for fitting parabolic 2nd order polynomial model
 model_fit <- function(df) {
   lm(data = df, ndvi ~ poly(doy, 2, raw = T))
 }
 
-model_fit(data = s2.ndvi.sample, x = s2.ndvi.sample$doy, y = s2.ndvi.sample$ndvi)
-
-# Calculate vertex
+# Function for calculation of vertex
 # https://quantifyinghealth.com/plot-a-quadratic-function-in-r/
 find_vertex = function(model_fit) {
   # Get model coefficients
@@ -167,51 +127,8 @@ find_vertex = function(model_fit) {
     y = as.numeric(vertex_y)
   ))
 }
-vertex <- find_vertex(model_fit) %>%
-  mutate(x = as.Date(x))
 
-# Generate predictons (for curve plotting)
-s2.ndvi.sample$preds <- predict(model_fit, s2.ndvi.sample)
-
-
-s2.ndvi.long <- s2.ndvi.long %>%
-  mutate(model = model_fit(data = s2.ndvi.long, x = doy, y = ndvi)) %>%
-  mutate(vertex = find_vertex(model))
-# Plot the whole thing
-ggplot(s2.ndvi.sample) +
-  geom_point(aes(x = doy, y = ndvi)) +
-  geom_line(aes(x = doy, y = preds)) +
-  annotate("point", x = vertex$x, y = vertex$y,
-           colour = "red",
-           size = 5) +
-  annotate("text",
-           x = vertex$x, y = vertex$y,
-           label = paste0("Vertex (", round(vertex$x, 2), ",", round(vertex$y, 2), ")"),
-           colour = "red",
-           size = 10,
-           vjust = -1) +
-  theme_classic()
-
-# Should iterate before making df long format?
-# Or use group_by(). For every group (id) apply the function, 
-# then move to the next group.
-
-# Following tutorial here: https://data-se.netlify.app/2018/12/10/new-split-apply-combine-variant-in-dplyr-group-split/
-test <- s2.ndvi.long.nest %>%
-  mutate(model = purrr::map(.f = model_fit, . = data)) %>%
-  mutate(vertex = purrr::map(model, .f = find_vertex)) %>%
-  mutate(preds = purrr::map(model, .f = predict))
-
-test2 <- purrr::map(s2.ndvi.long.nest, .f = model_ndvi)
-
-# Write it all into one function? Get the parameters out and then mutate the df
-# at the end?
-
-unnested <- test %>% 
-  unnest(cols = c(data, model, vertex, preds))
-
-test[[5]][[1]]
-
+# Define function to model, find vertex, and precict values
 model_ndvi <- function(data) {
   
   # Use function to fit model
@@ -228,28 +145,32 @@ model_ndvi <- function(data) {
     mutate(ndvi.max = vertex$y, 
            ndvi.max.doy = vertex$x, 
            ndvi.pred = pred)
-  
-  
 }
 
-test3 <- model_ndvi(as.data.frame(st_drop_geometry(s2.ndvi.sample)))
+# Following tutorial here: https://data-se.netlify.app/2018/12/10/new-split-apply-combine-variant-in-dplyr-group-split/
 
-# This works
-test4 <- s2.ndvi.long %>%
+# Apply model_ndvi to data using group_modify
+s2.modelled.ndvi <- s2.ndvi.long %>%
   group_modify(~ model_ndvi(.x))
-
-# Fix data formatting
-test4 <- test4 %>%
-  
-  #ungroup() %>%
-  #rename(ndvi.max.doy = 'ndvi.max.doy$x') %>%
   mutate(ndvi.max.doy = as_date(ndvi.max.doy))
 
-test4
-
-
 # Plotting
-ggplot(test4, aes(group_by = id)) +
+ggplot(s2.modelled.ndvi, aes(group_by = id)) +
   geom_line(aes(x = doy, y = ndvi.pred, group = id, color = ndvi.max)) +
   geom_point(aes(x = ndvi.max.doy, y = ndvi.max)) +
   scale_color_viridis()
+
+# Plot the whole thing
+ggplot(s2.ndvi.sample) +
+  geom_point(aes(x = doy, y = ndvi)) +
+  geom_line(aes(x = doy, y = preds)) +
+  annotate("point", x = vertex$x, y = vertex$y,
+           colour = "red",
+           size = 5) +
+  annotate("text",
+           x = vertex$x, y = vertex$y,
+           label = paste0("Vertex (", round(vertex$x, 2), ",", round(vertex$y, 2), ")"),
+           colour = "red",
+           size = 10,
+           vjust = -1) +
+  theme_classic()
