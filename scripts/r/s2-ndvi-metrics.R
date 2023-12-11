@@ -89,9 +89,72 @@ names(s2.ndvi) <- dates
 plot(s2.ndvi)
 
 # Extract raster time series to points
-s2.ndvi.points <- st_as_sf(as.points(s2.ndvi, values = TRUE))
+s2.ndvi.points <- st_as_sf(as.points(s2.ndvi, values = TRUE)) %>%
+  mutate(id = row_number())
 
 
-# Apply parabolic 2nd order polynomial to every pixel in the df
+# Apply parabolic 2nd order polynomial to every pixel in the df ----
+s2.ndvi.long <- s2.ndvi.points %>%
+  pivot_longer(!geometry & !id, names_to = 'doy', values_to = 'ndvi') %>%
+  mutate(doy = as.Date(doy))
+
+# to subsample the df, add this to first line ([sample(nrow(s2.ndvi.points), 3), ])
+
+# plot to check what the data looks like
+ggplot(s2.ndvi.sample, aes(x = doy, y = ndvi)) +
+         geom_point(aes(color = ndvi)) +# +
+         geom_line(aes(group = id))
+
+
+
+
+# Jakob's code ----
+# Generate some random data
+x <- rnorm(100)
+my_data <- data.frame(
+  x = x,
+  y = -x**2 - x + rnorm(100)
+)
+
+# Fit second order polynomial
+# f(x) = ax^2 + bx + c
+model_fit <- lm(y ~ poly(x, 2, raw = T), data = my_data)
+
+# Calculate vertex
+# https://quantifyinghealth.com/plot-a-quadratic-function-in-r/
+find_vertex = function(model_fit) {
+  # Get model coefficients
+  a = model_fit$coefficients[3]
+  b = model_fit$coefficients[2]
+  c = model_fit$coefficients[1]
+  # Determine x coordinate of vertex
+  vertex_x = -b / (2 * a)
+  # Calculate y coordinate of vertex
+  vertex_y = a * vertex_x**2 + b * vertex_x + c
+  # Strip attributes and return as data.frame
+  return(data.frame(
+    x = as.numeric(vertex_x),
+    y = as.numeric(vertex_y)
+  ))
+}
+vertex <- find_vertex(model_fit)
+
+# Generate predictons (for curve plotting)
+my_data$preds <- predict(model_fit, my_data)
+
+# Plot the whole thing
+ggplot(my_data) +
+  geom_point(aes(x = x, y = y)) +
+  geom_line(aes(x = x, y = preds)) +
+  annotate("point", x = vertex$x, y = vertex$y,
+           colour = "red",
+           size = 5) +
+  annotate("text",
+           x = vertex$x, y = vertex$y,
+           label = paste0("Vertex (", round(vertex$x, 2), ",", round(vertex$y, 2), ")"),
+           colour = "red",
+           size = 10,
+           vjust = -1) +
+  theme_classic()
 
 
