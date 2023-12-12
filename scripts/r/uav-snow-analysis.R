@@ -1,7 +1,7 @@
 # function for calculating altered NDSI
 # Calum Hoad, 04/12/2023
 
-# Import necessary libraries
+# Import necessary libraries ----
 library(terra)
 library(dplyr)
 library(ggplot2)
@@ -10,7 +10,8 @@ library(sf)
 library(tidyverse)
 library(pbapply)
 
-# Paths to the data, read in as SpatRast
+
+# Paths to the data, read in as SpatRast ----
 one <- rast('../../data/uav/MAIA-exports/20220629/20220629-div32768_clipped.tif')
 two <- rast('../../data/uav/MAIA-exports/20220705/20220705-div32768_clipped.tif') 
 three <- rast('../../data/uav/MAIA-exports/20220718/20220718-div32768_clipped.tif')
@@ -27,8 +28,8 @@ one <- resample(one, three, method = 'bilinear')
 two <- resample(two, three, method = 'bilinear')
 four <- resample(four, three, method = 'bilinear')
 
-# Rename bands in raster to specifications of sensor (MAIA Sentinel-2)
 
+# Rename bands in raster to specifications of sensor (MAIA Sentinel-2) ----
 
 # MAIA Sentinel-2
 names(one) <- c('violet', 'blue', 'green', 'red', 're1', 're2', 'nir1', 'nir2', 'nir3')
@@ -45,40 +46,27 @@ names(four) <- c('green', 'nir', 're', 'red', 'RGB-R', 'RGB-G', 'RGB-B')
 # Create a list of the rasters which can be passed to functions
 bl <- list(one, two, three, four)
 
+
+# Calculate snow cover ----
+
 # Function to calculate NDSI
 calc_ndsi <- function(x) {
   x <- (x$green-x$nir)/(x$green+x$nir)
 }
 
 # Apply function to raster list using lapply or pblapply
-bl <- lapply(bl, calc_ndsi)
-
-rastStack <- rast(bl)
-
-plot(rastStack)
-# Rename rasters 'ndsi'
-rast1ndsi <- (one$green-one$nir)/(one$green+one$nir)
-names(rast1ndsi) <- "ndsi.1"
-rast2ndsi <- (two$green-two$nir)/(two$green+two$nir)
-names(rast2ndsi) <- "ndsi.2"
-rast3ndsi <- (three$green-three$nir)/(three$green+three$nir)
-names(rast3ndsi) <- "ndsi.3"
-rast4ndsi <- (four$green-four$nir)/(four$green+four$nir)
-names(rast4ndsi) <- "ndsi.4"
-
-# Reclassify every pixel as 1, to facilitate pixel count via sum
-num_pixels <- terra::classify(rast1ndsi, rbind(c(-1, 1, 1))) %>%
-  project('epsg:32621')
-
-names(num_pixels) <- c('pixels')
+bl <- pblapply(bl, calc_ndsi)
 
 # Create function to classify snow free (< 0) and snow covered (> 0) pixels
 class_snow <- function(x) {
-  x <- terra::classify(x, rbind(c(-1, 0, 0), c(0, 1, 1)))
+  x <- terra::classify(x, rbind(c(-2, 0, 0), c(0, 2, 1)))
 }
 
 # Apply function 
 bl.snow <- pblapply(bl, class_snow)
+
+# Stack rasters
+bl.snow <- rast(bl.snow)
 
 # Rename all rasters in list
 names(bl.snow[[1]]) <- ('snow.1')
@@ -86,13 +74,12 @@ names(bl.snow[[2]]) <- ('snow.2')
 names(bl.snow[[3]]) <- ('snow.3')
 names(bl.snow[[4]]) <- ('snow.4')
 
-rastStack <- rast(bl.snow)
+# Create raster where every pix = 1, to facilitate later pixel count via sum
+num.pixels <- terra::classify(bl.snow[[2]], rbind(c(-2, 2, 1)))
 
-plot(rastStack)
+# Assign name  
+names(num.pixels) <- c('tot.pixels')
 
-# Plot RGB to check snow classification
-plotRGB(one, 4, 3, 2, scale = 0.6, stretch = 'lin')
-plot(class_one)
 
 # Get grid matching spatial resolution of EO data ----
 
@@ -114,46 +101,42 @@ s2.poly <- st_buffer(s2.centres, 5, endCapStyle = "SQUARE")
 
 ggplot() + geom_sf(data = s2.poly) + geom_sf(data = s2.centres)   
 
+
 # Use pixel polygons to sum the value of the reclassed snow pixels ----
-extract_sum1 <- terra::extract(class_one, pixel_poly, fun = 'sum', ID = TRUE, 
-                              bind = TRUE)
-extract_sum2 <- terra::extract(class_two, extract_sum1, fun = 'sum', ID = TRUE, 
-                                bind = TRUE)
-extract_sum3 <- terra::extract(class_three, extract_sum2, fun = 'sum', ID = TRUE, 
-                               bind = TRUE)
-extract_sum4 <- terra::extract(class_four, extract_sum3, fun = 'sum', ID = TRUE, 
-                               bind = TRUE)
 
-extractTest1 <- terra::extract(rastStack, s2.poly, fun = 'sum', ID = TRUE, bind = TRUE)
+# Extract number of pixels which are snow covered from classified raster stack
+s2.snow.cover <- terra::extract(bl.snow, s2.poly, fun = 'sum', ID = TRUE, bind = TRUE)
 
-# Extract sum from raster where every pixel = 1, in order to get tot.pix 
-extract_sum5 <- terra::extract(num_pixels, extract_sum4, fun = 'sum', ID = TRUE, 
+# Extract number of pixels per polygon, using num.pixels raster (all pix = 1)
+s2.snow.cover <- terra::extract(num_pixels, s2.snow.cover, fun = 'sum', ID = TRUE, 
                               bind = TRUE)
 
-# Plot extracted data
-ggplot() + geom_sf(data = extract_sum5, aes(color = extract_sum5$ndsi.1))
 
-plot(extract_sum5, col = extract_sum5$ndsi.1)
+# Plot extracted data ----
+s2.snow.cover.sf <- st_as_sf(s2.snow.cover)
+
+ggplot() + geom_sf(data = s2.snow.cover.sf, aes(color = s2.snow.cover.sf$ndsi.1))
+
 
 # Calculation of average snow statistic ----
 # Calculate average snow coverage per pixel over whole period of obs
-extracted_data <- as.data.frame(extract_sum5) %>%
+extracted_data <- as.data.frame(s2.snow.cover.sf) %>%
   rename(tot.pixels = pixels) %>%
-  mutate(snow.persist = (0.25 * (ndsi.1/tot.pixels)) +
-                        (0.25 * (ndsi.2/tot.pixels)) +
-                        (0.25 * (ndsi.3/tot.pixels)) +
-                        (0.25 * (ndsi.4/tot.pixels))) %>%
-  mutate(ndsi.1 = (ndsi.1/tot.pixels)) %>% # And percent cover at each time point
-  mutate(ndsi.2 = (ndsi.2/tot.pixels)) %>%
-  mutate(ndsi.3 = (ndsi.3/tot.pixels)) %>%
-  mutate(ndsi.4 = (ndsi.4/tot.pixels)) %>%
-  rename('2023-07-02' = ndsi.1,
-         '2023-07-12' = ndsi.2,
-         '2023-07-18' = ndsi.3,
-         '2023-07-26' = ndsi.4)
+  mutate(snow.persist = (0.25 * (snow.1/tot.pixels)) +
+                        (0.25 * (snow.2/tot.pixels)) +
+                        (0.25 * (snow.3/tot.pixels)) +
+                        (0.25 * (snow.4/tot.pixels))) %>%
+  mutate(snow.1 = (snow.1/tot.pixels)) %>% # And percent cover at each time point
+  mutate(snow.2 = (snow.2/tot.pixels)) %>%
+  mutate(snow.3 = (snow.3/tot.pixels)) %>%
+  mutate(snow.4 = (snow.4/tot.pixels)) %>%
+  rename('2023-07-02' = snow.1,
+         '2023-07-12' = snow.2,
+         '2023-07-18' = snow.3,
+         '2023-07-26' = snow.4)
 
 # Output the data to csv
-write.csv2(extracted_data, '../../data/uav/snow-metrics/blaesedalen_30m_snowcover.csv')
+write.csv2(extracted_data, '../../data/uav/snow-metrics/blaesedalen_10m_snowcover.csv')
 
 # Format data for plotting
 extracted_data_long <- pivot_longer(extracted_data, 
@@ -180,7 +163,6 @@ plotRGB(landsat, 4, 3, 2, scale = 1.1, stretch = 'lin', smooth = FALSE)
 points(pixel_centres)
 lines(pixel_poly)
 
-# Question for Jakob - how do we get consistent pixel polys for landsat data?
 
 single_point <- st_read('../../data/lsatTS-output/pixel_centres.shp') %>%
   mutate(site = str_split(sample_id, "_") %>% 
@@ -192,3 +174,5 @@ single_poly <- mutate(single_point, geometry =  buffer_square(single_point, leng
 plot(single_poly)
 
 options(scipen = 999)
+
+
