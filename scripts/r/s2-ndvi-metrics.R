@@ -54,7 +54,6 @@ uav <- project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.
 # Create function for stacking rasters from lists of filepaths, then cropping to extent of UAV imagery
 import_s2 <- function(x) {
     x <- rast(x) %>%
-      #project('epsg:32621') %>%
       crop(uav)
     #x <- set.names(object = x, nm = c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp'))
 }
@@ -151,26 +150,11 @@ model_ndvi <- function(data) {
 
 # Apply model_ndvi to data using group_modify
 s2.modelled.ndvi <- s2.ndvi.long %>%
-  group_modify(~ model_ndvi(.x))
+  group_modify(~ model_ndvi(.x)) %>%
   mutate(ndvi.max.doy = as_date(ndvi.max.doy))
 
-# Plotting
+# Plotting ----
 ggplot(s2.modelled.ndvi, aes(group_by = id)) +
   geom_line(aes(x = doy, y = ndvi.pred, group = id, color = ndvi.max)) +
   geom_point(aes(x = ndvi.max.doy, y = ndvi.max)) +
   scale_color_viridis()
-
-# Plot the whole thing
-ggplot(s2.ndvi.sample) +
-  geom_point(aes(x = doy, y = ndvi)) +
-  geom_line(aes(x = doy, y = preds)) +
-  annotate("point", x = vertex$x, y = vertex$y,
-           colour = "red",
-           size = 5) +
-  annotate("text",
-           x = vertex$x, y = vertex$y,
-           label = paste0("Vertex (", round(vertex$x, 2), ",", round(vertex$y, 2), ")"),
-           colour = "red",
-           size = 10,
-           vjust = -1) +
-  theme_classic()

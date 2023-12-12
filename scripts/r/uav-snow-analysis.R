@@ -4,11 +4,11 @@
 # Import necessary libraries
 library(terra)
 library(dplyr)
-# library(rts)
 library(ggplot2)
 library(buffeRs)
 library(sf)
 library(tidyverse)
+library(pbapply)
 
 # Paths to the data, read in as SpatRast
 one <- rast('../../data/uav/MAIA-exports/20220629/20220629-div32768_clipped.tif')
@@ -17,10 +17,10 @@ three <- rast('../../data/uav/MAIA-exports/20220718/20220718-div32768_clipped.ti
 four <- rast('../../data/uav/MAIA-exports/20220814/20220814-div32768_clipped.tif')
 
 # Paths to blaesedalen data
-one <- rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif')
-two <- rast('../../data/uav/M3M-exports/5cm/20230712-clipped-5cm-div128.tif') 
-three <- rast('../../data/uav/M3M-exports/5cm/20230718-clipped-5cm-div128.tif')
-four <- rast('../../data/uav/M3M-exports/5cm/20230726-clipped-5cm-div128.tif')
+one <- project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif'), 'epsg:32621')
+two <- project(rast('../../data/uav/M3M-exports/5cm/20230712-clipped-5cm-div128.tif'), 'epsg:32621') 
+three <- project(rast('../../data/uav/M3M-exports/5cm/20230718-clipped-5cm-div128.tif'), 'epsg:32621')
+four <- project(rast('../../data/uav/M3M-exports/5cm/20230726-clipped-5cm-div128.tif'), 'epsg:32621')
 
 # Resample if not already same res and extent
 one <- resample(one, three, method = 'bilinear')
@@ -42,8 +42,21 @@ names(two) <- c('green', 'nir', 're', 'red', 'RGB-R', 'RGB-G', 'RGB-B')
 names(three) <- c('green', 'nir', 're', 'red', 'RGB-R', 'RGB-G', 'RGB-B')
 names(four) <- c('green', 'nir', 're', 'red', 'RGB-R', 'RGB-G', 'RGB-B')
 
+# Create a list of the rasters which can be passed to functions
+bl <- list(one, two, three, four)
 
-# Calculate the NDSI
+# Function to calculate NDSI
+calc_ndsi <- function(x) {
+  x <- (x$green-x$nir)/(x$green+x$nir)
+}
+
+# Apply function to raster list using lapply or pblapply
+bl <- lapply(bl, calc_ndsi)
+
+rastStack <- rast(bl)
+
+plot(rastStack)
+# Rename rasters 'ndsi'
 rast1ndsi <- (one$green-one$nir)/(one$green+one$nir)
 names(rast1ndsi) <- "ndsi.1"
 rast2ndsi <- (two$green-two$nir)/(two$green+two$nir)
@@ -59,22 +72,23 @@ num_pixels <- terra::classify(rast1ndsi, rbind(c(-1, 1, 1))) %>%
 
 names(num_pixels) <- c('pixels')
 
-# Classify, where < 0.1 not snow, where > 0.1 snow
-classNDSIhigher <- terra::classify(rast1ndsi, rbind(c(-1, 0.15, 0), c(0.15, 1, 1)))
-classNDSIlower <- terra::classify(rast1ndsi, rbind(c(-1, 0.1, 0), c(0.1, 1, 1)))
-classNDSIlowest <- terra::classify(rast1ndsi, rbind(c(-1, 0, 0), c(0, 1, 1)))
-plot(classNDSIhigher)
-plot(classNDSIlower)
-plot(classNDSIlowerst)
+# Create function to classify snow free (< 0) and snow covered (> 0) pixels
+class_snow <- function(x) {
+  x <- terra::classify(x, rbind(c(-1, 0, 0), c(0, 1, 1)))
+}
 
-class_one <- terra::classify(rast1ndsi, rbind(c(-1, 0, 0), c(0, 1, 1))) %>%
-  project('epsg:32621')
-class_two <- terra::classify(rast2ndsi, rbind(c(-1, 0, 0), c(0, 1, 1))) %>%
-  project('epsg:32621')
-class_three <- terra::classify(rast3ndsi, rbind(c(-1, 0, 0), c(0, 1, 1))) %>%
-  project('epsg:32621')
-class_four <- terra::classify(rast4ndsi, rbind(c(-1, 0, 0), c(0, 1, 1))) %>%
-  project('epsg:32621')
+# Apply function 
+bl.snow <- pblapply(bl, class_snow)
+
+# Rename all rasters in list
+names(bl.snow[[1]]) <- ('snow.1')
+names(bl.snow[[2]]) <- ('snow.2')
+names(bl.snow[[3]]) <- ('snow.3')
+names(bl.snow[[4]]) <- ('snow.4')
+
+rastStack <- rast(bl.snow)
+
+plot(rastStack)
 
 # Plot RGB to check snow classification
 plotRGB(one, 4, 3, 2, scale = 0.6, stretch = 'lin')
@@ -82,8 +96,8 @@ plot(class_one)
 
 # Get grid matching spatial resolution of EO data ----
 
-# Bring in the list of pixel centres 
-pixel_centres <- st_read('../../data/lsatTS-output/pixel_centres.shp') %>%
+# Landsat, Bring in the list of pixel centres from LandsatTS
+landsat_centres <- st_read('../../data/lsatTS-output/pixel_centres.shp') %>%
   mutate(site = str_split(sample_id, "_") %>% 
            sapply(`[`, 1)) %>%
   filter(site == 'blaesedalen') %>%
@@ -93,7 +107,13 @@ pixel_poly <- st_buffer(pixel_centres, 15, endCapStyle = "SQUARE")
 
 ggplot() + geom_sf(data = pixel_centres) + geom_sf(data = pixel_poly)
 
- 
+# Sentinel-2, bring in the list of pixel centres from S2 script
+s2.centres <- st_read('../../data/sentinel-2/output/s2_modelled_point.shp')
+
+s2.poly <- st_buffer(s2.centres, 5, endCapStyle = "SQUARE")
+
+ggplot() + geom_sf(data = s2.poly) + geom_sf(data = s2.centres)   
+
 # Use pixel polygons to sum the value of the reclassed snow pixels ----
 extract_sum1 <- terra::extract(class_one, pixel_poly, fun = 'sum', ID = TRUE, 
                               bind = TRUE)
@@ -103,6 +123,8 @@ extract_sum3 <- terra::extract(class_three, extract_sum2, fun = 'sum', ID = TRUE
                                bind = TRUE)
 extract_sum4 <- terra::extract(class_four, extract_sum3, fun = 'sum', ID = TRUE, 
                                bind = TRUE)
+
+extractTest1 <- terra::extract(rastStack, s2.poly, fun = 'sum', ID = TRUE, bind = TRUE)
 
 # Extract sum from raster where every pixel = 1, in order to get tot.pix 
 extract_sum5 <- terra::extract(num_pixels, extract_sum4, fun = 'sum', ID = TRUE, 
