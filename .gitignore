@@ -56,3 +56,4 @@ rsconnect/
 *.SAFE/*
 *.xml
 sentinel-2/
+landsat-imagery/
