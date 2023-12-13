@@ -155,7 +155,9 @@ model_ndvi <- function(data) {
 # Apply model_ndvi to data using group_modify
 s2.modelled.ndvi <- s2.ndvi.long %>%
   group_modify(~ model_ndvi(.x)) %>%
-  mutate(ndvi.max.doy = as_date(ndvi.max.doy))
+  mutate(ndvi.max.date = as_date(ndvi.max.doy),
+         # Calculate fractional day of year, by adding decimal to date
+         ndvi.max.doy = yday(ndvi.max.date) + (ndvi.max.doy - floor(ndvi.max.doy)))
 
 # Plotting ----
 ggplot(s2.modelled.ndvi, aes(group_by = id)) +
@@ -164,9 +166,20 @@ ggplot(s2.modelled.ndvi, aes(group_by = id)) +
   scale_color_viridis()
 
 # Outputs ---- 
-s2.modelled.export <- s2.modelled.ndvi %>%
+
+# Wide format
+s2.modelled.export.wide <- s2.modelled.ndvi %>%
   group_by(id) %>%
   filter(row_number() == 1) %>%
   select(!doy & !ndvi & !ndvi.pred)
 
-st_write(st_as_sf(s2.modelled.export),  '../../data/sentinel-2/output/s2_modelled_point.shp')
+st_write(st_as_sf(s2.modelled.export.wide),  '../../data/sentinel-2/output/s2_modelled_point_wide.shp')
+write.csv2(s2.modelled.export.wide,  '../../data/sentinel-2/output/s2_modelled_point_wide.csv')
+
+# Long format
+s2.modelled.export.long <- s2.modelled.ndvi %>%
+  rename(doy.obs = 'doy', 
+         ndvi.obs = 'ndvi')
+
+st_write(st_as_sf(s2.modelled.export.long),  '../../data/sentinel-2/output/s2_modelled_point_long.shp')
+write.csv2(s2.modelled.export.long,  '../../data/sentinel-2/output/s2_modelled_point_long.csv')

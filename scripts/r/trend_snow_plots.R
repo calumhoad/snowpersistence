@@ -67,11 +67,11 @@ s2.max.ndvi.plot <- ggplot(s2.snow, aes(x = ndvi.max, y = snow.persist)) +
   
 s2.ndvi.metrics.plot <- ggplot(drop_na(s2.snow, snow.persist), aes(x = ndvi.max.doy, 
                                             y = ndvi.max)) +
-  geom_point(alpha = 0.5, aes(color = snow.persist, size = snow.persist)) +
+  geom_point(position = 'jitter', alpha = 0.5, aes(color = snow.persist, size = snow.persist)) +
   #geom_smooth(method = 'lm') +
   scale_color_viridis_c(name = "snow.persist") +
   labs(x = 'Maximum NDVI Day of Year', 
-       y = 'Matximum NDVI', 
+       y = 'Maximum NDVI', 
        padding = 1) +
   theme_cowplot()
 
