@@ -222,3 +222,14 @@ lsatTS.pix.centres <- lsat.dt %>%
 
 # Output the pixel centres as a .shp
 st_write(lsatTS.pix.centres, '../../data/lsatTS-output/blaesedalen/lsatTS_pix_centres_bl.shp')
+
+lsat.auto.gs.7.sf <- st_as_sf(lsat.auto.gs.7, coords = c('longitude', 'latitude'), crs = 4326)
+
+lsat.auto.gs.7.sf
+
+bl.map <- leaflet() %>%
+  addProviderTiles('OpenStreetMap.Mapnik') %>%
+  addCircleMarkers(data = lsat.auto.gs.7.sf)
+bl.map
+
+st_write(lsat.auto.gs.7.sf, '../../data/lsatTS-output/blaesedalen/lsatTS_auto_7_gs.shp')

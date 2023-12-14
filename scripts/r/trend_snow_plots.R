@@ -46,84 +46,6 @@ gs.auto <- gs.auto %>% filter(year == 2023 & ndvi.max.doy > 175)
 gs.auto.joined <- left_join(gs.auto, snow, by = 'sample.id')
 
 ###
-# Plots of max.ndvi,doy, max.ndvi, and snow.persist ----
-###
-
-#SENTINEL-2
-# S2 max ndvi doy against snow persistence
-s2.max.ndvi.doy.plot <- ggplot(s2.snow, aes(x = ndvi.max.doy, y = snow.persist)) +
-  geom_point(aes(color = ndvi.max)) +
-  geom_smooth(method = 'lm') +
-  scale_color_viridis_c(name = "ndvi.max") +
-  labs(x = 'Maximum NDVI Day of Year', 
-       y = 'Snow persistence\n(unweighted average)', 
-       padding = 1) +
-  theme_cowplot()
-
-# S2 max ndvi against snow persistence
-s2.max.ndvi.plot <- ggplot(s2.snow, aes(x = ndvi.max, y = snow.persist)) +
-  geom_point(aes(color = ndvi.max.doy)) +
-  geom_smooth(method = 'lm') +
-  scale_color_viridis_c(name = "ndvi.max.doy") +
-  labs(x = 'Maximum NDVI', 
-       y = 'Sentinel-2\n\nSnow persistence\n(unweighted average)', 
-       padding = 1) +
-  theme_cowplot()
-  
-s2.ndvi.metrics.plot <- ggplot(drop_na(s2.snow, snow.persist), aes(x = ndvi.max.doy, 
-                                            y = ndvi.max)) +
-  geom_point(position = 'jitter', alpha = 0.5, aes(color = snow.persist, size = snow.persist)) +
-  #geom_smooth(method = 'lm') +
-  scale_color_viridis_c(name = "snow.persist") +
-  labs(x = 'Maximum NDVI Day of Year', 
-       y = 'Maximum NDVI', 
-       padding = 1) +
-  theme_cowplot()
-
-#LANDSAT
-# max ndvi doy against snow persistence
-ls.max.ndvi.doy.plot <- ggplot(ls.snow, aes(x = ndvi.max.doy, y = snow.persist)) +
-  geom_point(aes(color = ndvi.max)) +
-  geom_smooth(method = 'lm') +
-  scale_color_viridis_c(name = "ndvi.max") +
-  labs(x = 'Maximum NDVI Day of Year', 
-       y = 'Snow persistence\n(unweighted average)', 
-       padding = 1) +
-  theme_cowplot()
-
-# max ndvi against snow persistence
-ls.max.ndvi.plot <- ggplot(ls.snow, aes(x = ndvi.max, y = snow.persist)) +
-  geom_point(aes(color = ndvi.max.doy)) +
-  geom_smooth(method = 'lm') +
-  scale_color_viridis_c(name = "ndvi.max.doy") +
-  labs(x = 'Maximum NDVI', 
-       y = 'LANDSAT\n\nSnow persistence\n(unweighted average)', 
-       padding = 1) +
-  theme_cowplot()
-
-ls.ndvi.metrics.plot <- ggplot(drop_na(ls.snow, snow.persist), aes(x = ndvi.max.doy, 
-                                                                   y = ndvi.max)) +
-  geom_point(position = 'jitter', alpha = 0.5, aes(color = snow.persist, size = snow.persist)) +
-  #geom_smooth(method = 'lm') +
-  scale_color_viridis_c(name = "snow.persist") +
-  labs(x = 'Maximum NDVI Day of Year', 
-       y = 'Maximum NDVI', 
-       padding = 1) +
-  theme_cowplot()
-
-
-# Arrange plots side by side
-plots_combined <- s2.max.ndvi.plot + 
-  s2.max.ndvi.doy.plot +
-  s2.ndvi.metrics.plot +
-  ls.max.ndvi.plot +
-  ls.max.ndvi.doy.plot +
-  ls.ndvi.metrics.plot +
-  plot_layout(ncol = 3, nrow = 2)
-
-plots_combined
-
-###
 # Checking match between Landsat and LandsatTS pixel centres
 ###
 
@@ -137,3 +59,179 @@ lsat.pix.centres <- st_read('../../data/sentinel-2/output/ls_modelled_point_wide
 ggplot() +
   geom_sf(data = lsatTS.pix.centres, aes(color = 'red', size = 2)) +#, aes(color = 'red')) +
   geom_sf(data = lsat.pix.centres, aes(color = 'blue', size = 1))#, aes(color = 'blue'))
+
+###
+# Create single dataset containing snow persistence, landsat sinlgle yr ndvi preds, LandsatTS preds ----
+###
+
+# Read in the output from LandsatTS
+lsatTS <- st_read('../../data/lsatTS-output/blaesedalen/lsatTS_auto_7_gs.shp') %>%
+  st_transform(crs = 32621) %>%
+  filter(year == 2023)
+
+# From landsat
+lsat <- st_read('../../data/uav/snow-metrics/blaesedalen_30m_snowcover_andLS.shp')
+
+# Check locations are consistent
+ggplot() +
+  geom_sf(data = lsat.all, aes(color = 'purple', size = 3)) +
+  geom_sf(data = lsatTS, aes(color = 'red', size = 2)) +#, aes(color = 'red')) +
+  geom_sf(data = lsat, aes(color = 'blue', size = 1))#, aes(color = 'blue'))
+
+# Spatial join lsatTS to lsat
+lsts.all <- st_join(lsat, lsatTS, left = TRUE) %>%
+  rename(ls.ndvi.max = 'ndvi_mx.x', 
+         ls.ndvi.max.doy = 'ndv_mx_dy', 
+         lsts.ndvi.max = 'ndvi_mx.y', 
+         lsts.ndvi.max.doy = 'ndv_mx_d',
+         snow.persist = 'snw_prs') %>%
+  select(ls.ndvi.max, ls.ndvi.max.doy, 
+         lsts.ndvi.max, lsts.ndvi.max.doy, 
+         snow.persist, 
+         geometry)
+
+
+###
+# Plots of max.ndvi,doy, max.ndvi, and snow.persist ----
+###
+
+# Set some plot parameters here:
+xdoy <- c(200, 270)
+xndvi <- c(0.1, 0.7)
+ysnow <- c(0, 1)
+yndvi <- c(0.1, 0.7)
+
+#SENTINEL-2
+# S2 max ndvi doy against snow persistence
+s2.max.ndvi.doy.plot <- ggplot(s2.snow, aes(x = ndvi.max.doy, y = snow.persist)) +
+  geom_point(aes(color = ndvi.max)) +
+  geom_smooth(method = 'lm') +
+  xlim(xdoy) +
+  ylim(ysnow) +
+  scale_color_viridis_c(name = "ndvi.max") +
+  labs(x = '', 
+       y = '', 
+       padding = 1) +
+  theme_cowplot()
+
+# S2 max ndvi against snow persistence
+s2.max.ndvi.plot <- ggplot(s2.snow, aes(x = ndvi.max, y = snow.persist)) +
+  geom_point(aes(color = ndvi.max.doy)) +
+  geom_smooth(method = 'lm') +
+  xlim(xndvi) +
+  ylim(ysnow) +
+  scale_color_viridis_c(name = "ndvi.max.doy") +
+  labs(x = '', 
+       y = 'Sentinel-2\n\nSnow persistence', 
+       padding = 1) +
+  theme_cowplot()
+
+# S2 ndvi metrics against each other  
+s2.ndvi.metrics.plot <- ggplot(drop_na(s2.snow, snow.persist), aes(x = ndvi.max.doy, 
+                                            y = ndvi.max)) +
+  geom_point(position = 'jitter', alpha = 0.5, aes(color = snow.persist, size = snow.persist)) +
+  #geom_smooth(method = 'lm') +
+  xlim(xdoy) +
+  ylim(yndvi) +
+  scale_color_viridis_c(name = "snow.persist") +
+  labs(x = 'Maximum NDVI Day of Year', 
+       y = 'Maximum NDVI', 
+       padding = 1) +
+  theme_cowplot()
+
+#LANDSAT
+# max ndvi doy against snow persistence
+ls.max.ndvi.doy.plot <- ggplot(ls.snow, aes(x = ndvi.max.doy, y = snow.persist)) +
+  geom_point(aes(color = ndvi.max)) +
+  geom_smooth(method = 'lm') +
+  xlim(xdoy) +
+  ylim(ysnow) +
+  scale_color_viridis_c(name = "ndvi.max") +
+  labs(x = '', 
+       y = '', 
+       padding = 1) +
+  theme_cowplot()
+
+# max ndvi against snow persistence
+ls.max.ndvi.plot <- ggplot(ls.snow, aes(x = ndvi.max, y = snow.persist)) +
+  geom_point(aes(color = ndvi.max.doy)) +
+  geom_smooth(method = 'lm') +
+  xlim(xndvi) +
+  ylim(ysnow) +
+  scale_color_viridis_c(name = "ndvi.max.doy") +
+  labs(x = '', 
+       y = 'Landsat 8/9\n\nSnow persistence', 
+       padding = 1) +
+  theme_cowplot()
+
+# Landsat ndvi metrics against eachother
+ls.ndvi.metrics.plot <- ggplot(drop_na(ls.snow, snow.persist), aes(x = ndvi.max.doy, 
+                                                                   y = ndvi.max)) +
+  geom_point(position = 'jitter', alpha = 0.5, aes(color = snow.persist, size = snow.persist)) +
+  #geom_smooth(method = 'lm') +
+  xlim(xdoy) +
+  ylim(yndvi) +
+  scale_color_viridis_c(name = "snow.persist") +
+  labs(x = 'Maximum NDVI Day of Year', 
+       y = 'Maximum NDVI', 
+       padding = 1) +
+  theme_cowplot()
+
+###
+# Plotting all three datasets
+###
+
+#LandsatTS
+# max ndvi doy against snow persistence
+lsts.max.ndvi.doy.plot <- ggplot(lsts.all, aes(x = lsts.ndvi.max.doy, y = snow.persist)) +
+  geom_point(aes(color = lsts.ndvi.max)) +
+  geom_smooth(method = 'lm') +
+  xlim(xdoy) +
+  ylim(ysnow) +
+  scale_color_viridis_c(name = "ndvi.max") +
+  labs(x = 'Maximum NDVI Day of Year', 
+       y = '', 
+       padding = 1) +
+  theme_cowplot()
+
+# max ndvi against snow persistence
+lsts.max.ndvi.plot <- ggplot(lsts.all, aes(x = lsts.ndvi.max, y = snow.persist)) +
+  geom_point(aes(color = lsts.ndvi.max.doy)) +
+  geom_smooth(method = 'lm') +
+  xlim(xndvi) +
+  ylim(ysnow) +
+  scale_color_viridis_c(name = "lsts.ndvi.max.doy",
+                        guide = guide_colourbar(title = 'yes')) +
+  labs(x = 'Maximum NDVI', 
+       y = 'LandsatTS\n\nSnow persistence', 
+       padding = 1) +
+  theme(legend.position = 'bottom') +
+  theme_cowplot()
+
+# LandsatTS NDVI metrics against eachother
+lsts.ndvi.metrics.plot <- ggplot(drop_na(lsts.all, snow.persist), aes(x = lsts.ndvi.max.doy, 
+                                                                   y = lsts.ndvi.max)) +
+  geom_point(position = 'jitter', alpha = 0.5, aes(color = snow.persist, size = snow.persist)) +
+  #geom_smooth(method = 'lm') +
+  xlim(xdoy) +
+  ylim(yndvi) +
+  scale_color_viridis_c(name = "snow.persist") +
+  labs(x = 'Maximum NDVI Day of Year', 
+       y = 'Maximum NDVI', 
+       padding = 1) +
+  theme_cowplot()
+
+# Arrange plots side by side
+plots_combined <- s2.max.ndvi.plot + 
+  s2.max.ndvi.doy.plot +
+  s2.ndvi.metrics.plot +
+  ls.max.ndvi.plot +
+  ls.max.ndvi.doy.plot +
+  ls.ndvi.metrics.plot +
+  lsts.max.ndvi.plot +
+  lsts.max.ndvi.doy.plot +
+  lsts.ndvi.metrics.plot +
+  plot_layout(ncol = 3, nrow = 3)
+
+plots_combined
+
