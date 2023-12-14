@@ -101,27 +101,35 @@ s2.poly <- st_buffer(s2.centres, 5, endCapStyle = "SQUARE")
 
 ggplot() + geom_sf(data = s2.poly) + geom_sf(data = s2.centres)   
 
+# Bring in alternative landsat centres from the ls metrics script
+ls.centres <- st_read('../../data/sentinel-2/output/ls_modelled_point_wide.shp')
+
+ls.poly <- st_buffer(ls.centres, 15, endCapStyle = "SQUARE")
+
+plot(ls.poly)
+
 
 # Use pixel polygons to sum the value of the reclassed snow pixels ----
 
+# SENTINEL-2
 # Extract number of pixels which are snow covered from classified raster stack
 s2.snow.cover <- terra::extract(bl.snow, s2.poly, fun = 'sum', ID = TRUE, bind = TRUE)
 
 # Extract number of pixels per polygon, using num.pixels raster (all pix = 1)
-s2.snow.cover <- terra::extract(num_pixels, s2.snow.cover, fun = 'sum', ID = TRUE, 
+s2.snow.cover <- terra::extract(num.pixels, s2.snow.cover, fun = 'sum', ID = TRUE, 
                               bind = TRUE)
+# LANDSAT
+# Extract number of pixels which are snow covered from classified raster stack
+ls.snow.cover <- terra::extract(bl.snow, ls.poly, fun = 'sum', ID = TRUE, bind = TRUE)
 
-
-# Plot extracted data ----
-s2.snow.cover.sf <- st_as_sf(s2.snow.cover)
-
-ggplot() + geom_sf(data = s2.snow.cover.sf, aes(color = s2.snow.cover.sf$ndsi.1))
+# Extract number of pixels per polygon, using num.pixels raster (all pix = 1)
+ls.snow.cover <- terra::extract(num.pixels, ls.snow.cover, fun = 'sum', ID = TRUE, bind = TRUE)
 
 
 # Calculation of average snow statistic ----
 # Calculate average snow coverage per pixel over whole period of obs
-extracted_data <- as.data.frame(s2.snow.cover.sf) %>%
-  rename(tot.pixels = pixels) %>%
+extracted_data <- as.data.frame(ls.snow.cover) %>%
+  #rename(tot.pixels = pixels) %>%
   mutate(snow.persist = (0.25 * (snow.1/tot.pixels)) +
                         (0.25 * (snow.2/tot.pixels)) +
                         (0.25 * (snow.3/tot.pixels)) +
@@ -136,8 +144,10 @@ extracted_data <- as.data.frame(s2.snow.cover.sf) %>%
          '2023-07-26' = snow.4)
 
 # Output the data to csv
+# SENTINEL-2
 write.csv2(extracted_data, '../../data/uav/snow-metrics/blaesedalen_10m_snowcover.csv')
-
+# LANDSAT
+write.csv2(extracted_data, '../../data/uav/snow-metrics/blaesedalen_30m_snowcover.csv')
 # Format data for plotting
 extracted_data_long <- pivot_longer(extracted_data, 
                                     !sample_id & !site & !tot.pixels, 

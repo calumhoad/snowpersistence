@@ -203,20 +203,8 @@ writeRaster(ls.data.import[[6]], '../../data/landsat-imagery/terra/2023-08-17.ti
 writeRaster(ls.data.import[[7]], '../../data/landsat-imagery/terra/2023-09-10.tif')
 writeRaster(ls.data.import[[8]], '../../data/landsat-imagery/terra/2023-09-20.tif')
 
-dates <- c('2023-06-08', 
-           '2023-07-02',
-           '2023-07-08', 
-           '2023-07-26', 
-           '2023-08-01', 
-           '2023-08-17', 
-           '2023-09-10', 
-           '2023-09-20')
 
-names(ls.data.import[[1]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'b10')
-names(ls.data.import[[2]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'b10')
-names(ls.data.import[[3]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'b10')
-names(ls.data.import[[4]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'b10')
-names(ls.data.import[[5]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'b10')
-names(ls.data.import[[6]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'b10')
-names(ls.data.import[[7]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'b10')
-names(ls.data.import[[8]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'b10')
+# Check data
+ggplot(ls.modelled.export.long, group_by = id) +
+  geom_point(aes(x = doy.obs, y = ndvi.pred)) +
+  geom_line(aes(x = doy.obs, y = ndvi.obs, group = id))
