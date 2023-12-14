@@ -108,10 +108,17 @@ s2.max.ndvi.doy.plot <- ggplot(s2.snow, aes(x = ndvi.max.doy, y = snow.persist))
   geom_smooth(method = 'lm') +
   xlim(xdoy) +
   ylim(ysnow) +
-  scale_color_viridis_c(name = "ndvi.max") +
+  scale_color_viridis_c(name = "ndvi.max",
+                        breaks = seq(0.3, 
+                                     0.5, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(0.1, 0.6),# Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
   labs(x = '', 
        y = '', 
        padding = 1) +
+  guides(color = 'none') +
   theme_cowplot()
 
 # S2 max ndvi against snow persistence
@@ -120,10 +127,17 @@ s2.max.ndvi.plot <- ggplot(s2.snow, aes(x = ndvi.max, y = snow.persist)) +
   geom_smooth(method = 'lm') +
   xlim(xndvi) +
   ylim(ysnow) +
-  scale_color_viridis_c(name = "ndvi.max.doy") +
+  scale_color_viridis_c(name = "lsts.ndvi.max.doy",
+                        breaks = seq(220, 
+                                     260, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(210, 270),  # Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
   labs(x = '', 
        y = 'Sentinel-2\n\nSnow persistence', 
        padding = 1) +
+  guides(color = 'none') +
   theme_cowplot()
 
 # S2 ndvi metrics against each other  
@@ -133,11 +147,21 @@ s2.ndvi.metrics.plot <- ggplot(drop_na(s2.snow, snow.persist), aes(x = ndvi.max.
   #geom_smooth(method = 'lm') +
   xlim(xdoy) +
   ylim(yndvi) +
-  scale_color_viridis_c(name = "snow.persist") +
-  labs(x = 'Maximum NDVI Day of Year', 
+  scale_color_viridis_c(name = "snow.persist",
+                        breaks = seq(0, 
+                                     0.6, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(0, 0.6),
+                        na.value = 'yellow',# Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'Snow\nPersist',
+                                                direction = 'vertical')) + 
+  labs(x = '', 
        y = 'Maximum NDVI', 
        padding = 1) +
+  guides(color = 'none') +
   theme_cowplot()
+
+help(viridis)
 
 #LANDSAT
 # max ndvi doy against snow persistence
@@ -146,10 +170,17 @@ ls.max.ndvi.doy.plot <- ggplot(ls.snow, aes(x = ndvi.max.doy, y = snow.persist))
   geom_smooth(method = 'lm') +
   xlim(xdoy) +
   ylim(ysnow) +
-  scale_color_viridis_c(name = "ndvi.max") +
+  scale_color_viridis_c(name = "ndvi.max",
+                        breaks = seq(0.3, 
+                                     0.5, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(0.1, 0.6),  # Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
   labs(x = '', 
        y = '', 
        padding = 1) +
+  guides(color = 'none') +
   theme_cowplot()
 
 # max ndvi against snow persistence
@@ -158,10 +189,17 @@ ls.max.ndvi.plot <- ggplot(ls.snow, aes(x = ndvi.max, y = snow.persist)) +
   geom_smooth(method = 'lm') +
   xlim(xndvi) +
   ylim(ysnow) +
-  scale_color_viridis_c(name = "ndvi.max.doy") +
+  scale_color_viridis_c(name = "lsts.ndvi.max.doy",
+                        breaks = seq(220, 
+                                     260, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(210, 270),  # Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
   labs(x = '', 
        y = 'Landsat 8/9\n\nSnow persistence', 
        padding = 1) +
+  guides(color = 'none') +
   theme_cowplot()
 
 # Landsat ndvi metrics against eachother
@@ -171,10 +209,18 @@ ls.ndvi.metrics.plot <- ggplot(drop_na(ls.snow, snow.persist), aes(x = ndvi.max.
   #geom_smooth(method = 'lm') +
   xlim(xdoy) +
   ylim(yndvi) +
-  scale_color_viridis_c(name = "snow.persist") +
-  labs(x = 'Maximum NDVI Day of Year', 
+  scale_color_viridis_c(name = "snow.persist",
+                        breaks = seq(0, 
+                                     0.6, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(0, 0.6),
+                        na.value = 'yellow', # Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'Snow\nPersist',
+                                                direction = 'vertical')) +  
+  labs(x = '', 
        y = 'Maximum NDVI', 
        padding = 1) +
+  guides(color = 'none') +
   theme_cowplot()
 
 ###
@@ -188,7 +234,13 @@ lsts.max.ndvi.doy.plot <- ggplot(lsts.all, aes(x = lsts.ndvi.max.doy, y = snow.p
   geom_smooth(method = 'lm') +
   xlim(xdoy) +
   ylim(ysnow) +
-  scale_color_viridis_c(name = "ndvi.max") +
+  scale_color_viridis_c(name = "ndvi.max",
+                        breaks = seq(0.3, 
+                                     0.5, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(0.1, 0.6),  # Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax',
+                                                direction = 'vertical')) +
   labs(x = 'Maximum NDVI Day of Year', 
        y = '', 
        padding = 1) +
@@ -201,11 +253,18 @@ lsts.max.ndvi.plot <- ggplot(lsts.all, aes(x = lsts.ndvi.max, y = snow.persist))
   xlim(xndvi) +
   ylim(ysnow) +
   scale_color_viridis_c(name = "lsts.ndvi.max.doy",
-                        guide = guide_colourbar(title = 'yes')) +
+                        breaks = seq(220, 
+                                     260, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(210, 270),  # Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
   labs(x = 'Maximum NDVI', 
        y = 'LandsatTS\n\nSnow persistence', 
        padding = 1) +
-  theme(legend.position = 'bottom') +
+  theme(legend.position = 'bottom', 
+        legend.justification = 'left', 
+        legend.direction = 'horizontal') +
   theme_cowplot()
 
 # LandsatTS NDVI metrics against eachother
@@ -215,7 +274,14 @@ lsts.ndvi.metrics.plot <- ggplot(drop_na(lsts.all, snow.persist), aes(x = lsts.n
   #geom_smooth(method = 'lm') +
   xlim(xdoy) +
   ylim(yndvi) +
-  scale_color_viridis_c(name = "snow.persist") +
+  scale_color_viridis_c(name = "snow.persist",
+                        breaks = seq(0, 
+                                     0.6, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(0, 0.6),
+                        na.value = 'yellow',# Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'Snow\nPersist',
+                                                direction = 'vertical')) + 
   labs(x = 'Maximum NDVI Day of Year', 
        y = 'Maximum NDVI', 
        padding = 1) +
