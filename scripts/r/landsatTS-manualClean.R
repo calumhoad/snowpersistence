@@ -213,3 +213,12 @@ write.csv2(lsat.auto.trnds.7, '../../data/lsatTS-output/blaesedalen/blaesedalen_
 write.csv2(lsat.manual.trnds.7, '../../data/lsatTS-output/blaesedalen/blaesedalen_manual_7yr_trnds.csv')
 write.csv2(lsat.manual.gs.7, '../../data/lsatTS-output/blaesedalen/blaesedalen_manual_7yr_gs_metric.csv')
 write.csv2(lsat.auto.gs.7, '../../data/lsatTS-output/blaesedalen/blaesedalen_auto_7yr_gs_metric.csv')
+
+# Get pixel centres only
+lsatTS.pix.centres <- lsat.dt %>%
+  group_by(sample.id) %>%
+  filter(row_number() == 1) %>%
+  st_as_sf(coords = c('latitude', 'longitude'))
+
+# Output the pixel centres as a .shp
+st_write(lsatTS.pix.centres, '../../data/lsatTS-output/blaesedalen/lsatTS_pix_centres_bl.shp')

@@ -127,10 +127,13 @@ plots_combined
 # Checking match between Landsat and LandsatTS pixel centres
 ###
 
-lsatTS.pix.centres <- st_read('../../data/lsatTS-output/pixel_centres.shp') %>%
-  st_transform('epsg:32621')
+# Get data
+lsatTS.pix.centres <- st_read( '../../data/lsatTS-output/pixel_centres.shp') %>%
+  st_transform('epsg:32621') %>%
+  filter(row_number() < 169)
 lsat.pix.centres <- st_read('../../data/sentinel-2/output/ls_modelled_point_wide.shp')  
 
+# Plot to check for match
 ggplot() +
-  geom_sf(data = lsatTS.pix.centres) +#, aes(color = 'red')) +
-  geom_sf(data = lsat.pix.centres)#, aes(color = 'blue'))
+  geom_sf(data = lsatTS.pix.centres, aes(color = 'red', size = 2)) +#, aes(color = 'red')) +
+  geom_sf(data = lsat.pix.centres, aes(color = 'blue', size = 1))#, aes(color = 'blue'))
