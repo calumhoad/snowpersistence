@@ -128,7 +128,7 @@ ls.snow.cover <- terra::extract(num.pixels, ls.snow.cover, fun = 'sum', ID = TRU
 
 # Calculation of average snow statistic ----
 # Calculate average snow coverage per pixel over whole period of obs
-extracted_data <- as.data.frame(ls.snow.cover) %>%
+extracted_data <- st_as_sf(ls.snow.cover) %>%
   #rename(tot.pixels = pixels) %>%
   mutate(snow.persist = (0.25 * (snow.1/tot.pixels)) +
                         (0.25 * (snow.2/tot.pixels)) +
@@ -148,6 +148,8 @@ extracted_data <- as.data.frame(ls.snow.cover) %>%
 write.csv2(extracted_data, '../../data/uav/snow-metrics/blaesedalen_10m_snowcover.csv')
 # LANDSAT
 write.csv2(extracted_data, '../../data/uav/snow-metrics/blaesedalen_30m_snowcover.csv')
+write.csv2(extracted_data, '../../data/uav/snow-metrics/blaesedalen_30m_snowcover_andLS.csv')
+st_write(extracted_data, '../../data/uav/snow-metrics/blaesedalen_30m_snowcover_andLS.shp')
 # Format data for plotting
 extracted_data_long <- pivot_longer(extracted_data, 
                                     !sample_id & !site & !tot.pixels, 

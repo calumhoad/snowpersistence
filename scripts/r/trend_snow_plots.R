@@ -90,6 +90,13 @@ lsts.all <- st_join(lsat, lsatTS, left = TRUE) %>%
          snow.persist, 
          geometry)
 
+###
+# Checking NaN values in dataset
+###
+
+lsat.na <- lsat.all %>% filter(is.na(snow.persist))
+
+ggplot() + geom_sf(data = lsat.na) # Confirms NA values are outside the drone rast
 
 ###
 # Plots of max.ndvi,doy, max.ndvi, and snow.persist ----

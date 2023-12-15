@@ -106,6 +106,7 @@ s2.ndvi.points <- st_as_sf(as.points(s2.ndvi, values = TRUE)) %>%
 s2.ndvi.long <- s2.ndvi.points %>%
   pivot_longer(!geometry & !id, names_to = 'doy', values_to = 'ndvi') %>%
   mutate(doy = as.Date(doy)) %>%
+  filter(ndvi >= 0.1) %>%
   group_by(id)
 
 # Function for fitting parabolic 2nd order polynomial model
