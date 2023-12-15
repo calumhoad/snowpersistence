@@ -14,10 +14,6 @@ library(broom)
 library(viridis)
 #library(janitor)
 
-###
-# Need to implement a filter to get rid of NDVI values < 0.15 in the curve fitting?
-###
-
 # Create a list of the S2 R10m files for each S2 scene
 d20230626 <- list.files('../../data/sentinel-2/20230626/S2B_MSIL2A_20230626T153819_N0509_R011_T21WXT_20230626T183843.SAFE/GRANULE/L2A_T21WXT_A032927_20230626T153935/IMG_DATA/R10m/', full.names = TRUE)
 d20230708 <- list.files('../../data/sentinel-2/20230708/S2A_MSIL2A_20230708T152811_N0509_R111_T21WXT_20230708T214952.SAFE/GRANULE/L2A_T21WXT_A042007_20230708T152945/IMG_DATA/R10m/', full.names = TRUE)
@@ -106,8 +102,12 @@ s2.ndvi.points <- st_as_sf(as.points(s2.ndvi, values = TRUE)) %>%
 s2.ndvi.long <- s2.ndvi.points %>%
   pivot_longer(!geometry & !id, names_to = 'doy', values_to = 'ndvi') %>%
   mutate(doy = as.Date(doy)) %>%
-  filter(ndvi >= 0.1) %>%
   group_by(id)
+
+# Filter out obs with ndvi < 0.1, and groups where there are less than 5 obs
+s2.ndvi.long <- s2.ndvi.long %>% filter(ndvi >= 0.1) %>%
+  filter(n_distinct(doy) >= 5)
+
 
 # Function for fitting parabolic 2nd order polynomial model
 model_fit <- function(df) {
@@ -134,6 +134,13 @@ find_vertex = function(model_fit) {
 
 # Define function to model, find vertex, and precict values
 model_ndvi <- function(data) {
+  
+  ### This doesn't work, have filtered above instead
+  # Filter the dataset, to retain only records where NDVI >= 0.1
+  #data <- data %>% 
+  #  filter(ndvi >= 0.1) %>%
+  #  filter(n_distinct(doy) >= 5)
+
   
   # Use function to fit model
   model <- model_fit(data)
@@ -166,6 +173,7 @@ ggplot(s2.modelled.ndvi, aes(group_by = id)) +
   geom_point(aes(x = ndvi.max.doy, y = ndvi.max)) +
   scale_color_viridis()
 
+ggplot() + geom_sf(data = st_as_sf(s2.modelled.ndvi))
 # Outputs ---- 
 
 # Wide format
@@ -174,8 +182,8 @@ s2.modelled.export.wide <- s2.modelled.ndvi %>%
   filter(row_number() == 1) %>%
   select(!doy & !ndvi & !ndvi.pred)
 
-st_write(st_as_sf(s2.modelled.export.wide),  '../../data/sentinel-2/output/s2_modelled_point_wide.shp')
-write.csv2(s2.modelled.export.wide,  '../../data/sentinel-2/output/s2_modelled_point_wide.csv')
+st_write(st_as_sf(s2.modelled.export.wide),  '../../data/sentinel-2/output/s2_modelled_point_wide_filterndvi.shp')
+write.csv2(s2.modelled.export.wide,  '../../data/sentinel-2/output/s2_modelled_point_wide_filterndvi.csv')
 
 # Long format
 s2.modelled.export.long <- s2.modelled.ndvi %>%
@@ -183,4 +191,4 @@ s2.modelled.export.long <- s2.modelled.ndvi %>%
          ndvi.obs = 'ndvi')
 
 st_write(st_as_sf(s2.modelled.export.long),  '../../data/sentinel-2/output/s2_modelled_point_long.shp')
-write.csv2(s2.modelled.export.long,  '../../data/sentinel-2/output/s2_modelled_point_long.csv')
+write.csv2(s2.modelled.export.long,  '../../data/sentinel-2/output/s2_modelled_point_long_filteredndvi.csv')

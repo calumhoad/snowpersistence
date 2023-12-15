@@ -95,11 +95,16 @@ pixel_poly <- st_buffer(pixel_centres, 15, endCapStyle = "SQUARE")
 ggplot() + geom_sf(data = pixel_centres) + geom_sf(data = pixel_poly)
 
 # Sentinel-2, bring in the list of pixel centres from S2 script
+
+# without NDVI filter 
 s2.centres <- st_read('../../data/sentinel-2/output/s2_modelled_point.shp')
+# with NDVI filter
+s2.centres <- st_read('../../data/sentinel-2/output/s2_modelled_point_wide_filterndvi.shp')
 
 s2.poly <- st_buffer(s2.centres, 5, endCapStyle = "SQUARE")
 
-ggplot() + geom_sf(data = s2.poly) + geom_sf(data = s2.centres)   
+ggplot() + geom_sf(data = s2.poly) + geom_sf(data = s2.centres)  
+
 
 # Bring in alternative landsat centres from the ls metrics script
 ls.centres <- st_read('../../data/sentinel-2/output/ls_modelled_point_wide.shp')
@@ -128,7 +133,7 @@ ls.snow.cover <- terra::extract(num.pixels, ls.snow.cover, fun = 'sum', ID = TRU
 
 # Calculation of average snow statistic ----
 # Calculate average snow coverage per pixel over whole period of obs
-extracted_data <- st_as_sf(ls.snow.cover) %>%
+extracted_data <- st_as_sf(s2.snow.cover) %>%
   #rename(tot.pixels = pixels) %>%
   mutate(snow.persist = (0.25 * (snow.1/tot.pixels)) +
                         (0.25 * (snow.2/tot.pixels)) +
@@ -145,7 +150,7 @@ extracted_data <- st_as_sf(ls.snow.cover) %>%
 
 # Output the data to csv
 # SENTINEL-2
-write.csv2(extracted_data, '../../data/uav/snow-metrics/blaesedalen_10m_snowcover.csv')
+write.csv2(extracted_data, '../../data/uav/snow-metrics/blaesedalen_10m_snowcover_filterndvi.csv')
 # LANDSAT
 write.csv2(extracted_data, '../../data/uav/snow-metrics/blaesedalen_30m_snowcover.csv')
 write.csv2(extracted_data, '../../data/uav/snow-metrics/blaesedalen_30m_snowcover_andLS.csv')
