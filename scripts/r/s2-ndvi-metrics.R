@@ -14,6 +14,16 @@ library(broom)
 library(viridis)
 #library(janitor)
 
+# Part 1: Reads in Sentinel-2 data as a terra rast and clips to aoi extent,
+#   calculates NDVI per pixel, then converts raster to point geom.
+# Part 2: Reads in Sentinel-2 NDVI timeseries as sf point, then fits curves
+
+#### @Jakob - skip to part 2 ####
+
+###
+# PART 1
+###
+
 # Create a list of the S2 R10m files for each S2 scene
 d20230626 <- list.files('../../data/sentinel-2/20230626/S2B_MSIL2A_20230626T153819_N0509_R011_T21WXT_20230626T183843.SAFE/GRANULE/L2A_T21WXT_A032927_20230626T153935/IMG_DATA/R10m/', full.names = TRUE)
 d20230708 <- list.files('../../data/sentinel-2/20230708/S2A_MSIL2A_20230708T152811_N0509_R111_T21WXT_20230708T214952.SAFE/GRANULE/L2A_T21WXT_A042007_20230708T152945/IMG_DATA/R10m/', full.names = TRUE)
@@ -61,7 +71,7 @@ import_s2 <- function(x) {
 # Import the data
 s2.data.import <- lapply(s2.data, import_s2)
 
-# Check the function worked by plotting rasters from list
+# Check import function works by plotting rasters from list
 plot(s2.data.import[[6]])
 
 # Rename bands to make reading logical
@@ -73,7 +83,6 @@ names(s2.data.import[[5]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 't
 names(s2.data.import[[6]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
 names(s2.data.import[[7]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
 names(s2.data.import[[8]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-
 
 # Apply function to calculate NDVI ----
 s2_ndvi <- function(x) {
@@ -89,19 +98,31 @@ s2.ndvi <- rast(s2.ndvi)
 # Name spatRaster layers with dates
 names(s2.ndvi) <- dates
 
-plot(s2.ndvi)
-
 # Extract raster time series to points
 s2.ndvi.points <- st_as_sf(as.points(s2.ndvi, values = TRUE)) %>%
   mutate(id = row_number())
 
+# Write out the extracted points
+st_write(s2.ndvi.points, '../../data/sentinel-2/output/sentinel-2-ndvi-ts-pt-2023.csv', 
+         layer_options = "GEOMETRY=AS_XY")
+
+
+###
+# PART 2
+###
 
 # Apply parabolic 2nd order polynomial to every pixel in the df ----
+
+# If Part 1 of this script has not been run, read in the data
+s2.ndvi.points <- read.csv('../../data/sentinel-2/output/sentinel-2-ndvi-ts-pt-2023.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32621)
 
 # Get a dataframe of points from the raster
 s2.ndvi.long <- s2.ndvi.points %>%
   pivot_longer(!geometry & !id, names_to = 'doy', values_to = 'ndvi') %>%
-  mutate(doy = as.Date(doy)) %>%
+  mutate(doy = sub('X', '', doy), 
+         doy = sub('\\.', '-', doy), 
+         doy = as_date(doy)) %>%
   group_by(id)
 
 # Filter out obs with ndvi < 0.1, and groups where there are less than 5 obs
@@ -167,13 +188,7 @@ s2.modelled.ndvi <- s2.ndvi.long %>%
          # Calculate fractional day of year, by adding decimal to date
          ndvi.max.doy = yday(ndvi.max.date) + (ndvi.max.doy - floor(ndvi.max.doy)))
 
-# Plotting ----
-ggplot(s2.modelled.ndvi, aes(group_by = id)) +
-  geom_line(aes(x = doy, y = ndvi.pred, group = id, color = ndvi.max)) +
-  geom_point(aes(x = ndvi.max.doy, y = ndvi.max)) +
-  scale_color_viridis()
 
-ggplot() + geom_sf(data = st_as_sf(s2.modelled.ndvi))
 # Outputs ---- 
 
 # Wide format
