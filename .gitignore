@@ -55,5 +55,6 @@ rsconnect/
 *.zip
 *.SAFE/*
 *.xml
-sentinel-2/
+imagery/
+kluane/
 landsat-imagery/
