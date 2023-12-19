@@ -135,9 +135,9 @@ s2.ndvi.long <- s2.ndvi.long %>%
 # Function for fitting parabolic 2nd order polynomial model
 model_fit <- function(df) {
   # Using a linear model polynom order 2
-  lm(data = df, ndvi ~ poly(doy, 2, raw = T))
+  #lm(data = df, ndvi ~ poly(doy, 2, raw = T))
   # Using a spline smoother
-  #smooth.spline(x = df$doy, y = df$ndvi, spar = 0.5)
+  smooth.spline(x = df$doy, y = df$ndvi, spar = 0.5)
 }
 
 # Function for calculation of vertex
@@ -175,12 +175,12 @@ model_ndvi <- function(data) {
   # pred <- unlist(pred$y)
 
   # use function to find vertex (linear model)
-  vertex <- find_vertex(model)
+ # vertex <- find_vertex(model)
   # find vertex based on predictions (spline smoother)
-  #vertex <- data.frame(
-  #  x = pred$x[pred$y == max(pred$y)], 
-  #  y = pred$y[pred$y == max(pred$y)]
-  #)
+  vertex <- data.frame(
+    x = pred$x[pred$y == max(pred$y)], 
+    y = pred$y[pred$y == max(pred$y)]
+  )
   
   # Write necessary values back to df
   data <- suppressMessages(full_join(data, data.frame(
@@ -212,7 +212,7 @@ ggplot(
   aes(x = doy, colour = id, group = id)
 ) +
   geom_point(aes(y = ndvi)) +
-  geom_line(aes(y = ndvi.pred)) +
+  geom_line(aes(y = ndvi.pred.doy.1)) +
   theme_classic() +
   theme(legend.position = "none")
 
@@ -223,7 +223,7 @@ ggplot(
   aes(x = doy, group = id)
 ) +
   geom_point(aes(y = ndvi)) +
-  geom_line(aes(y = ndvi.pred)) +
+  geom_line(aes(y = ndvi.pred.doy.1)) +
   geom_point(aes(x = ndvi.max.doy, y = ndvi.max), color = "red") +
   facet_wrap(~id) +
   theme_classic()
@@ -234,15 +234,15 @@ ggplot(
 s2.modelled.export.wide <- s2.modelled.ndvi %>%
   group_by(id) %>%
   filter(row_number() == 1) %>%
-  select(!doy & !ndvi & !ndvi.pred)
+  dplyr::select(!doy & !ndvi & !ndvi.pred.doy.1)
 
-st_write(st_as_sf(s2.modelled.export.wide),  '../../data/sentinel-2/output/s2_modelled_point_wide_filterndvi.shp')
-write.csv2(s2.modelled.export.wide,  '../../data/sentinel-2/output/s2_modelled_point_wide_filterndvi.csv')
+st_write(st_as_sf(s2.modelled.export.wide),  '../../data/sentinel-2/output/s2_modelled_JA_point_wide.shp')
+write.csv2(s2.modelled.export.wide,  '../../data/sentinel-2/output/s2_modelled_JA_point_wide.csv')
 
 # Long format
 s2.modelled.export.long <- s2.modelled.ndvi %>%
   rename(doy.obs = 'doy', 
          ndvi.obs = 'ndvi')
 
-st_write(st_as_sf(s2.modelled.export.long),  '../../data/sentinel-2/output/s2_modelled_point_long.shp')
-write.csv2(s2.modelled.export.long,  '../../data/sentinel-2/output/s2_modelled_point_long_filteredndvi.csv')
+st_write(st_as_sf(s2.modelled.export.long),  '../../data/sentinel-2/output/s2_modelled_JA_point_long.shp')
+write.csv2(s2.modelled.export.long,  '../../data/sentinel-2/output/s2_modelled_JA_point_long.csv')
