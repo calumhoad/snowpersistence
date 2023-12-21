@@ -48,12 +48,13 @@ ggplot(phen_sim) +
     geom_hline(yintercept = 0, linetype = "dashed") +
     theme_cowplot()
 
-# Fit curve using greenbrown package function using Beck et al. 2006 Eq 3 
+# Fit curve using greenbrown package function using Beck et al. 2006 Eq 3
 # and including weighting of "overestimated NDVI values" (see paper for details)
 # Note: greenbrown also allows for fitting with Elmore et al. 2011 Eq 4
 #       but I tried (!) and with thin samples as we have, the gentle sloping
 #       summer phenology introduced by the addtional term can not reliably
-#       estimated using the low frequency (gap-y) data that we have. 
+#       estimated using the low frequency (gap-y) data that we have. For that
+#       use "FitDoubleLogElmore()" with the same syntax. 
 double_log_model <- FitDoubleLogBeck(
     x = phen_sim$ndvi,
     t = phen_sim$doy,
