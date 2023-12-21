@@ -5,6 +5,9 @@
 # install.packages(c("bfast", "phenopix"))
 # install.packages("greenbrown", repos="http://R-Forge.R-project.org")
 library(tidyverse)
+library(bfast)
+library(phenopix)
+library(greenbrown)
 library(greenbrown)
 library(ggplot2)
 library(cowplot)
@@ -97,3 +100,4 @@ ggplot(phen_sim) +
         y = phen_sim$ndvi_max[1],
             colour = "red") +
     theme_cowplot()
+
