@@ -41,6 +41,13 @@ s2.snow <- read.csv2('../../data/uav/snow-metrics/blaesedalen_10m_snowcover.csv'
 s2.snow.2 <- read.csv2('../../data/uav/snow-metrics/blaesedalen_10m_snowcover_filterndvi.csv') %>%
   rename(ndvi.max = 'ndvi_mx', ndvi.max.doy = 'ndv_mx_dy')# %>%
   mutate(ndvi.max.doy = yday(ndvi.max.doy))
+  
+# Read in Sentinel-2 data with model modifications from Jakob
+s2.snow.ja <- read.csv2('../../data/sentinel-2/output/s2_modelled_JA_point_wide.csv')
+s2.snow.ja <- left_join(s2.snow.ja, s2.snow, by = 'id') %>%
+  dplyr::select(id, geometry.x, ndvi.max.x, ndvi.max.doy.x, snow.persist) %>%
+  rename(ndvi.max = 'ndvi.max.x',
+         ndvi.max.doy = 'ndvi.max.doy.x')
 
 # Join snow and NDVI metrics, if separate datasets ----
 # Join data frames based on sample_id
@@ -90,7 +97,7 @@ lsts.all <- st_join(lsat, lsatTS, left = TRUE) %>%
          lsts.ndvi.max = 'ndvi_mx.y', 
          lsts.ndvi.max.doy = 'ndv_mx_d',
          snow.persist = 'snw_prs') %>%
-  select(ls.ndvi.max, ls.ndvi.max.doy, 
+  dplyr::select(ls.ndvi.max, ls.ndvi.max.doy, 
          lsts.ndvi.max, lsts.ndvi.max.doy, 
          snow.persist, 
          geometry)
@@ -112,6 +119,65 @@ xdoy <- c(200, 270)
 xndvi <- c(0.1, 0.7)
 ysnow <- c(0, 1)
 yndvi <- c(0.1, 0.7)
+
+# SENTINEL-2, with modelling edited by Jakob
+s2j.max.ndvi.doy.plot <- ggplot(s2.snow.ja, aes(x = ndvi.max.doy, y = snow.persist)) +
+  geom_point(aes(color = ndvi.max)) +
+  geom_smooth(method = 'lm') +
+  xlim(xdoy) +
+  ylim(ysnow) +
+  scale_color_viridis_c(name = "ndvi.max",
+                        breaks = seq(0.3, 
+                                     0.5, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(0.1, 0.6),# Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
+  labs(x = '', 
+       y = '', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+# S2 max ndvi against snow persistence
+s2j.max.ndvi.plot <- ggplot(s2.snow.ja, aes(x = ndvi.max, y = snow.persist)) +
+  geom_point(aes(color = ndvi.max.doy)) +
+  geom_smooth(method = 'lm') +
+  xlim(xndvi) +
+  ylim(ysnow) +
+  scale_color_viridis_c(name = "lsts.ndvi.max.doy",
+                        breaks = seq(220, 
+                                     260, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(210, 270),  # Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
+  labs(x = '', 
+       y = 'Sentinel-2 j\n\nSnow persistence', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+# S2 ndvi metrics against each other  
+s2j.ndvi.metrics.plot <- ggplot(drop_na(s2.snow.ja, snow.persist), aes(x = ndvi.max.doy, 
+                                                                      y = ndvi.max)) +
+  geom_point(position = 'jitter', alpha = 0.5, aes(color = snow.persist, size = snow.persist)) +
+  #geom_smooth(method = 'lm') +
+  xlim(xdoy) +
+  ylim(yndvi) +
+  scale_color_viridis_c(name = "snow.persist",
+                        breaks = seq(0, 
+                                     0.6, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(0, 0.6),
+                        na.value = 'yellow',# Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'Snow\nPersist',
+                                                direction = 'vertical')) + 
+  labs(x = '', 
+       y = 'Maximum NDVI', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
 
 #SENTINEL-2 (ndvi-filtered)
 s2f.max.ndvi.doy.plot <- ggplot(s2.snow.2, aes(x = ndvi.max.doy, y = snow.persist)) +
@@ -171,8 +237,6 @@ s2f.ndvi.metrics.plot <- ggplot(drop_na(s2.snow.2, snow.persist), aes(x = ndvi.m
        padding = 1) +
   guides(color = 'none') +
   theme_cowplot()
-
-help(viridis)
 
 # S2 (non-ndvi filtered) max ndvi doy against snow persistence
 s2.max.ndvi.doy.plot <- ggplot(s2.snow, aes(x = ndvi.max.doy, y = snow.persist)) +
@@ -365,9 +429,12 @@ plots_combined <- s2.max.ndvi.plot +
   s2f.max.ndvi.plot +
   s2f.max.ndvi.doy.plot +
   s2f.ndvi.metrics.plot +
-  ls.max.ndvi.plot +
-  ls.max.ndvi.doy.plot +
-  ls.ndvi.metrics.plot +
+  s2j.max.ndvi.plot +
+  s2j.max.ndvi.doy.plot +
+  s2j.ndvi.metrics.plot +
+  #ls.max.ndvi.plot +
+  #ls.max.ndvi.doy.plot +
+  #ls.ndvi.metrics.plot +
   lsts.max.ndvi.plot +
   lsts.max.ndvi.doy.plot +
   lsts.ndvi.metrics.plot +
