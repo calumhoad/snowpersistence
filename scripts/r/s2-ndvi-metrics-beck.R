@@ -1,6 +1,9 @@
 # Sentinel-2 NDVI Metrics
 # Calum Hoad, 05/12/2023
 
+# Turn off scientific notation
+options(scipen = 999)
+
 # Import necessary libraries
 library(terra)
 library(dplyr)
@@ -48,7 +51,7 @@ d20230817 <- list.files('../../data/sentinel-2/imagery/20230817/S2A_MSIL2A_20230
 d20230923 <- list.files('../../data/sentinel-2/imagery/20230923/S2A_MSIL2A_20230922T154951_N0509_R054_T21WXT_20230922T234400.SAFE/GRANULE/L2A_T21WXT_A043094_20230922T155005/IMG_DATA/R10m/', full.names = TRUE)
 d20231003 <- list.files('../../data/sentinel-2/imagery/20231003/S2A_MSIL2A_20231003T152051_N0509_R068_T21WXT_20231003T202504.SAFE/GRANULE/L2A_T21WXT_A043251_20231003T152052/IMG_DATA/R10m/', full.names = TRUE)
 d20231011 <- list.files('../../data/sentinel-2/imagery/20231011/S2B_MSIL2A_20231011T153059_N0509_R111_T21WXS_20231011T190635.SAFE/GRANULE/L2A_T21WXS_A034457_20231011T153057/IMG_DATA/R10m/', full.names = TRUE)
-d20231017 <- list.files('../../data/sentinel-2/imagery/20231017/S2B_MSIL2A_20231017T155149_N0509_R054_T22WDB_20231017T201439.SAFE/GRANULE/L2A_T22WDB_A034543_20231017T155218/IMG_DATA/R10m/', full.names = TRUE)
+d20231017 <- list.files('../../data/sentinel-2/imagery/20231017/S2B_MSIL2A_20231017T155149_N0509_R054_T21WXT_20231017T201439.SAFE/GRANULE/L2A_T21WXT_A034543_20231017T155218/IMG_DATA/R10m/', full.names = TRUE)
 
 
 # List of imagery dates, for later use
@@ -56,9 +59,9 @@ dates <- c('2023-04-06',
            '2023-05-01', 
            '2023-05-16', 
            '2023-05-22', 
-           '2023-05-25', 
+           #'2023-05-25', 
            '2023-06-08', 
-           '2023-06-25', 
+           #'2023-06-25', 
            '2023-06-26', 
            '2023-07-08',
            '2023-07-26', 
@@ -80,9 +83,9 @@ s2.data <- list(d20230406,
                 d20230501,
                 d20230516,
                 d20230522,
-                d20230525,
+                #d20230525, UTM22N
                 d20230608,
-                d20230625,
+                #d20230625, UTM22N
                 d20230626, 
                 d20230708, 
                 d20230726, 
@@ -111,15 +114,24 @@ s2.data.import <- lapply(s2.data, import_s2)
 # Check import function works by plotting rasters from list
 plot(s2.data.import[[6]])
 
+
 # Rename bands to make reading logical
-names(s2.data.import[[1]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-names(s2.data.import[[2]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-names(s2.data.import[[3]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-names(s2.data.import[[4]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-names(s2.data.import[[5]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-names(s2.data.import[[6]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-names(s2.data.import[[7]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-names(s2.data.import[[8]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[1]])  <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[2]])  <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[3]])  <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[4]])  <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[5]])  <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[6]])  <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[7]])  <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[8]])  <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[9]])  <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[10]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[11]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[12]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[13]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[14]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[15]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[16]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
 
 # Apply function to calculate NDVI ----
 s2_ndvi <- function(x) {
@@ -140,7 +152,7 @@ s2.ndvi.points <- st_as_sf(as.points(s2.ndvi, values = TRUE)) %>%
   mutate(id = row_number())
 
 # Write out the extracted points
-st_write(s2.ndvi.points, '../../data/sentinel-2/output/sentinel-2-ndvi-ts-pt-2023.csv', 
+st_write(s2.ndvi.points, '../../data/sentinel-2/output/sentinel-2-ndvi-ext-ts-pt-2023.csv', 
          layer_options = "GEOMETRY=AS_XY")
 
 
@@ -151,7 +163,7 @@ st_write(s2.ndvi.points, '../../data/sentinel-2/output/sentinel-2-ndvi-ts-pt-202
 # Apply parabolic 2nd order polynomial to every pixel in the df ----
 
 # If Part 1 of this script has not been run, read in the data
-s2.ndvi.points <- read.csv('../../data/sentinel-2/output/sentinel-2-ndvi-ts-pt-2023.csv') %>%
+s2.ndvi.points <- read.csv('../../data/sentinel-2/output/sentinel-2-ndvi-ext-ts-pt-2023.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32621)
 
 # Get a dataframe of points from the raster
@@ -167,6 +179,13 @@ s2.ndvi.long <- s2.ndvi.points %>%
 s2.ndvi.long <- s2.ndvi.long %>% 
   # filter(ndvi >= 0.1) %>%
   filter(n_distinct(doy) >= 5)
+
+#### QUESTION ####
+#
+# Should have code here to re-assign all negative NDVI values in the time series
+# to 0, as per the Beck paper?
+#
+##################
 
 # In order to get Beck to work, need to get more data days from either end of the 
 # growing season. Then need to build the function into the group_map function
@@ -224,6 +243,45 @@ ggplot(s2.ndvi.long) +
            colour = "red") +
   theme_cowplot()
 
+# Function for fitting Beck
+fit_beck  <- function(df) {
+  double_log_model <- FitDoubleLogBeck(
+    x = df$ndvi,
+    t = df$doy,
+    plot = TRUE)
+}
+
+# Function to generate NDVI predictions using Beck
+predict.dbl_log_model <- function(model_object, doys_to_predict) {
+  eval(
+    model_object$formula,
+    c(
+      list(t = doys_to_predict),
+      split(model_object$params, names(model_object$params))
+    )
+  )
+}
+
+# Predict data for whole year and extract peak ndvi and associated doy
+year_in_doys <- 1:365
+
+model_ndvi_beck <- function(data) {
+  
+  model <- fit_beck(data)
+  
+  s2.ndvi.long <- s2.ndvi.long %>%
+    full_join(data.frame(
+      doy = year_in_doys,
+      ndvi_pred = predict.dbl_log_model(double_log_model, year_in_doys)
+    )) %>%
+    arrange(doy) %>%
+    mutate(ndvi_max = max(ndvi_pred)) %>%
+    mutate(ndvi_max_doy = doy[which(ndvi_pred == ndvi_max[1])][1])
+}
+
+# Apply Beck functions
+s2.modelled.ndvi.beck <- s2.ndvi.long %>%
+  group_modify(~ model_ndvi_beck(.x))
 
 # Function for fitting parabolic 2nd order polynomial model
 model_fit <- function(df) {
@@ -251,7 +309,7 @@ find_vertex = function(model_fit) {
   ))
 }
 
-# Define function to model, find vertex, and precict values
+# Define function to model, find vertex, and predict values
 model_ndvi <- function(data) {
   
   ### This doesn't work, have filtered above instead
