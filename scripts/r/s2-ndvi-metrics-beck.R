@@ -52,28 +52,48 @@ d20231017 <- list.files('../../data/sentinel-2/imagery/20231017/S2B_MSIL2A_20231
 
 
 # List of imagery dates, for later use
-dates <- c('2023-06-26', 
+dates <- c('2023-04-06', 
+           '2023-05-01', 
+           '2023-05-16', 
+           '2023-05-22', 
+           '2023-05-25', 
+           '2023-06-08', 
+           '2023-06-25', 
+           '2023-06-26', 
            '2023-07-08',
            '2023-07-26', 
            '2023-07-29', 
            '2023-08-07', 
            '2023-08-08', 
            '2023-08-17', 
-           '2023-09-23')
+           '2023-09-23',
+           '2023-10-03',
+           '2023-10-11', 
+           '2023-10-17')
 
 # Get the Sentinel-2 10m bands as raster stack, project + crop to extent of UAV imagery
 # As function?
 
 # Create list where each item in the list is another list,
 #   containing the filepath to each imagery band
-s2.data <- list(d20230626, 
+s2.data <- list(d20230406,
+                d20230501,
+                d20230516,
+                d20230522,
+                d20230525,
+                d20230608,
+                d20230625,
+                d20230626, 
                 d20230708, 
                 d20230726, 
                 d20230729, 
                 d20230807, 
                 d20230808, 
                 d20230817, 
-                d20230923)
+                d20230923,
+                d20231003,
+                d20231011, 
+                d20231017)
 
 # Get uAV imagery over plot to use for cropping - RE-EXPORT UAV IMAGERY SO RE-PROJECT IS AVOIDED
 uav <- project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif'), 'epsg:32621')
