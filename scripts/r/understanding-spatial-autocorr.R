@@ -111,8 +111,20 @@ ggplot(moran_I, aes(x = distance, y = moran)) +
 
 # Spatial lag and spatial error models ----
 
+# define spatial neighborhoods - nb object
+meuse.nb <- dnearneigh(meuse, d1 = 0, d2 = 200)
+
+# define spatial weights for neighborhoods - listw object
+meuse.lw <- nb2listw(meuse.nb, style = "W", zero.policy = TRUE)
+
 # fit spatial lag moddel
 zinc.slm <- lagsarlm(log(zinc) ~ elev + sqrt(dist), data = meuse, listw = meuse.lw, zero.policy = TRUE)
+
+# define spatial neighborhoods - nb object
+meuse.nb <- dnearneigh(meuse, d1 = 0, d2 = 200)
+
+# define spatial weights for neighborhoods - listw object
+meuse.lw <- nb2listw(meuse.nb, style = "W", zero.policy = TRUE)
 
 # fit spatial error model
 zinc.sem <- errorsarlm(log(zinc) ~ elev + sqrt(dist), data = meuse, listw = meuse.lw, zero.policy = TRUE)
@@ -122,8 +134,6 @@ AIC(zinc.lm, zinc.slm, zinc.sem)
 
 
 # Model comparison, taking into account the scale sensitivity of the neighbourhood
-
-# This step hasn't worked properly, why? ###
 
 # create empty vectors for holding the Moran statistics
 moran_I_lm <- c()

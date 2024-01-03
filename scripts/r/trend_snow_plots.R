@@ -32,7 +32,7 @@ ls.snow <- read.csv2('../../data/uav/snow-metrics/blaesedalen_30m_snowcover.csv'
          ndvi.max = 'ndvi_mx', 
          ndvi.max.doy = 'ndv_mx_dy')
 
-# Sentinel-2 (30,) snow cover data, drived from UAV imagery
+# Sentinel-2 (30,) snow cover data, derived from UAV imagery
 s2.snow <- read.csv2('../../data/uav/snow-metrics/blaesedalen_10m_snowcover.csv') %>%
   rename(ndvi.max = 'ndvi_mx', ndvi.max.doy = 'ndv_mx_') %>%
   mutate(ndvi.max.doy = yday(ndvi.max.doy))
