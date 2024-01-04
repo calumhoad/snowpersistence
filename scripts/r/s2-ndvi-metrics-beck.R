@@ -181,6 +181,10 @@ s2.ndvi.long <- s2.ndvi.long %>%
   # filter(ndvi >= 0.1) %>%
   filter(n_distinct(doy) >= 5)
 
+# Shorter test dataset
+s2.ndvi.test <- s2.ndvi.long %>% filter(id %in% rand_id)
+s2.ndvi.test
+
 #### QUESTION ####
 #
 # Should have code here to re-assign all negative NDVI values in the time series
@@ -201,57 +205,15 @@ s2.ndvi.long <- s2.ndvi.long %>%
 #       estimated using the low frequency (gap-y) data that we have. For that
 #       use "FitDoubleLogElmore()" with the same syntax. 
 
-# On a single data point ----
-double_log_model <- FitDoubleLogBeck(
-  x = s2.ndvi.long$ndvi,
-  t = s2.ndvi.long$doy,
-  plot = TRUE)
-
-# Check the model
-double_log_model
-
-# Write helper functions to generate predictions for the whole year
-predict.dbl_log_model <- function(model_object, doys_to_predict) {
-  eval(
-    model_object$formula,
-    c(
-      list(t = doys_to_predict),
-      split(model_object$params, names(model_object$params))
-    )
-  )
-}
-
-# Predict data for whole year and extract peak ndvi and associated doy
-year_in_doys <- 1:365
-
-s2.ndvi.long <- s2.ndvi.long %>%
-  full_join(data.frame(
-    doy = year_in_doys,
-    ndvi_pred = predict.dbl_log_model(double_log_model, year_in_doys)
-  )) %>%
-  arrange(doy) %>%
-  mutate(ndvi_max = max(ndvi_pred)) %>%
-  mutate(ndvi_max_doy = doy[which(ndvi_pred == ndvi_max[1])][1])
-
-# Plot the resulting curve fit
-ggplot(s2.ndvi.long) +
-  geom_point(aes(x = doy, y = ndvi), colour = "blue") +
-  geom_line(aes(x = doy, y = ndvi_pred)) +
-  scale_y_continuous(limits = c(-0.3, 0.9), breaks = seq(-0.3, 0.9, 0.3)) +
-  scale_x_continuous(limits = c(0, 365)) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  annotate("point", 
-           x = s2.ndvi.long$ndvi_max_doy[1], 
-           y = s2.ndvi.long$ndvi_max[1],
-           colour = "red") +
-  theme_cowplot()
 
 # Function for fitting Beck ----
 fit_beck  <- function(df) {
   double_log_model <- FitDoubleLogBeck(
     x = df$ndvi,
     t = df$doy,
-    plot = FALSE)
+    weighting = TRUE, # Does this default to TRUE? Re-run model with this explicit.
+    #tout = seq(1, 12, length = 365), # Time steps of output, test this?
+    plot = TRUE)
 }
 
 # Function to generate NDVI predictions using Beck
@@ -289,7 +251,7 @@ model_ndvi_beck <- function(data) {
 }
 
 # Apply Beck functions
-s2.modelled.ndvi.beck <- s2.ndvi.long %>%
+s2.modelled.ndvi.beck <- s2.ndvi.test %>%
   group_modify(~ model_ndvi_beck(.x))
 
 # Quick quality control plots

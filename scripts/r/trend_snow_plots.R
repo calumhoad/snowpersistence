@@ -14,6 +14,17 @@ library(cowplot)
 
 # Read in the data ----
 
+# Sentinel-2 Blaesedalen, modelled with Beck
+s2.beck <- read.csv('../../data/sentinel-2/output/s2_modelled_beck_point_wide.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32621)
+
+# Get snow data
+s2.snow <- read.csv2('../../data/uav/snow-metrics/blaesedalen_10m_snowcover.csv') %>%
+  dplyr::select(id, snow.persist)
+
+# Join snow data to Beck
+s2.beck <- left_join(s2.beck, s2.snow, by = 'id')
+
 # Trend data from LandsatTS, with automatic screening of pixels
 trends.auto <- read.csv2('../../data/lsatTS-output/blaesedalen/blaesedalen_auto_7yr_trnds.csv')
 
@@ -119,6 +130,65 @@ xdoy <- c(200, 270)
 xndvi <- c(0.1, 0.7)
 ysnow <- c(0, 1)
 yndvi <- c(0.1, 0.7)
+
+# SENTINEL-2, with Beck model applied
+s2b.max.ndvi.doy.plot <- ggplot(s2.beck, aes(x = ndvi.max.doy, y = snow.persist)) +
+  geom_point(aes(color = ndvi.max)) +
+  geom_smooth(method = 'lm') +
+  xlim(xdoy) +
+  ylim(ysnow) +
+  scale_color_viridis_c(name = "ndvi.max",
+                        breaks = seq(0.3, 
+                                     0.5, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(0.1, 0.6),# Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
+  labs(x = '', 
+       y = '', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+# S2 max ndvi against snow persistence
+s2b.max.ndvi.plot <- ggplot(s2.beck, aes(x = ndvi.max, y = snow.persist)) +
+  geom_point(aes(color = ndvi.max.doy)) +
+  geom_smooth(method = 'lm') +
+  xlim(xndvi) +
+  ylim(ysnow) +
+  scale_color_viridis_c(name = "lsts.ndvi.max.doy",
+                        breaks = seq(220, 
+                                     260, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(210, 270),  # Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
+  labs(x = '', 
+       y = 'Sentinel-2 Beck\n\nSnow persistence', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+# S2 ndvi metrics against each other  
+s2b.ndvi.metrics.plot <- ggplot(drop_na(s2.beck, snow.persist), aes(x = ndvi.max.doy, 
+                                                                       y = ndvi.max)) +
+  geom_point(position = 'jitter', alpha = 0.5, aes(color = snow.persist, size = snow.persist)) +
+  #geom_smooth(method = 'lm') +
+  xlim(xdoy) +
+  ylim(yndvi) +
+  scale_color_viridis_c(name = "snow.persist",
+                        breaks = seq(0, 
+                                     0.6, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(0, 0.6),
+                        na.value = 'yellow',# Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'Snow\nPersist',
+                                                direction = 'vertical')) + 
+  labs(x = '', 
+       y = 'Maximum NDVI', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
 
 # SENTINEL-2, with modelling edited by Jakob
 s2j.max.ndvi.doy.plot <- ggplot(s2.snow.ja, aes(x = ndvi.max.doy, y = snow.persist)) +
@@ -432,12 +502,15 @@ plots_combined <- s2.max.ndvi.plot +
   s2j.max.ndvi.plot +
   s2j.max.ndvi.doy.plot +
   s2j.ndvi.metrics.plot +
+  s2b.max.ndvi.plot +
+  s2b.max.ndvi.doy.plot +
+  s2b.ndvi.metrics.plot +
   #ls.max.ndvi.plot +
   #ls.max.ndvi.doy.plot +
   #ls.ndvi.metrics.plot +
-  lsts.max.ndvi.plot +
-  lsts.max.ndvi.doy.plot +
-  lsts.ndvi.metrics.plot +
+  #lsts.max.ndvi.plot +
+  #lsts.max.ndvi.doy.plot +
+  #lsts.ndvi.metrics.plot +
   plot_layout(ncol = 3, nrow = 4)
 
 plots_combined
