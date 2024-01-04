@@ -251,7 +251,7 @@ fit_beck  <- function(df) {
   double_log_model <- FitDoubleLogBeck(
     x = df$ndvi,
     t = df$doy,
-    plot = TRUE)
+    plot = FALSE)
 }
 
 # Function to generate NDVI predictions using Beck
@@ -273,6 +273,9 @@ model_ndvi_beck <- function(data) {
   # Fit Beck model to data for pixel
   model <- fit_beck(data)
   
+  # Get geometry of id
+  geom <- st_geometry(data[1, ])
+  
   # Predict values and write back to original dataframe
   data <- suppressMessages(full_join(data, data.frame(
     doy = year_in_doys,
@@ -280,13 +283,10 @@ model_ndvi_beck <- function(data) {
   ))) %>%
     arrange(doy) %>%
     mutate(ndvi_max = max(ndvi_pred)) %>%
-    mutate(ndvi_max_doy = doy[which(ndvi_pred == ndvi_max[1])][1]) #%>%
-    #mutate(
-    #geometry = st_geometry(data[1. ])
-  #)
+    mutate(ndvi_max_doy = doy[which(ndvi_pred == ndvi_max[1])][1]) %>%
+    mutate(geometry = geom)
   return(data)
 }
-
 
 # Apply Beck functions
 s2.modelled.ndvi.beck <- s2.ndvi.long %>%
