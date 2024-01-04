@@ -327,9 +327,17 @@ st_write(st_as_sf(s2.modelled.export.wide),  '../../data/sentinel-2/output/s2_mo
 write.csv2(s2.modelled.export.wide,  '../../data/sentinel-2/output/s2_modelled_JA_point_wide.csv')
 
 # Long format
-s2.modelled.export.long <- s2.modelled.ndvi %>%
-  rename(doy.obs = 'doy', 
-         ndvi.obs = 'ndvi')
+s2.modelled.export.long <- s2.modelled.ndvi.beck %>%
+  rename(ndvi.pred = 'ndvi_pred',
+         ndvi.max = 'ndvi_max', 
+         ndvi.max.doy = 'ndvi_max_doy')
 
-st_write(st_as_sf(s2.modelled.export.long),  '../../data/sentinel-2/output/s2_modelled_JA_point_long.shp')
+st_write(st_as_sf(s2.modelled.export.long),  
+         '../../data/sentinel-2/output/s2_modelled_beck_point_long.csv',
+         layer_options = "GEOMETRY=AS_XY")
+
+st_write(s2.ndvi.points, '../../data/sentinel-2/output/sentinel-2-ndvi-ext-ts-pt-2023.csv', 
+         layer_options = "GEOMETRY=AS_XY")
+
+
 write.csv2(s2.modelled.export.long,  '../../data/sentinel-2/output/s2_modelled_JA_point_long.csv')
