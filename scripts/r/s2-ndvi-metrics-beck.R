@@ -176,7 +176,8 @@ s2.ndvi.long <- s2.ndvi.points %>%
   group_by(id)
 
 # Filter out obs with ndvi < 0.1, and groups where there are less than 5 obs
-s2.ndvi.long <- s2.ndvi.long %>% 
+s2.ndvi.long <- s2.ndvi.long %>%
+  mutate(ndvi = ifelse(ndvi < 0, 0, ndvi)) %>% # reassign values < 0 as 0, per Beck 
   # filter(ndvi >= 0.1) %>%
   filter(n_distinct(doy) >= 5)
 
@@ -199,6 +200,8 @@ s2.ndvi.long <- s2.ndvi.long %>%
 #       summer phenology introduced by the addtional term can not reliably
 #       estimated using the low frequency (gap-y) data that we have. For that
 #       use "FitDoubleLogElmore()" with the same syntax. 
+
+# On a single data point ----
 double_log_model <- FitDoubleLogBeck(
   x = s2.ndvi.long$ndvi,
   t = s2.ndvi.long$doy,
@@ -243,7 +246,7 @@ ggplot(s2.ndvi.long) +
            colour = "red") +
   theme_cowplot()
 
-# Function for fitting Beck
+# Function for fitting Beck ----
 fit_beck  <- function(df) {
   double_log_model <- FitDoubleLogBeck(
     x = df$ndvi,
@@ -267,115 +270,48 @@ year_in_doys <- 1:365
 
 model_ndvi_beck <- function(data) {
   
+  # Fit Beck model to data for pixel
   model <- fit_beck(data)
   
-  s2.ndvi.long <- s2.ndvi.long %>%
-    full_join(data.frame(
-      doy = year_in_doys,
-      ndvi_pred = predict.dbl_log_model(double_log_model, year_in_doys)
-    )) %>%
+  # Predict values and write back to original dataframe
+  data <- suppressMessages(full_join(data, data.frame(
+    doy = year_in_doys,
+    ndvi_pred = predict.dbl_log_model(model, year_in_doys)
+  ))) %>%
     arrange(doy) %>%
     mutate(ndvi_max = max(ndvi_pred)) %>%
-    mutate(ndvi_max_doy = doy[which(ndvi_pred == ndvi_max[1])][1])
+    mutate(ndvi_max_doy = doy[which(ndvi_pred == ndvi_max[1])][1]) #%>%
+    #mutate(
+    #geometry = st_geometry(data[1. ])
+  #)
+  return(data)
 }
+
 
 # Apply Beck functions
 s2.modelled.ndvi.beck <- s2.ndvi.long %>%
   group_modify(~ model_ndvi_beck(.x))
 
-# Function for fitting parabolic 2nd order polynomial model
-model_fit <- function(df) {
-  # Using a linear model polynom order 2
-  #lm(data = df, ndvi ~ poly(doy, 2, raw = T))
-  # Using a spline smoother
-  smooth.spline(x = df$doy, y = df$ndvi, spar = 0.5)
-}
-
-# Function for calculation of vertex
-# https://quantifyinghealth.com/plot-a-quadratic-function-in-r/
-find_vertex = function(model_fit) {
-  # Get model coefficients
-  a = model_fit$coefficients[3]
-  b = model_fit$coefficients[2]
-  c = model_fit$coefficients[1]
-  # Determine x coordinate of vertex
-  vertex_x = -b / (2 * a)
-  # Calculate y coordinate of vertex
-  vertex_y = a * vertex_x**2 + b * vertex_x + c
-  # Strip attributes and return as data.frame
-  return(data.frame(
-    x = as.numeric(vertex_x),
-    y = as.numeric(vertex_y)
-  ))
-}
-
-# Define function to model, find vertex, and predict values
-model_ndvi <- function(data) {
-  
-  ### This doesn't work, have filtered above instead
-  # Filter the dataset, to retain only records where NDVI >= 0.1
-  # data <- data %>%
-  #  filter(ndvi >= 0.1) %>%
-  #  filter(n_distinct(doy) >= 5)
-
-  # Use function to fit model
-  model <- model_fit(data)
-  
-  # Generate predictions for curve plotting (for time-period doy 130-300)
-  pred <- predict(model, data.frame(doy = 130:300))
-  # pred <- unlist(pred$y)
-
-  # use function to find vertex (linear model)
- # vertex <- find_vertex(model)
-  # find vertex based on predictions (spline smoother)
-  vertex <- data.frame(
-    x = pred$x[pred$y == max(pred$y)], 
-    y = pred$y[pred$y == max(pred$y)]
-  )
-  
-  # Write necessary values back to df
-  data <- suppressMessages(full_join(data, data.frame(
-    doy = 130:300,
-    ndvi.max = vertex$y,
-    ndvi.max.doy = vertex$x,
-    ndvi.pred = pred
-  ))) %>% 
-  # add missing geometries
-  mutate(
-    geometry = st_geometry(data[1, ])
-  )
-  return(data)
-}
-
-# Following tutorial here: https://data-se.netlify.app/2018/12/10/new-split-apply-combine-variant-in-dplyr-group-split/
-
-# Apply model_ndvi to data using group_modify
-s2.modelled.ndvi <- s2.ndvi.long %>%
-  group_modify(~ model_ndvi(.x)) %>%
-  mutate(ndvi.max.date = as_date(ndvi.max.doy),
-         # Calculate fractional day of year, by adding decimal to date
-         ndvi.max.doy = yday(ndvi.max.date) + (ndvi.max.doy - floor(ndvi.max.doy)))
-
 # Quick quality control plots
 # 100 random pixels overview
 ggplot(
-  s2.modelled.ndvi %>% filter(id %in% sample(unique(s2.modelled.ndvi$id), 100)),
+  s2.modelled.ndvi.beck %>% filter(id %in% sample(unique(s2.modelled.ndvi.beck$id), 100)),
   aes(x = doy, colour = id, group = id)
 ) +
   geom_point(aes(y = ndvi)) +
-  geom_line(aes(y = ndvi.pred.doy.1)) +
+  geom_line(aes(y = ndvi_pred)) +
   theme_classic() +
   theme(legend.position = "none")
 
 # 9 random pixels in detail
-rand_id <- sample(s2.modelled.ndvi %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
+rand_id <- sample(s2.modelled.ndvi.beck %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
 ggplot(
-  s2.modelled.ndvi %>% filter(id %in% rand_id),
+  s2.modelled.ndvi.beck %>% filter(id %in% rand_id),
   aes(x = doy, group = id)
 ) +
   geom_point(aes(y = ndvi)) +
-  geom_line(aes(y = ndvi.pred.doy.1)) +
-  geom_point(aes(x = ndvi.max.doy, y = ndvi.max), color = "red") +
+  geom_line(aes(y = ndvi_pred)) +
+  geom_point(aes(x = ndvi_max_doy, y = ndvi_max), color = "red") +
   facet_wrap(~id) +
   theme_classic()
 
