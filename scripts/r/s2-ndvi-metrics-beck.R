@@ -318,12 +318,17 @@ ggplot(
 # Outputs ---- 
 
 # Wide format
-s2.modelled.export.wide <- s2.modelled.ndvi %>%
+s2.modelled.export.wide <- s2.modelled.ndvi.beck %>%
   group_by(id) %>%
   filter(row_number() == 1) %>%
-  dplyr::select(!doy & !ndvi & !ndvi.pred.doy.1)
+  dplyr::select(!doy & !ndvi & !ndvi_pred) %>%
+  rename(ndvi.max = 'ndvi_max', 
+         ndvi.max.doy = 'ndvi_max_doy')
 
-st_write(st_as_sf(s2.modelled.export.wide),  '../../data/sentinel-2/output/s2_modelled_JA_point_wide.shp')
+st_write(st_as_sf(s2.modelled.export.wide),  
+         '../../data/sentinel-2/output/s2_modelled_beck_point_wide.csv',
+         layer_options = "GEOMETRY=AS_XY")
+
 write.csv2(s2.modelled.export.wide,  '../../data/sentinel-2/output/s2_modelled_JA_point_wide.csv')
 
 # Long format
