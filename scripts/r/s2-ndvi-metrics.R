@@ -189,6 +189,36 @@ s2.modelled.ndvi <- s2.ndvi.long %>%
          ndvi.max.doy = yday(ndvi.max.date) + (ndvi.max.doy - floor(ndvi.max.doy)))
 
 
+# Quick quality control plots ----
+
+s2.modelled.ndvi <- s2.modelled.ndvi %>% 
+  mutate(doy = yday(doy))#,
+         #ndvi.max.doy = yday(ndvi.max.doy))
+
+# 100 random pixels overview
+ggplot(
+  s2.modelled.ndvi %>% filter(id %in% sample(unique(s2.modelled.ndvi$id), 100)),
+  aes(x = doy, colour = id, group = id)
+) +
+  geom_point(aes(y = ndvi)) +
+  geom_line(aes(y = ndvi.pred)) +
+  theme_classic() +
+  theme(legend.position = "none")
+
+# 9 random pixels in detail
+#rand_id <- sample(s2.modelled.ndvi.beck %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
+rand_id <- c(172, 343, 493, 839, 884, 1026, 1097, 1139, 1165)
+ggplot(
+  s2.modelled.ndvi %>% filter(id %in% rand_id),
+  aes(x = doy, group = id)
+) +
+  geom_point(aes(y = ndvi)) +
+  geom_line(aes(y = ndvi.pred)) +
+  geom_point(aes(x = ndvi.max.doy, y = ndvi.max), color = "red") +
+  facet_wrap(~id) +
+  theme_classic()
+
+
 # Outputs ---- 
 
 # Wide format
