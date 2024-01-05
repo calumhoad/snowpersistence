@@ -24,8 +24,6 @@ library(viridis)
 #   calculates NDVI per pixel, then converts raster to point geom.
 # Part 2: Reads in Sentinel-2 NDVI timeseries as sf point, then fits curves
 
-#### @Jakob - skip to part 2 ####
-
 ###
 # PART 1
 ###
