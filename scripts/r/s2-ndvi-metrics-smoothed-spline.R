@@ -1,6 +1,12 @@
 # Sentinel-2 NDVI Metrics
 # Calum Hoad, 05/12/2023
 
+# Calculate NDVI maximum and NDVI maximum DoY by fitting a smoothed spline
+# to every pixel in a Sentinel-2 time series, then extracting
+# the vertex.
+
+# Help writing model functions for smoothed spline from Jakob Assmann. 
+
 # Import necessary libraries
 library(terra)
 library(dplyr)
@@ -111,7 +117,7 @@ st_write(s2.ndvi.points, '../../data/sentinel-2/output/sentinel-2-ndvi-ts-pt-202
 # PART 2
 ###
 
-# Apply parabolic 2nd order polynomial to every pixel in the df ----
+# Apply smoothed spline to every pixel time series ----
 
 # If Part 1 of this script has not been run, read in the data
 s2.ndvi.points <- read.csv('../../data/sentinel-2/output/sentinel-2-ndvi-ts-pt-2023.csv') %>%
@@ -134,8 +140,6 @@ s2.ndvi.long <- s2.ndvi.long %>%
 
 # Function for fitting parabolic 2nd order polynomial model
 model_fit <- function(df) {
-  # Using a linear model polynom order 2
-  #lm(data = df, ndvi ~ poly(doy, 2, raw = T))
   # Using a spline smoother
   smooth.spline(x = df$doy, y = df$ndvi, spar = 0.5)
 }
@@ -217,7 +221,8 @@ ggplot(
   theme(legend.position = "none")
 
 # 9 random pixels in detail
-rand_id <- sample(s2.modelled.ndvi %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
+#rand_id <- sample(s2.modelled.ndvi %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
+rand_id <- c(172, 343, 493, 839, 884, 1026, 1097, 1139, 1165)
 ggplot(
   s2.modelled.ndvi %>% filter(id %in% rand_id),
   aes(x = doy, group = id)
