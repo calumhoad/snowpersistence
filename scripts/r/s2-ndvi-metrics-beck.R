@@ -192,10 +192,6 @@ s2.ndvi.test
 #
 ##################
 
-# In order to get Beck to work, need to get more data days from either end of the 
-# growing season. Then need to build the function into the group_map function
-# so that it iterates over each pixel id
-
 # Apply Beck, using script provided by Jakob ###
 # Fit curve using greenbrown package function using Beck et al. 2006 Eq 3
 # and including weighting of "overestimated NDVI values" (see paper for details)
