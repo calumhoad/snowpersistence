@@ -1,6 +1,10 @@
 # Sentinel-2 NDVI Metrics
 # Calum Hoad, 05/12/2023
 
+# Calculate NDVI maximum and NDVI maximum DoY by fitting a parabolic 2nd order
+# polynomial curve to every pixel in a Sentinel-2 time series, then extracting
+# the vertex.
+
 # Import necessary libraries
 library(terra)
 library(dplyr)
