@@ -60,7 +60,7 @@ ggplot(s2.all.long %>% filter(id %in% sample(unique(s2.all.long$id), 20)) %>% gr
   geom_point(aes(x = ndvi.max.doy, y = ndvi.max, color = model)) +
   xlim(c(190, 260)) +
   ylim(c(0, 0.7)) +
-  theme(cowplot())
+  theme_cowplot()
 
 
 
