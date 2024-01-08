@@ -4,6 +4,7 @@
 library(tidyverse)
 library(ggplot2)
 library(cowplot)
+library(sf)
 
 # Bring in the data from the various model outputs ----
 
@@ -32,10 +33,14 @@ s2.beck <- read.csv('../../data/sentinel-2/output/s2_modelled_beck_point_wide.cs
          ndvi.max_b = 'ndvi.max', 
          ndvi.max.doy_b = 'ndvi.max.doy')
 
+# Read in snow cover data
+s2.snow <- read.csv2('../../data/uav/snow-metrics/blaesedalen_10m_snowcover.csv') %>%
+  select(id, snow.persist)
 
 # Join the data from the various model outputs ----
 s2.all <- left_join(s2.para, s2.smooth, by = 'id')
 s2.all <- left_join(s2.all, s2.beck, by = 'id')
+s2.all <- left_join(s2.all, s2.snow, by = 'id')
 
 # Manual check of geometry values shows that all ids are consistent, drop geom 
 # columns which are redundant
@@ -43,6 +48,11 @@ s2.all <- s2.all %>%
   select(-geometry.p, -geometry.s) %>%
   st_as_sf(coords = c("geometry.x.b", "geometry.y.b"), crs = 32621)
 
+# Output the combined dataset for use in any other scripts
+st_write(s2.all, "../../data/sentinel-2/output/s2_all_models.csv",
+         layer_options = "GEOMETRY=AS_XY")
+
+help(st_write)
 
 # Compare and plot the data ----
 s2.all.long <- s2.all %>%
