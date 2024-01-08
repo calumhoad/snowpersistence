@@ -127,4 +127,25 @@ sem.ndvi.max.doy_s <- errorsarlm(ndvi.max.doy_s ~ snow.persist,
                                  listw = s2.lw, 
                                  zero.policy = TRUE)
 
+
+# How do we know whether the spatial error model has removed enough 
+# of the spatial autocorrelation?
+
+# Run Moran's I on the output of the spatial error model
+moran.spaterr <- moran.mc(model$residuals, s2.lw, nsim = 999, zero.policy = TRUE)
+plot(moran, main = '', las = 1)
+
+model <- sem.ndvi.max.doy_s
+
 stargazer(sem.ndvi.max.doy_s, type = 'text')
+
+s2.line <- s2 %>% mutate(predict = predict(sem.ndvi.max.doy_s))
+
+const.coef <- model$coefficients[1]
+resp.coef <- model$coefficients[2]
+
+
+ggplot(s2.line, aes(x = snow.persist, y = ndvi.max.doy_s)) +
+  geom_point() +
+  geom_abline(intercept = const.coef, slope = resp.coef, color = 'red') +
+  stat_smooth(method = 'lm')
