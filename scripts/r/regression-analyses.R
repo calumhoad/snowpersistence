@@ -149,3 +149,5 @@ ggplot(s2.line, aes(x = snow.persist, y = ndvi.max.doy_s)) +
   geom_point() +
   geom_abline(intercept = const.coef, slope = resp.coef, color = 'red') +
   stat_smooth(method = 'lm')
+
+                   

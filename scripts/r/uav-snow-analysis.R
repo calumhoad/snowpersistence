@@ -1,4 +1,4 @@
-# function for calculating altered NDSI
+# Script for calculating average snow cover per pixel
 # Calum Hoad, 04/12/2023
 
 # Import necessary libraries ----
