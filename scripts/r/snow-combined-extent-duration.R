@@ -19,6 +19,9 @@
 # (y) across time (x).
 ###
 
+# Turn off scientific notation
+options(scipen = 999)
+
 # Import the necessary libraries ----
 library(terra)
 library(dplyr)
@@ -83,6 +86,12 @@ bl.snow <- rast(bl.snow)
 
 plot(bl.snow)
 
+# Rename snow class rasters
+names(bl.snow[[1]]) <- ('snow.t1')
+names(bl.snow[[2]]) <- ('snow.t2')
+names(bl.snow[[3]]) <- ('snow.t3')
+names(bl.snow[[4]]) <- ('snow.t4')
+
 # Using only raw red-band reflectance values
 
 # Get only the red band
@@ -106,14 +115,17 @@ class_snow_red <- function(x) {
 # Run function across list of red-band only rasters
 bl.r.snow <- pblapply(bl.red, class_snow_red)
 
-# Plot to check output
-plot(rast(bl.r.snow))
-
 # Rename snow class rasters
-names(bl.snow[[1]]) <- ('snow.t1')
-names(bl.snow[[2]]) <- ('snow.t2')
-names(bl.snow[[3]]) <- ('snow.t3')
-names(bl.snow[[4]]) <- ('snow.t4')
+names(bl.r.snow[[1]]) <- ('snow.t1')
+names(bl.r.snow[[2]]) <- ('snow.t2')
+names(bl.r.snow[[3]]) <- ('snow.t3')
+names(bl.r.snow[[4]]) <- ('snow.t4')
+
+# Stack classed rasters
+bl.r.snow <- rast(bl.r.snow)
+
+# Plot to check output
+plot(bl.r.snow)
 
 # Create raster where every pix = 1, to facilitate later pixel count via sum
 num.pixels <- terra::classify(bl.snow[[2]], rbind(c(-2, 2, 1)))
@@ -122,4 +134,91 @@ names(num.pixels) <- c('tot.pixels')
 
 
 # Get grid matching spatial resolution of EO data ----
+
+
+# Landsat, Bring in the list of pixel centres from LandsatTS
+landsat_centres <- st_read('../../data/lsatTS-output/pixel_centres.shp') %>%
+  mutate(site = str_split(sample_id, "_") %>% 
+           sapply(`[`, 1)) %>%
+  filter(site == 'blaesedalen') %>%
+  st_transform(crs = 32621)
+
+# buffer square to polygon
+pixel_poly <- st_buffer(landsat_centres, 15, endCapStyle = "SQUARE")
+
+# plot to check
+ggplot() + geom_sf(data = landsat_centres) + geom_sf(data = pixel_poly)
+
+
+# Sentinel-2, bring in the list of pixel centres from S2 script
+s2.centres <- st_read('../../data/sentinel-2/output/s2_modelled_point.shp')
+
+# buffer square to polygon 
+s2.poly <- st_buffer(s2.centres, 5, endCapStyle = "SQUARE")
+
+# plot to check
+ggplot() + geom_sf(data = s2.poly) + geom_sf(data = s2.centres)  
+
+
+
+# Use pixel polygons to extract the sum of the reclassed snow pixels ----
+
+# SENTINEL-2
+# Extract number of pixels which are snow covered from classified raster stack
+s2.r.snow.cover <- terra::extract(bl.r.snow, s2.poly, fun = 'sum', ID = TRUE, bind = TRUE) # red
+
+# Extract number of pixels per polygon, using num.pixels raster (all pix = 1)
+s2.r.snow.cover <- terra::extract(num.pixels, s2.r.snow.cover, fun = 'sum', ID = TRUE, 
+                                bind = TRUE)
+# LANDSAT
+# Extract number of pixels which are snow covered from classified raster stack
+ls.snow.cover <- terra::extract(bl.snow, ls.poly, fun = 'sum', ID = TRUE, bind = TRUE)
+
+# Extract number of pixels per polygon, using num.pixels raster (all pix = 1)
+ls.snow.cover <- terra::extract(num.pixels, ls.snow.cover, fun = 'sum', ID = TRUE, bind = TRUE)
+
+
+# Calculate snow cover as percentage ----
+
+# Convert the spatvector to an sf
+extracted.data <- st_as_sf(s2.r.snow.cover) %>%
+  # Calculate percentage cover per S2 pixel
+  mutate(snow.t1 = snow.t1/tot.pixels, 
+         snow.t2 = snow.t2/tot.pixels, 
+         snow.t3 = snow.t3/tot.pixels, 
+         snow.t4 = snow.t4/tot.pixels) %>%
+  # Rename time points with actual dates
+  rename('2023-07-02' = snow.t1,
+         '2023-07-12' = snow.t2,
+         '2023-07-18' = snow.t3,
+         '2023-07-26' = snow.t4)
+
+# Interpolate between observations and calculate the area under the curve ----
+
+# Set the time period for which the area under the curve will be calculated
+start <- '2023-07-01'
+end <- '2023-07-26'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
