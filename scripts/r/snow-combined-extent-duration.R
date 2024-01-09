@@ -31,6 +31,7 @@ library(sf)
 library(tidyverse)
 library(tidyterra)
 library(pbapply)
+library(DescTools)
 
 
 # Bring in and format the data ----
@@ -195,11 +196,34 @@ extracted.data <- st_as_sf(s2.r.snow.cover) %>%
 
 # Interpolate between observations and calculate the area under the curve ----
 
+# Get a sample dataset to work with (one sample id)
+test.data <- filter(extracted.data, id == 189) %>%
+  select(-ndvi_mx, -ndv_mx_, -tot.pixels) %>%
+  pivot_longer(!id & !geometry, names_to = 'date', values_to = "snow.cover")
+
+# Plot the sample data
+ggplot() +
+  geom_point(data = test.data, aes(x = date, y = snow.cover))
+
+# Create predicted values for July 1st and 31st?
+# Draw a line between t1 and t2,
+# predict t0 (July 1st)
+# Draw a line between t3 and t4, 
+# predict t5 (July 31st)
+# Store points in df?
+
 # Set the time period for which the area under the curve will be calculated
-start <- '2023-07-01'
-end <- '2023-07-26'
+start <- lubridate::yday('2023-07-02')
+end <- lubridate::yday('2023-07-26')
 
+# AUC calculation
+auc <- AUC(x = lubridate::yday(test.data$date), 
+           y = test.data$snow.cover,
+           from = start, 
+           to = end, 
+           method = 'trapezoid')
 
+auc
 
 
 
