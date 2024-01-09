@@ -197,13 +197,16 @@ extracted.data <- st_as_sf(s2.r.snow.cover) %>%
 # Interpolate between observations and calculate the area under the curve ----
 
 # Get a sample dataset to work with (one sample id)
-test.data <- filter(extracted.data, id == 189) %>%
+test.data <- extracted.data %>% #filter(extracted.data, id == 189) %>%
   select(-ndvi_mx, -ndv_mx_, -tot.pixels) %>%
-  pivot_longer(!id & !geometry, names_to = 'date', values_to = "snow.cover")
+  pivot_longer(!id & !geometry, names_to = 'date', values_to = "snow.cover") %>%
+  drop_na() %>%
+  group_by(id)
 
 # Plot the sample data
 ggplot() +
-  geom_point(data = test.data, aes(x = date, y = snow.cover))
+  geom_point(data = test.data, aes(x = date, y = snow.cover)) +
+  geom_line(data = test.data, aes(x = date, y = snow.cover, group = id))
 
 # Create predicted values for July 1st and 31st?
 # Draw a line between t1 and t2,
@@ -223,10 +226,35 @@ auc <- AUC(x = lubridate::yday(test.data$date),
            to = end, 
            method = 'trapezoid')
 
-auc
+# Function for AUC calculation
+calc_auc <- function(data) {
+  # Calculate area under curve
+  auc <- AUC(x = lubridate::yday(data$date), 
+             y = data$snow.cover, 
+             from = start,
+             to = end, 
+             method = 'trapezoid')
+  auc <- ifelse(is.na(auc), 0, auc)
+  # Write AUC value back to df
+  data <- data %>%
+    mutate(snow.auc = auc)
+    # fill NA values (where there's never any snow) with 0
+}
 
+# Iterate this over the dataframe
+test.auc <- test.data %>%
+  group_modify(~ calc_auc(.x))
 
+# Plot the output ----
 
+# Histogram
+ggplot() +
+  geom_histogram(data = test.auc, aes(x = snow.auc), binwidth = 0.5)
+
+# Map of snow.auc values
+ggplot() +
+  geom_sf(data = st_as_sf(test.auc), aes(fill = snow.auc)) +
+  scale_fill_viridis_c()
 
 
 
