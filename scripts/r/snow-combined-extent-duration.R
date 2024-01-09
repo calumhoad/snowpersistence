@@ -234,11 +234,12 @@ calc_auc <- function(data) {
              from = start,
              to = end, 
              method = 'trapezoid')
+  # If all snow.cover values are 0 (at no point is there any snow in pixel),
+  #   auc will return as NA. Replace all NA values with 0.
   auc <- ifelse(is.na(auc), 0, auc)
   # Write AUC value back to df
   data <- data %>%
     mutate(snow.auc = auc)
-    # fill NA values (where there's never any snow) with 0
 }
 
 # Iterate this over the dataframe
