@@ -254,7 +254,15 @@ ggplot() +
 
 output.data <- pivot_wider(snow.auc, id_cols = c(id, geometry, snow.auc), 
                            names_from = date, 
-                           values_from = c(snow.cover))
+                           values_from = c(snow.cover)) %>%
+  st_as_sf() %>%
+  st_centroid()
+
+# Convert from polygon to centroid
+output 
+
+st_write(output.data, "../../data/uav/snow-metrics/blaesedalen-10m-auc-snowcover.csv",
+         layer_options = "GEOMETRY=AS_XY")
 
 # There is something going wrong, where some of the 02nd July pixels have NA 
 # values for snow cover. Investigating this below:
@@ -266,7 +274,8 @@ test.2 <- output.data %>%
 # Plot the pixels missing values as red
 ggplot() +
   geom_sf(data = st_as_sf(snow.auc), fill = 'blue') +
-  geom_sf(data = st_as_sf(test.2), fill = 'red') 
+  geom_sf(data = st_as_sf(test.2), fill = 'red') +
+  geom_sf(data = output.data)
   
 # All the pixels which are missing values for 2nd July are in the NE of the plot.
 # The extents should be exactly the same for all of the data, why are some missing?
