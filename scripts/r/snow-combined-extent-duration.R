@@ -197,7 +197,7 @@ extracted.data <- st_as_sf(s2.r.snow.cover) %>%
 # Interpolate between observations and calculate the area under the curve ----
 
 # Get a sample dataset to work with (one sample id)
-test.data <- extracted.data %>% #filter(extracted.data, id == 189) %>%
+snow.data <- extracted.data %>% #filter(extracted.data, id == 189) %>%
   select(-ndvi_mx, -ndv_mx_, -tot.pixels) %>%
   pivot_longer(!id & !geometry, names_to = 'date', values_to = "snow.cover") %>%
   drop_na() %>%
@@ -205,8 +205,8 @@ test.data <- extracted.data %>% #filter(extracted.data, id == 189) %>%
 
 # Plot the sample data
 ggplot() +
-  geom_point(data = test.data, aes(x = date, y = snow.cover)) +
-  geom_line(data = test.data, aes(x = date, y = snow.cover, group = id))
+  geom_point(data = snow.data, aes(x = date, y = snow.cover)) +
+  geom_line(data = snow.data, aes(x = date, y = snow.cover, group = id))
 
 # Create predicted values for July 1st and 31st?
 # Draw a line between t1 and t2,
@@ -218,13 +218,6 @@ ggplot() +
 # Set the time period for which the area under the curve will be calculated
 start <- lubridate::yday('2023-07-02')
 end <- lubridate::yday('2023-07-26')
-
-# AUC calculation
-auc <- AUC(x = lubridate::yday(test.data$date), 
-           y = test.data$snow.cover,
-           from = start, 
-           to = end, 
-           method = 'trapezoid')
 
 # Function for AUC calculation
 calc_auc <- function(data) {
@@ -243,26 +236,42 @@ calc_auc <- function(data) {
 }
 
 # Iterate this over the dataframe
-test.auc <- test.data %>%
+snow.auc <- snow.data %>%
   group_modify(~ calc_auc(.x))
 
 # Plot the output ----
 
 # Histogram
 ggplot() +
-  geom_histogram(data = test.auc, aes(x = snow.auc), binwidth = 0.5)
+  geom_histogram(data = snow.auc, aes(x = snow.auc), binwidth = 0.5)
 
 # Map of snow.auc values
 ggplot() +
-  geom_sf(data = st_as_sf(test.auc), aes(fill = snow.auc)) +
+  geom_sf(data = st_as_sf(snow.auc), aes(fill = snow.auc)) +
   scale_fill_viridis_c()
 
+# Write the output ----
 
+output.data <- pivot_wider(snow.auc, id_cols = c(id, geometry, snow.auc), 
+                           names_from = date, 
+                           values_from = c(snow.cover))
 
+# There is something going wrong, where some of the 02nd July pixels have NA 
+# values for snow cover. Investigating this below:
 
+# Get the pixels which have NA values
+test.2 <- output.data %>%
+  filter(is.na(`2023-07-02`))
 
+# Plot the pixels missing values as red
+ggplot() +
+  geom_sf(data = st_as_sf(snow.auc), fill = 'blue') +
+  geom_sf(data = st_as_sf(test.2), fill = 'red') 
+  
+# All the pixels which are missing values for 2nd July are in the NE of the plot.
+# The extents should be exactly the same for all of the data, why are some missing?
 
-
+extracted.data
 
 
 
