@@ -14,6 +14,8 @@ library(cowplot)
 
 # Read in the data ----
 
+## Sentinel-2 ##
+
 # All modelled NDVI values for Sentinel-2
 s2.ndvi <- read.csv("../../data/sentinel-2/output/s2_all_models.csv") %>%
                st_as_sf(coords = c('X', 'Y'), crs = 32621)
@@ -27,8 +29,7 @@ s2.data <- left_join(s2.ndvi, s2.snow, by = 'id') %>%
   drop_na()
 
 
-
-
+## Landsat ##
 
 # Trend data from LandsatTS, with automatic screening of pixels
 trends.auto <- read.csv2('../../data/lsatTS-output/blaesedalen/blaesedalen_auto_7yr_trnds.csv')
@@ -48,34 +49,7 @@ ls.snow <- read.csv2('../../data/uav/snow-metrics/blaesedalen_30m_snowcover.csv'
          ndvi.max = 'ndvi_mx', 
          ndvi.max.doy = 'ndv_mx_dy')
 
-# Sentinel-2 (30,) snow cover data, derived from UAV imagery
-s2.snow <- read.csv2('../../data/uav/snow-metrics/blaesedalen_10m_snowcover.csv') %>%
-  rename(ndvi.max = 'ndvi_mx', ndvi.max.doy = 'ndv_mx_') %>%
-  mutate(ndvi.max.doy = yday(ndvi.max.doy))
-
-# Sentinel-2 snow and ndvi data, with filter of >= 0.1 on ndvi for curve fitting
-s2.snow.2 <- read.csv2('../../data/uav/snow-metrics/blaesedalen_10m_snowcover_filterndvi.csv') %>%
-  rename(ndvi.max = 'ndvi_mx', ndvi.max.doy = 'ndv_mx_dy')# %>%
-  mutate(ndvi.max.doy = yday(ndvi.max.doy))
-  
-# Read in Sentinel-2 data with model modifications from Jakob
-s2.snow.ja <- read.csv2('../../data/sentinel-2/output/s2_modelled_JA_point_wide.csv')
-s2.snow.ja <- left_join(s2.snow.ja, s2.snow, by = 'id') %>%
-  dplyr::select(id, geometry.x, ndvi.max.x, ndvi.max.doy.x, snow.persist) %>%
-  rename(ndvi.max = 'ndvi.max.x',
-         ndvi.max.doy = 'ndvi.max.doy.x')
-
-# Join snow and NDVI metrics, if separate datasets ----
-# Join data frames based on sample_id
-joined.auto <- left_join(gs.auto, ls.snow, by = "sample.id")
-
-# Filter gs datasets to only 2023 and max.ndvi.doy greater than 175
-gs.auto <- gs.auto %>% filter(year == 2023 & ndvi.max.doy > 175)
-gs.auto.joined <- left_join(gs.auto, snow, by = 'sample.id')
-
-###
 # Checking match between Landsat and LandsatTS pixel centres
-###
 
 # Get data
 lsatTS.pix.centres <- st_read( '../../data/lsatTS-output/pixel_centres.shp') %>%
@@ -88,9 +62,7 @@ ggplot() +
   geom_sf(data = lsatTS.pix.centres, aes(color = 'red', size = 2)) +#, aes(color = 'red')) +
   geom_sf(data = lsat.pix.centres, aes(color = 'blue', size = 1))#, aes(color = 'blue'))
 
-###
 # Create single dataset containing snow persistence, landsat sinlgle yr ndvi preds, LandsatTS preds ----
-###
 
 # Read in the output from LandsatTS
 lsatTS <- st_read('../../data/lsatTS-output/blaesedalen/lsatTS_auto_7_gs.shp') %>%
@@ -118,13 +90,14 @@ lsts.all <- st_join(lsat, lsatTS, left = TRUE) %>%
          snow.persist, 
          geometry)
 
-###
 # Checking NaN values in dataset
-###
+
 
 lsat.na <- lsat.all %>% filter(is.na(snow.persist))
 
 ggplot() + geom_sf(data = lsat.na) # Confirms NA values are outside the drone rast
+
+################################################################################
 
 ###
 # Plots of max.ndvi,doy, max.ndvi, and snow.persist ----
