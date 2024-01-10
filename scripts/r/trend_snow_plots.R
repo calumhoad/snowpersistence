@@ -14,16 +14,21 @@ library(cowplot)
 
 # Read in the data ----
 
-# Sentinel-2 Blaesedalen, modelled with Beck
-s2.beck <- read.csv('../../data/sentinel-2/output/s2_modelled_beck_point_wide.csv') %>%
-  st_as_sf(coords = c('X', 'Y'), crs = 32621)
+# All modelled NDVI values for Sentinel-2
+s2.ndvi <- read.csv("../../data/sentinel-2/output/s2_all_models.csv") %>%
+               st_as_sf(coords = c('X', 'Y'), crs = 32621)
 
-# Get snow data
-s2.snow <- read.csv2('../../data/uav/snow-metrics/blaesedalen_10m_snowcover.csv') %>%
-  dplyr::select(id, snow.persist)
+# Snow data
+s2.snow <- read.csv("../../data/uav/snow-metrics/blaesedalen-10m-auc-snowcover.csv") #%>%
 
-# Join snow data to Beck
-s2.beck <- left_join(s2.beck, s2.snow, by = 'id')
+# Join the snow and ndvi data
+s2.data <- left_join(s2.ndvi, s2.snow, by = 'id') %>%
+  select(-snow.persist, -X, -Y) %>%
+  drop_na()
+
+
+
+
 
 # Trend data from LandsatTS, with automatic screening of pixels
 trends.auto <- read.csv2('../../data/lsatTS-output/blaesedalen/blaesedalen_auto_7yr_trnds.csv')
@@ -514,4 +519,12 @@ plots_combined <- s2.max.ndvi.plot +
   plot_layout(ncol = 3, nrow = 4)
 
 plots_combined
+
+
+# Map plots
+# Plotting NDVI metrics as map
+ggplot() +
+  geom_sf(data = st_buffer(s2.data, dist = 5, endCapStyle = "SQUARE"),
+          aes(fill = ndvi.max_b)) +
+  scale_fill_viridis_c(limits = c(0.1, 0.6))
 

@@ -253,7 +253,7 @@ ggplot() +
 
 # Map of snow.auc values
 ggplot() +
-  geom_sf(data = st_as_sf(snow.auc), aes(fill = snow.auc)) +
+  geom_sf(data = st_as_sf(snow.auc), aes(fill = snow.av)) +
   scale_fill_viridis_c()
 
 # Plot the snow.av against the snow.auc
