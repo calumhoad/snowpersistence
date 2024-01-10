@@ -533,12 +533,15 @@ ggplot() +
           aes(fill = ndvi.max_b)) +
   scale_fill_viridis_c(limits = c(0.1, 0.6))
 
+# Read in raw NDVI data
 ndvi <- read.csv('../../data/sentinel-2/output/sentinel-2-ndvi-ts-pt-2023.csv') %>%
   st_as_sf(coords = c('X', 'Y'))
 
+# Join with snow data
 ndvi.join <- left_join(ndvi, s2.snow, by = 'id') %>%
   drop_na()
 
+# Format data for plotting
 ndvi.sample <- ndvi.join %>% #filter(id == 300) %>%
   select(-X, -Y, -snow.av, -X2023.07.02, -X2023.07.12, -X2023.07.18, -X2023.07.26.y) %>%
   pivot_longer(!id & !geometry & !snow.auc, names_to = 'date', values_to = 'ndvi') %>%
@@ -551,6 +554,7 @@ ndvi.sample <- ndvi.join %>% #filter(id == 300) %>%
                                                    ifelse(date == 'X2023.08.17', yday('2023-08-17'), 
                                                           ifelse(date == 'X2023.09.23', yday('2023-09-23'), NA)))))))))
 
+# Plot observations 
 ggplot() +
   geom_line(data = ndvi.sample %>% filter(snow.auc < 2), aes(x = date, y = ndvi, group = id), color = '#9ebc9fff', size = 1) + #size = snow.auc)) +
   geom_line(data = ndvi.sample %>% filter(snow.auc > 15), aes(x = date, y = ndvi, group = id), color = '#d08c6dff', size = 2) +
@@ -558,6 +562,13 @@ ggplot() +
   labs( x = 'Day of Year', 
         y = 'NDVI Observation') +
   theme_cowplot()
+
+# Plot as map
+ggplot() +
+  geom_sf(data = st_buffer(ndvi.sample %>% filter(date == 229), dist = 5, endCapStyle = "SQUARE"), 
+          aes(fill = ndvi)) +
+  scale_fill_viridis_c(limits = c(0.1, 0.6))
+
 # Un-used code ----
 #LANDSAT
 # max ndvi doy against snow persistence
