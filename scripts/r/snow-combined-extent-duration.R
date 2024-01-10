@@ -58,7 +58,10 @@ bl <- list(t1, t2, t3, t4)
 ggplot() +
   geom_spatraster_rgb(data = t4, r = 5, g = 6, b = 7, max_col_value = 0.6)
 
+
 # Calculate snow cover at each time step ----
+
+## Using NDSI ##
 
 # Function to calculate altered NDSI
 calc_ndsi <- function(x) {
@@ -93,7 +96,8 @@ names(bl.snow[[2]]) <- ('snow.t2')
 names(bl.snow[[3]]) <- ('snow.t3')
 names(bl.snow[[4]]) <- ('snow.t4')
 
-# Using only raw red-band reflectance values
+
+## Using only raw red-band reflectance values ##
 
 # Get only the red band
 t1r <- t1['red']
@@ -129,7 +133,7 @@ bl.r.snow <- rast(bl.r.snow)
 plot(bl.r.snow)
 
 # Create raster where every pix = 1, to facilitate later pixel count via sum
-num.pixels <- terra::classify(bl.snow[[2]], rbind(c(-2, 2, 1)))
+num.pixels <- terra::classify(bl.r.snow[[2]], rbind(c(-2, 2, 1)))
 # Assign name to this
 names(num.pixels) <- c('tot.pixels')
 
@@ -188,6 +192,8 @@ extracted.data <- st_as_sf(s2.r.snow.cover) %>%
          snow.t2 = snow.t2/tot.pixels, 
          snow.t3 = snow.t3/tot.pixels, 
          snow.t4 = snow.t4/tot.pixels) %>%
+  # Calculate average cover over the season
+  mutate(snow.av = (0.25*snow.t1) + (0.25*snow.t2) + (0.25*snow.t3) + (0.25*snow.t4)) %>%
   # Rename time points with actual dates
   rename('2023-07-02' = snow.t1,
          '2023-07-12' = snow.t2,
@@ -196,10 +202,10 @@ extracted.data <- st_as_sf(s2.r.snow.cover) %>%
 
 # Interpolate between observations and calculate the area under the curve ----
 
-# Get a sample dataset to work with (one sample id)
+# Format the data
 snow.data <- extracted.data %>% #filter(extracted.data, id == 189) %>%
   select(-ndvi_mx, -ndv_mx_, -tot.pixels) %>%
-  pivot_longer(!id & !geometry, names_to = 'date', values_to = "snow.cover") %>%
+  pivot_longer(!id & !geometry & !snow.av, names_to = 'date', values_to = "snow.cover") %>%
   drop_na() %>%
   group_by(id)
 
@@ -250,19 +256,25 @@ ggplot() +
   geom_sf(data = st_as_sf(snow.auc), aes(fill = snow.auc)) +
   scale_fill_viridis_c()
 
+# Plot the snow.av against the snow.auc
+ggplot() +
+  geom_point(data = snow.auc, aes(x = snow.auc, y = snow.av))
+
 # Write the output ----
 
-output.data <- pivot_wider(snow.auc, id_cols = c(id, geometry, snow.auc), 
+# Format to wide data for output
+output.data <- pivot_wider(snow.auc, id_cols = c(id, geometry, snow.auc, snow.av), 
                            names_from = date, 
                            values_from = c(snow.cover)) %>%
   st_as_sf() %>%
   st_centroid()
 
-# Convert from polygon to centroid
-output 
-
+# Write the file 
 st_write(output.data, "../../data/uav/snow-metrics/blaesedalen-10m-auc-snowcover.csv",
          layer_options = "GEOMETRY=AS_XY")
+
+
+# Troubleshooting ----
 
 # There is something going wrong, where some of the 02nd July pixels have NA 
 # values for snow cover. Investigating this below:
