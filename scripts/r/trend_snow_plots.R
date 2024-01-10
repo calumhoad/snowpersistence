@@ -569,6 +569,32 @@ ggplot() +
           aes(fill = ndvi)) +
   scale_fill_viridis_c(limits = c(0.1, 0.6))
 
+# Bring in predicted NDVI from smoothed spline model
+ndvi.s <- st_read('../../data/sentinel-2/output/s2_modelled_JA_point_long.shp') %>%
+  select(id, doy_obs, ndv_prd)
+
+# Rename variables
+ndvi.s <- ndvi.s %>% rename(doy = 'doy_obs',
+                            ndvi = 'ndv_prd')
+
+# Join
+ndvi.s <- left_join(ndvi.s, s2.snow, by = 'id') %>%
+  select(id, doy, ndvi, snow.auc, geometry)
+
+# Drop NAs
+ndvi.s <- ndvi.s %>% drop_na()
+
+# Plot observations 
+ggplot() +
+  geom_line(data = ndvi.s %>% filter(snow.auc < 2), aes(x = doy, y = ndvi, group = id), color = '#9ebc9fff', size = 1) + #size = snow.auc)) +
+  geom_line(data = ndvi.s %>% filter(snow.auc > 15), aes(x = doy, y = ndvi, group = id), color = '#d08c6dff', size = 2) +
+  #scale_color_viridis_c() +
+  labs( x = 'Day of Year', 
+        y = 'NDVI Observation') +
+  xlim(c(175, 260)) +
+  ylim(c(-0.05, 0.6)) +
+  theme_cowplot()
+
 # Un-used code ----
 #LANDSAT
 # max ndvi doy against snow persistence
