@@ -115,3 +115,145 @@ s30.ndvi.points <- st_as_sf(as.points(s30.ndvi, values = TRUE)) %>%
 # Write out the extracted points
 st_write(s30.ndvi.points, '../../data/nasa-hls/s30/output/s30-ndvi-ts-pt-2023.csv', 
          layer_options = "GEOMETRY=AS_XY")
+
+
+###
+# PART 2
+###
+
+# Apply smoothed spline to every pixel time series ----
+
+# If Part 1 of this script has not been run, read in the data
+s30.ndvi.points <- read.csv('../../data/nasa-hls/s30/output/s30-ndvi-ts-pt-2023.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32621)
+
+# Get a dataframe of points from the raster
+s30.ndvi.long <- s30.ndvi.points %>%
+  pivot_longer(!geometry & !id, names_to = 'doy', values_to = 'ndvi') %>%
+  mutate(doy = sub('X', '', doy), 
+         doy = sub('\\.', '-', doy), 
+         doy = as_date(doy),
+         doy = yday(doy)) %>%
+  group_by(id)
+
+# Filter out obs with ndvi < 0.1, and groups where there are less than 5 obs
+s30.ndvi.long <- s30.ndvi.long %>% 
+  filter(ndvi >= 0.1) %>%
+  filter(n_distinct(doy) >= 5)
+
+
+# Function for fitting parabolic 2nd order polynomial model
+model_fit <- function(df) {
+  # Using a spline smoother
+  smooth.spline(x = df$doy, y = df$ndvi, spar = 0.5)
+}
+
+# Function for calculation of vertex
+# https://quantifyinghealth.com/plot-a-quadratic-function-in-r/
+find_vertex = function(model_fit) {
+  # Get model coefficients
+  a = model_fit$coefficients[3]
+  b = model_fit$coefficients[2]
+  c = model_fit$coefficients[1]
+  # Determine x coordinate of vertex
+  vertex_x = -b / (2 * a)
+  # Calculate y coordinate of vertex
+  vertex_y = a * vertex_x**2 + b * vertex_x + c
+  # Strip attributes and return as data.frame
+  return(data.frame(
+    x = as.numeric(vertex_x),
+    y = as.numeric(vertex_y)
+  ))
+}
+
+# Define function to model, find vertex, and precict values
+model_ndvi <- function(data) {
+  
+  ### This doesn't work, have filtered above instead
+  # Filter the dataset, to retain only records where NDVI >= 0.1
+  # data <- data %>%
+  #  filter(ndvi >= 0.1) %>%
+  #  filter(n_distinct(doy) >= 5)
+  
+  # Use function to fit model
+  model <- model_fit(data)
+  
+  # Generate predictions for curve plotting (for time-period doy 130-300)
+  pred <- predict(model, data.frame(doy = 130:300))
+  # pred <- unlist(pred$y)
+  
+  # use function to find vertex (linear model)
+  # vertex <- find_vertex(model)
+  # find vertex based on predictions (spline smoother)
+  vertex <- data.frame(
+    x = pred$x[pred$y == max(pred$y)], 
+    y = pred$y[pred$y == max(pred$y)]
+  )
+  
+  # Write necessary values back to df
+  data <- suppressMessages(full_join(data, data.frame(
+    doy = 130:300,
+    ndvi.max = vertex$y,
+    ndvi.max.doy = vertex$x,
+    ndvi.pred = pred
+  ))) %>% 
+    # add missing geometries
+    mutate(
+      geometry = st_geometry(data[1, ])
+    )
+  return(data)
+}
+
+# Following tutorial here: https://data-se.netlify.app/2018/12/10/new-split-apply-combine-variant-in-dplyr-group-split/
+
+# Apply model_ndvi to data using group_modify
+s30.modelled.ndvi <- s30.ndvi.long %>%
+  group_modify(~ model_ndvi(.x)) %>%
+  mutate(ndvi.max.date = as_date(ndvi.max.doy),
+         # Calculate fractional day of year, by adding decimal to date
+         ndvi.max.doy = yday(ndvi.max.date) + (ndvi.max.doy - floor(ndvi.max.doy)))
+
+# Quick quality control plots
+# 100 random pixels overview
+ggplot(
+  s30.modelled.ndvi %>% filter(id %in% sample(unique(s30.modelled.ndvi$id), 100)),
+  aes(x = doy, colour = id, group = id)
+) +
+  geom_point(aes(y = ndvi)) +
+  geom_line(aes(y = ndvi.pred.doy.1)) +
+  theme_classic() +
+  theme(legend.position = "none")
+
+# 9 random pixels in detail
+rand_id <- sample(s30.modelled.ndvi %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
+#rand_id <- c(172, 343, 493, 839, 884, 1026, 1097, 1139, 1165)
+ggplot(
+  s30.modelled.ndvi %>% filter(id %in% rand_id),
+  aes(x = doy, group = id)
+) +
+  geom_point(aes(y = ndvi)) +
+  geom_line(aes(y = ndvi.pred.doy.1)) +
+  geom_point(aes(x = ndvi.max.doy, y = ndvi.max), color = "red") +
+  facet_wrap(~id) +
+  theme_classic()
+
+# Outputs ---- 
+
+# Wide format
+s30.modelled.export.wide <- s30.modelled.ndvi %>%
+  group_by(id) %>%
+  filter(doy == 220) %>%
+  dplyr::select(-doy, -ndvi.pred.doy.1, -ndvi.max.date, -ndvi, -ndvi.pred.doy)
+
+st_write(st_as_sf(s30.modelled.export.wide),  '../../data/nasa-hls/s30/output/s30_modelled_smoothed_spline_point_wide.csv', 
+         layer_options = "GEOMETRY=AS_XY")
+
+# Long format
+s30.modelled.export.long <- s30.modelled.ndvi %>%
+  rename(doy.obs = 'doy', 
+         ndvi.obs = 'ndvi', 
+         ndvi.pred = 'ndvi.pred.doy.1') %>%
+  select(-ndvi.max.date)
+
+st_write(st_as_sf(s30.modelled.export.long),  '../../data/nasa-hls/s30/output/s30_modelled_smoothed_spline_point_long.csv', 
+         layer_options = "GEOMETRY=AS_XY")
