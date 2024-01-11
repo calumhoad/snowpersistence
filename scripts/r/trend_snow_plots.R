@@ -29,6 +29,21 @@ s2.data <- left_join(s2.ndvi, s2.snow, by = 'id') %>%
   drop_na()
 
 
+## S30 data ##
+
+# Smoothed spline modelled data for S30
+s30.ndvi <- read.csv('../../data/nasa-hls/s30/output/s30_modelled_smoothed_spline_point_wide.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32621)
+
+# Snow data for S30
+s30.snow <- read.csv("../../data/uav/snow-metrics/blaesedalen-30m-auc-snowcover.csv")
+
+# Join the snow and ndvi data for S30
+s30.data <- left_join(s30.ndvi, s30.snow, by = 'id') %>%
+  select(-X, -Y) %>%
+  drop_na()
+
+
 ## Landsat ##
 
 # Trend data from LandsatTS, with automatic screening of pixels
@@ -107,7 +122,7 @@ ggplot() + geom_sf(data = lsat.na) # Confirms NA values are outside the drone ra
 xdoy <- c(200, 270)
 xndvi <- c(0.1, 0.7)
 ysnow <- c(0, 25)
-yndvi <- c(0.1, 0.7)
+yndvi <- c(0.1, 0.9)
 
 # SENTINEL-2, with Beck model applied
 s2b.max.ndvi.doy.plot <- ggplot(s2.data, aes(x = ndvi.max.doy_b, y = snow.auc)) +
@@ -502,6 +517,68 @@ s2p.ndvi.metrics.plot <- ggplot(drop_na(s2.data, snow.auc), aes(x = ndvi.max.doy
   theme_cowplot()
 
 
+#S30, smoothed spline
+
+# S30, max ndvi doy vs snow
+s30s.max.ndvi.doy.plot <- ggplot(s30.data, aes(y = ndvi.max.doy, x = snow.auc)) +
+  geom_point(aes(color = ndvi.max)) +
+  geom_smooth(method = 'lm', color = 'red') +
+  xlim(ysnow) +
+  ylim(xdoy) +
+  scale_color_viridis_c(name = "ndvi.max",
+                        breaks = seq(0.3, 
+                                     0.5, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(0.1, 0.6),# Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
+  labs(x = '', 
+       y = '', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+# S2 max ndvi against snow persistence
+s30s.max.ndvi.plot <- ggplot(s30.data, aes(y = ndvi.max, x = snow.auc)) +
+  geom_point(aes(color = ndvi.max.doy)) +
+  geom_smooth(method = 'lm', color = 'red') +
+  xlim(ysnow) +
+  ylim(xndvi) +
+  scale_color_viridis_c(name = "ndvi.max.doy",
+                        breaks = seq(220, 
+                                     260, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(210, 270),  # Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
+  labs(x = '', 
+       y = 'S30\n smoothed spline\n\n\n', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+# S2 ndvi metrics against each other  
+s30s.ndvi.metrics.plot <- ggplot(drop_na(s30.data, snow.auc), aes(x = ndvi.max.doy, 
+                                                                y = ndvi.max)) +
+  geom_point(position = 'jitter', alpha = 0.5, aes(color = snow.auc, size = snow.auc)) +
+  #geom_smooth(method = 'lm') +
+  xlim(xdoy) +
+  ylim(yndvi) +
+  scale_color_viridis_c(name = "snow.auc",
+                        breaks = seq(0, 
+                                     0.6, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = ysnow,
+                        na.value = 'yellow',# Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'Snow\nPersist',
+                                                direction = 'vertical')) + 
+  labs(x = 'Maximum NDVI DoY', 
+       y = '', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+
 
 # Arrange plots side by side
 plots_combined <- s2p.max.ndvi.plot + 
@@ -513,6 +590,9 @@ plots_combined <- s2p.max.ndvi.plot +
   s2b.max.ndvi.plot +
   s2b.max.ndvi.doy.plot +
   s2b.ndvi.metrics.plot +
+  s30s.max.ndvi.plot +
+  s30s.max.ndvi.doy.plot +
+  s30s.ndvi.metrics.plot +
   #s2b.max.ndvi.plot +
   #s2b.max.ndvi.doy.plot +
   #s2b.ndvi.metrics.plot +
@@ -522,7 +602,7 @@ plots_combined <- s2p.max.ndvi.plot +
   #lsts.max.ndvi.plot +
   #lsts.max.ndvi.doy.plot +
   #lsts.ndvi.metrics.plot +
-  plot_layout(ncol = 3, nrow = 3)
+  plot_layout(ncol = 3, nrow = 4)
 
 plots_combined
 
