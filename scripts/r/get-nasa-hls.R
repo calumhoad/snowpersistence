@@ -1,6 +1,12 @@
 # Get NASA HLS data
 # Calum Hoad, 18/12/2023
 
+# The aim of this script is to download NASA Harmonized Landsat Sentinel (HLS)
+# data, over both the Kluane and Blaesedalen focal study sites.The data will be 
+# Sentinel-2 imagery, with spectral characteristics assimilated to those of 
+# Landsat 8. Dates which are cloud free over the focal sites can be provided by
+# the Sentinel-2 imagery for this project.
+
 # Install packages
 install.packages('rgdal')
 
