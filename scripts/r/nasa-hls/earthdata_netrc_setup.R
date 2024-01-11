@@ -24,10 +24,10 @@ if (up == "") {
     }
 } else {Sys.setenv("HOME" = up)}        
 
-netrc_path <- file.path(up, ".netrc", fsep = .Platform$file.sep)    # Path to netrc file
+netrc_path <- file.path('C:/Users/s1437405/.netrc')    # Path to netrc file, edited
 
 # Create a netrc file if one does not exist already
-if (file.exists(netrc_path) == FALSE || grepl("urs.earthdata.nasa.gov", readLines(netrc_path)) == FALSE) {
+if (file.exists(netrc_path) == FALSE || grepl("urs.earthdata.nasa.gov", readLines(netrc_path)[[1]]) == FALSE) {
     netrc_conn <- file(netrc_path)
     
     # User will be prompted for NASA Earthdata Login Username and Password below
@@ -58,3 +58,4 @@ if (file.exists(netrc_path) == FALSE || grepl("urs.earthdata.nasa.gov", readLine
     }
 }
 
+netrc_path
