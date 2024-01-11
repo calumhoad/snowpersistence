@@ -141,18 +141,15 @@ names(num.pixels) <- c('tot.pixels')
 # Get grid matching spatial resolution of EO data ----
 
 
-# Landsat, Bring in the list of pixel centres from LandsatTS
-landsat_centres <- st_read('../../data/lsatTS-output/pixel_centres.shp') %>%
-  mutate(site = str_split(sample_id, "_") %>% 
-           sapply(`[`, 1)) %>%
-  filter(site == 'blaesedalen') %>%
-  st_transform(crs = 32621)
+# HLS S30 Bring in the list of pixel centres from LandsatTS
+s30.data <- read_csv('../../data/nasa-hls/s30/output/s30_modelled_smoothed_spline_point_wide.csv') %>%
+                   st_as_sf(coords = c('X', 'Y'), crs = 32621)
 
 # buffer square to polygon
-pixel_poly <- st_buffer(landsat_centres, 15, endCapStyle = "SQUARE")
+s30.poly <- st_buffer(s30.data, 15, endCapStyle = "SQUARE")
 
 # plot to check
-ggplot() + geom_sf(data = landsat_centres) + geom_sf(data = pixel_poly)
+ggplot() + geom_sf(data = s30.poly) + geom_sf(data = s30.data)
 
 
 # Sentinel-2, bring in the list of pixel centres from S2 script
@@ -175,18 +172,19 @@ s2.r.snow.cover <- terra::extract(bl.r.snow, s2.poly, fun = 'sum', ID = TRUE, bi
 # Extract number of pixels per polygon, using num.pixels raster (all pix = 1)
 s2.r.snow.cover <- terra::extract(num.pixels, s2.r.snow.cover, fun = 'sum', ID = TRUE, 
                                 bind = TRUE)
-# LANDSAT
+# NASA HLS S30
 # Extract number of pixels which are snow covered from classified raster stack
-ls.snow.cover <- terra::extract(bl.snow, ls.poly, fun = 'sum', ID = TRUE, bind = TRUE)
+s30.snow.cover <- terra::extract(bl.r.snow, s30.poly, fun = 'sum', ID = TRUE, bind = TRUE)
 
 # Extract number of pixels per polygon, using num.pixels raster (all pix = 1)
-ls.snow.cover <- terra::extract(num.pixels, ls.snow.cover, fun = 'sum', ID = TRUE, bind = TRUE)
+s30.snow.cover <- terra::extract(num.pixels, s30.snow.cover, fun = 'sum', ID = TRUE, bind = TRUE)
 
 
 # Calculate snow cover as percentage ----
 
 # Convert the spatvector to an sf
-extracted.data <- st_as_sf(s2.r.snow.cover) %>%
+extracted.data <- st_as_sf(s30.snow.cover) %>%
+#extracted.data <- st_as_sf(s2.r.snow.cover) %>%
   # Calculate percentage cover per S2 pixel
   mutate(snow.t1 = snow.t1/tot.pixels, 
          snow.t2 = snow.t2/tot.pixels, 
@@ -202,9 +200,16 @@ extracted.data <- st_as_sf(s2.r.snow.cover) %>%
 
 # Interpolate between observations and calculate the area under the curve ----
 
-# Format the data
+# Format the data (S2)
 snow.data <- extracted.data %>% #filter(extracted.data, id == 189) %>%
   select(-ndvi_mx, -ndv_mx_, -tot.pixels) %>%
+  pivot_longer(!id & !geometry & !snow.av, names_to = 'date', values_to = "snow.cover") %>%
+  drop_na() %>%
+  group_by(id)
+
+# Format the data (S30)
+snow.data <- extracted.data %>% #filter(extracted.data, id == 189) %>%
+  select(-ndvi.max, -ndvi.max.doy, -tot.pixels) %>%
   pivot_longer(!id & !geometry & !snow.av, names_to = 'date', values_to = "snow.cover") %>%
   drop_na() %>%
   group_by(id)
@@ -270,7 +275,7 @@ output.data <- pivot_wider(snow.auc, id_cols = c(id, geometry, snow.auc, snow.av
   st_centroid()
 
 # Write the file 
-st_write(output.data, "../../data/uav/snow-metrics/blaesedalen-10m-auc-snowcover.csv",
+st_write(output.data, "../../data/uav/snow-metrics/blaesedalen-30m-auc-snowcover.csv",
          layer_options = "GEOMETRY=AS_XY")
 
 
