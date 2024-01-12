@@ -70,7 +70,7 @@ d20220512 <- list.files('../../data/sentinel-2/kluane/20220512/S2B_MSIL2A_202205
 d20220529 <- list.files('../../data/sentinel-2/kluane/20220529/S2B_MSIL2A_20220529T202849_N0400_R114_T08VLN_20220529T225514.SAFE/GRANULE/L2A_T08VLN_A027310_20220529T203220/IMG_DATA/R10m/', full.names = TRUE)
 d20220608 <- list.files('../../data/sentinel-2/kluane/20220608/S2B_MSIL2A_20220608T202849_N0400_R114_T08VLN_20220608T224737.SAFE/GRANULE/L2A_T08VLN_A027453_20220608T203026/IMG_DATA/R10m/', full.names = TRUE)
 d20220708 <- list.files('../../data/sentinel-2/kluane/20220708/S2B_MSIL2A_20220708T202849_N0400_R114_T08VLN_20220708T225301.SAFE/GRANULE/L2A_T08VLN_A027882_20220708T202849/IMG_DATA/R10m/', full.names = TRUE)
-d20220718 <- list.files('../../data/sentinel-2/kluane/20220718/S2B_MSIL2A_20220718T202849_N0400_R114_T08VLN_20220718T225258.SAFE/GRANULE/L2A_T08VLN_A028025_20220718T202849/IMG_DATA/R10m/', full.names = TRUE)
+#d20220718 <- list.files('../../data/sentinel-2/kluane/20220718/S2B_MSIL2A_20220718T202849_N0400_R114_T08VLN_20220718T225258.SAFE/GRANULE/L2A_T08VLN_A028025_20220718T202849/IMG_DATA/R10m/', full.names = TRUE)
 d20220721 <- list.files('../../data/sentinel-2/kluane/20220721/S2B_MSIL2A_20220721T204029_N0400_R014_T08VLN_20220721T231153.SAFE/GRANULE/L2A_T08VLN_A028068_20220721T204620/IMG_DATA/R10m/', full.names = TRUE)
 d20220726 <- list.files('../../data/sentinel-2/kluane/20220726/S2A_MSIL2A_20220726T204031_N0400_R014_T08VLN_20220727T004510.SAFE/GRANULE/L2A_T08VLN_A037048_20220726T204216/IMG_DATA/R10m/', full.names = TRUE)
 d20220812 <- list.files('../../data/sentinel-2/kluane/20220812/S2A_MSIL2A_20220812T202901_N0400_R114_T08VLN_20220813T031902.SAFE/GRANULE/L2A_T08VLN_A037291_20220812T202856/IMG_DATA/R10m/', full.names = TRUE)
@@ -78,7 +78,7 @@ d20220916 <- list.files('../../data/sentinel-2/kluane/20220916/S2B_MSIL2A_202209
 d20220924 <- list.files('../../data/sentinel-2/kluane/20220924/S2A_MSIL2A_20220924T204211_N0400_R014_T08VLN_20220925T004557.SAFE/GRANULE/L2A_T08VLN_A037906_20220924T204210/IMG_DATA/R10m/', full.names = TRUE)
 d20220929 <- list.files('../../data/sentinel-2/kluane/20220929/S2B_MSIL2A_20220929T204239_N0400_R014_T08VLN_20220929T232306.SAFE/GRANULE/L2A_T08VLN_A029069_20220929T204451/IMG_DATA/R10m/', full.names = TRUE)
 d20221006 <- list.files('../../data/sentinel-2/kluane/20221006/S2B_MSIL2A_20221006T203319_N0400_R114_T08VLN_20221007T000659.SAFE/GRANULE/L2A_T08VLN_A029169_20221006T203321/IMG_DATA/R10m/', full.names = TRUE)
-d20221108 <- list.files('../../data/sentinel-2/kluane/20221108/S2B_MSIL2A_20221108T204649_N0400_R014_T08VLN_20221108T212814.SAFE/GRANULE/L2A_T08VLN_A029641_20221108T204652/IMG_DATA/R10m/', full.names = TRUE)
+#d20221108 <- list.files('../../data/sentinel-2/kluane/20221108/S2B_MSIL2A_20221108T204649_N0400_R014_T08VLN_20221108T212814.SAFE/GRANULE/L2A_T08VLN_A029641_20221108T204652/IMG_DATA/R10m/', full.names = TRUE)
 
 # List of imagery dates, for later use
 dates <- c('2022-04-04', 
@@ -86,15 +86,15 @@ dates <- c('2022-04-04',
            '2022-05-29', 
            '2022-06-08', 
            '2022-07-08', 
-           '2022-07-18', 
+           #'2022-07-18', 
            '2022-07-21', 
            '2022-07-26', 
            '2022-08-12', 
            '2022-09-16', 
            '2022-09-24', 
            '2022-09-29', 
-           '2022-10-06', 
-           '2022-11-08')
+           '2022-10-06') 
+           #'2022-11-08')
 
 # Create list where each item in the list is another list,
 #   containing the filepath to each imagery band
@@ -103,15 +103,15 @@ s2.data <- list(d20220404,
                 d20220529, 
                 d20220608, 
                 d20220708,
-                d20220718,
-                d20220721, # Cloudy?
+                #d20220718,
+                d20220721,
                 d20220726,
                 d20220812, 
                 d20220916,
                 d20220924,
                 d20220929,
-                d20221006,
-                d20221108) # Unuseable? Clouds
+                d20221006)
+                #d20221108) # Unuseable? Clouds
 
 # Blaesedalen, Get uAV imagery over plot to use for cropping - RE-EXPORT UAV IMAGERY SO RE-PROJECT IS AVOIDED
 uav <- project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif'), 'epsg:32621')
@@ -129,11 +129,13 @@ import_s2 <- function(x) {
     #x <- set.names(object = x, nm = c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp'))
 }
 
+plot(uav)
+
 # Import the data
 s2.data.import <- lapply(s2.data, import_s2)
 
 # Check import function works by plotting rasters from list
-plotRGB(s2.data.import[[14]], r = 4*0.7, g = 3*0.7, b = 2*0.7)
+plotRGB(s2.data.import[[6]], r = 4*0.7, g = 3*0.7, b = 2*0.7)
 
 # Set list of band names for Sentinel-2
 s2.bands <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
@@ -151,8 +153,7 @@ names(s2.data.import[[9]]) <- s2.bands
 names(s2.data.import[[10]]) <- s2.bands
 names(s2.data.import[[11]]) <- s2.bands
 names(s2.data.import[[12]]) <- s2.bands
-names(s2.data.import[[13]]) <- s2.bands
-names(s2.data.import[[14]]) <- s2.bands
+
 
 # Apply function to calculate NDVI ----
 s2_ndvi <- function(x) {
@@ -241,7 +242,7 @@ model_ndvi <- function(data) {
   # Use function to fit model
   model <- model_fit(data)
   
-  # Generate predictions for curve plotting (for time-period doy 130-300)
+  # Generate predictions for curve plotting (for time-period doy 130-300) 
   pred <- predict(model, data.frame(doy = 130:300))
   # pred <- unlist(pred$y)
 
