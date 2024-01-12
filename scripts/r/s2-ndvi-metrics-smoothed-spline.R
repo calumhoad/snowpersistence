@@ -28,6 +28,8 @@ library(viridis)
 # PART 1
 ###
 
+# Import ***Blaesedalen*** Imagery
+
 # Create a list of the S2 R10m files for each S2 scene
 d20230626 <- list.files('../../data/sentinel-2/20230626/S2B_MSIL2A_20230626T153819_N0509_R011_T21WXT_20230626T183843.SAFE/GRANULE/L2A_T21WXT_A032927_20230626T153935/IMG_DATA/R10m/', full.names = TRUE)
 d20230708 <- list.files('../../data/sentinel-2/20230708/S2A_MSIL2A_20230708T152811_N0509_R111_T21WXT_20230708T214952.SAFE/GRANULE/L2A_T21WXT_A042007_20230708T152945/IMG_DATA/R10m/', full.names = TRUE)
@@ -62,8 +64,58 @@ s2.data <- list(d20230626,
                 d20230817, 
                 d20230923)
 
+# Import ***Kluane*** Imagery
+d20220404 <- list.files('../../data/sentinel-2/kluane/20220404/S2A_MSIL2A_20220404T203021_N0400_R114_T08VLN_20220404T231548.SAFE/GRANULE/L2A_T08VLN_A035432_20220404T203754/IMG_DATA/R10m/', full.names = TRUE)
+d20220512 <- list.files('../../data/sentinel-2/kluane/20220512/S2B_MSIL2A_20220512T204019_N0400_R014_T08VLN_20220513T130008.SAFE/GRANULE/L2A_T08VLN_A027067_20220512T204030/IMG_DATA/R10m/', full.names = TRUE)
+d20220529 <- list.files('../../data/sentinel-2/kluane/20220529/S2B_MSIL2A_20220529T202849_N0400_R114_T08VLN_20220529T225514.SAFE/GRANULE/L2A_T08VLN_A027310_20220529T203220/IMG_DATA/R10m/', full.names = TRUE)
+d20220608 <- list.files('../../data/sentinel-2/kluane/20220608/S2B_MSIL2A_20220608T202849_N0400_R114_T08VLN_20220608T224737.SAFE/GRANULE/L2A_T08VLN_A027453_20220608T203026/IMG_DATA/R10m/', full.names = TRUE)
+d20220708 <- list.files('../../data/sentinel-2/kluane/20220708/S2B_MSIL2A_20220708T202849_N0400_R114_T08VLN_20220708T225301.SAFE/GRANULE/L2A_T08VLN_A027882_20220708T202849/IMG_DATA/R10m/', full.names = TRUE)
+d20220718 <- list.files('../../data/sentinel-2/kluane/20220718/S2B_MSIL2A_20220718T202849_N0400_R114_T08VLN_20220718T225258.SAFE/GRANULE/L2A_T08VLN_A028025_20220718T202849/IMG_DATA/R10m/', full.names = TRUE)
+d20220721 <- list.files('../../data/sentinel-2/kluane/20220721/S2B_MSIL2A_20220721T204029_N0400_R014_T08VLN_20220721T231153.SAFE/GRANULE/L2A_T08VLN_A028068_20220721T204620/IMG_DATA/R10m/', full.names = TRUE)
+d20220726 <- list.files('../../data/sentinel-2/kluane/20220726/S2A_MSIL2A_20220726T204031_N0400_R014_T08VLN_20220727T004510.SAFE/GRANULE/L2A_T08VLN_A037048_20220726T204216/IMG_DATA/R10m/', full.names = TRUE)
+d20220812 <- list.files('../../data/sentinel-2/kluane/20220812/S2A_MSIL2A_20220812T202901_N0400_R114_T08VLN_20220813T031902.SAFE/GRANULE/L2A_T08VLN_A037291_20220812T202856/IMG_DATA/R10m/', full.names = TRUE)
+d20220916 <- list.files('../../data/sentinel-2/kluane/20220916/S2B_MSIL2A_20220916T203109_N0400_R114_T08VLN_20220916T231624.SAFE/GRANULE/L2A_T08VLN_A028883_20220916T203411/IMG_DATA/R10m/', full.names = TRUE)
+d20220924 <- list.files('../../data/sentinel-2/klaune/20220924/S2A_MSIL2A_20220924T204211_N0400_R014_T08VLN_20220925T004557.SAFE/GRANULE/L2A_T08VLN_A037906_20220924T204210/IMG_DATA/R10m/', full.names = TRUE)
+d20220929 <- list.files('../../data/sentinel-2/kluane/20220929/S2B_MSIL2A_20220929T204239_N0400_R014_T08VLN_20220929T232306.SAFE/GRANULE/L2A_T08VLN_A029069_20220929T204451/IMG_DATA/R10m/', full.names = TRUE)
+d20221006 <- list.files('../../data/sentinel-2/kluane/20221006/S2B_MSIL2A_20221006T203319_N0400_R114_T08VLN_20221007T000659.SAFE/GRANULE/L2A_T08VLN_A029169_20221006T203321/IMG_DATA/R10m/', full.names = TRUE)
+d20221108 <- list.files('../../data/sentinel-2/kluane/20221108/S2B_MSIL2A_20221108T204649_N0400_R014_T08VLN_20221108T212814.SAFE/GRANULE/L2A_T08VLN_A029641_20221108T204652/IMG_DATA/R10m/', full.names = TRUE)
+
+# List of imagery dates, for later use
+dates <- c('2022-04-04', 
+           '2022-05-12', 
+           '2022-05-29', 
+           '2022-06-08', 
+           '2022-07-08', 
+           '2022-07-18', 
+           '2022-07-21', 
+           '2022-07-26', 
+           '2022-08-12', 
+           '2022-09-16', 
+           '2022-09-24', 
+           '2022-09-29', 
+           '2022-10-06', 
+           '2022-11-08')
+
+# Create list where each item in the list is another list,
+#   containing the filepath to each imagery band
+s2.data <- list(d20220404, 
+                d20220512, 
+                d20220529, 
+                d20220608, 
+                d20220708,
+                d20220718,
+                d20220721, 
+                d20220726,
+                d20220812, 
+                d20220916,
+                d20220924,
+                d20221006,
+                d20221108)
+
 # Get uAV imagery over plot to use for cropping - RE-EXPORT UAV IMAGERY SO RE-PROJECT IS AVOIDED
 uav <- project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif'), 'epsg:32621')
+
+
 
 # Create function for stacking rasters from lists of filepaths, then cropping to extent of UAV imagery
 import_s2 <- function(x) {
