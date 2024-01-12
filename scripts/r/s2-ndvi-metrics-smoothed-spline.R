@@ -104,14 +104,14 @@ s2.data <- list(d20220404,
                 d20220608, 
                 d20220708,
                 d20220718,
-                d20220721, 
+                d20220721, # Cloudy?
                 d20220726,
                 d20220812, 
                 d20220916,
                 d20220924,
                 d20220929,
                 d20221006,
-                d20221108)
+                d20221108) # Unuseable? Clouds
 
 # Blaesedalen, Get uAV imagery over plot to use for cropping - RE-EXPORT UAV IMAGERY SO RE-PROJECT IS AVOIDED
 uav <- project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif'), 'epsg:32621')
@@ -120,6 +120,7 @@ uav <- project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.
 uav <- project(rast('../../data/uav/MAIA-exports/20220705/20220705-div32768_clipped.tif'), 'epsg:32608')
 
 # Kluane, high, get UAV imagery
+uav <- project(rast('../../data/uav/MAIA-exports/20220729/20220729-div32768.tif'), 'epsg:32608')
 
 # Create function for stacking rasters from lists of filepaths, then cropping to extent of UAV imagery
 import_s2 <- function(x) {
@@ -132,7 +133,7 @@ import_s2 <- function(x) {
 s2.data.import <- lapply(s2.data, import_s2)
 
 # Check import function works by plotting rasters from list
-plot(s2.data.import[[6]])
+plotRGB(s2.data.import[[14]], r = 4*0.7, g = 3*0.7, b = 2*0.7)
 
 # Set list of band names for Sentinel-2
 s2.bands <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
@@ -164,6 +165,9 @@ s2.ndvi <- lapply(s2.data.import, s2_ndvi)
 # Stack NDVI rasters into single spatRast
 s2.ndvi <- rast(s2.ndvi)
 
+# Plot to check
+plot(s2.ndvi)
+
 # Name spatRaster layers with dates
 names(s2.ndvi) <- dates
 
@@ -172,7 +176,7 @@ s2.ndvi.points <- st_as_sf(as.points(s2.ndvi, values = TRUE)) %>%
   mutate(id = row_number())
 
 # Write out the extracted points
-st_write(s2.ndvi.points, '../../data/sentinel-2/output/sentinel-2-kluane-ndvi-ts-pt-2023.csv', 
+st_write(s2.ndvi.points, '../../data/sentinel-2/output/sentinel-2-kluanehigh-ndvi-ts-pt-2023.csv', 
          layer_options = "GEOMETRY=AS_XY")
 
 
