@@ -75,7 +75,7 @@ d20220721 <- list.files('../../data/sentinel-2/kluane/20220721/S2B_MSIL2A_202207
 d20220726 <- list.files('../../data/sentinel-2/kluane/20220726/S2A_MSIL2A_20220726T204031_N0400_R014_T08VLN_20220727T004510.SAFE/GRANULE/L2A_T08VLN_A037048_20220726T204216/IMG_DATA/R10m/', full.names = TRUE)
 d20220812 <- list.files('../../data/sentinel-2/kluane/20220812/S2A_MSIL2A_20220812T202901_N0400_R114_T08VLN_20220813T031902.SAFE/GRANULE/L2A_T08VLN_A037291_20220812T202856/IMG_DATA/R10m/', full.names = TRUE)
 d20220916 <- list.files('../../data/sentinel-2/kluane/20220916/S2B_MSIL2A_20220916T203109_N0400_R114_T08VLN_20220916T231624.SAFE/GRANULE/L2A_T08VLN_A028883_20220916T203411/IMG_DATA/R10m/', full.names = TRUE)
-d20220924 <- list.files('../../data/sentinel-2/klaune/20220924/S2A_MSIL2A_20220924T204211_N0400_R014_T08VLN_20220925T004557.SAFE/GRANULE/L2A_T08VLN_A037906_20220924T204210/IMG_DATA/R10m/', full.names = TRUE)
+d20220924 <- list.files('../../data/sentinel-2/kluane/20220924/S2A_MSIL2A_20220924T204211_N0400_R014_T08VLN_20220925T004557.SAFE/GRANULE/L2A_T08VLN_A037906_20220924T204210/IMG_DATA/R10m/', full.names = TRUE)
 d20220929 <- list.files('../../data/sentinel-2/kluane/20220929/S2B_MSIL2A_20220929T204239_N0400_R014_T08VLN_20220929T232306.SAFE/GRANULE/L2A_T08VLN_A029069_20220929T204451/IMG_DATA/R10m/', full.names = TRUE)
 d20221006 <- list.files('../../data/sentinel-2/kluane/20221006/S2B_MSIL2A_20221006T203319_N0400_R114_T08VLN_20221007T000659.SAFE/GRANULE/L2A_T08VLN_A029169_20221006T203321/IMG_DATA/R10m/', full.names = TRUE)
 d20221108 <- list.files('../../data/sentinel-2/kluane/20221108/S2B_MSIL2A_20221108T204649_N0400_R014_T08VLN_20221108T212814.SAFE/GRANULE/L2A_T08VLN_A029641_20221108T204652/IMG_DATA/R10m/', full.names = TRUE)
@@ -109,13 +109,17 @@ s2.data <- list(d20220404,
                 d20220812, 
                 d20220916,
                 d20220924,
+                d20220929,
                 d20221006,
                 d20221108)
 
-# Get uAV imagery over plot to use for cropping - RE-EXPORT UAV IMAGERY SO RE-PROJECT IS AVOIDED
+# Blaesedalen, Get uAV imagery over plot to use for cropping - RE-EXPORT UAV IMAGERY SO RE-PROJECT IS AVOIDED
 uav <- project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif'), 'epsg:32621')
 
+# Kluane, low, get uav imagery
+uav <- project(rast('../../data/uav/MAIA-exports/20220705/20220705-div32768_clipped.tif'), 'epsg:32608')
 
+# Kluane, high, get UAV imagery
 
 # Create function for stacking rasters from lists of filepaths, then cropping to extent of UAV imagery
 import_s2 <- function(x) {
@@ -130,15 +134,24 @@ s2.data.import <- lapply(s2.data, import_s2)
 # Check import function works by plotting rasters from list
 plot(s2.data.import[[6]])
 
+# Set list of band names for Sentinel-2
+s2.bands <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+
 # Rename bands to make reading logical
-names(s2.data.import[[1]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-names(s2.data.import[[2]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-names(s2.data.import[[3]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-names(s2.data.import[[4]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-names(s2.data.import[[5]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-names(s2.data.import[[6]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-names(s2.data.import[[7]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
-names(s2.data.import[[8]]) <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
+names(s2.data.import[[1]]) <- s2.bands
+names(s2.data.import[[2]]) <- s2.bands
+names(s2.data.import[[3]]) <- s2.bands
+names(s2.data.import[[4]]) <- s2.bands
+names(s2.data.import[[5]]) <- s2.bands
+names(s2.data.import[[6]]) <- s2.bands
+names(s2.data.import[[7]]) <- s2.bands
+names(s2.data.import[[8]]) <- s2.bands
+names(s2.data.import[[9]]) <- s2.bands
+names(s2.data.import[[10]]) <- s2.bands
+names(s2.data.import[[11]]) <- s2.bands
+names(s2.data.import[[12]]) <- s2.bands
+names(s2.data.import[[13]]) <- s2.bands
+names(s2.data.import[[14]]) <- s2.bands
 
 # Apply function to calculate NDVI ----
 s2_ndvi <- function(x) {
@@ -159,7 +172,7 @@ s2.ndvi.points <- st_as_sf(as.points(s2.ndvi, values = TRUE)) %>%
   mutate(id = row_number())
 
 # Write out the extracted points
-st_write(s2.ndvi.points, '../../data/sentinel-2/output/sentinel-2-ndvi-ts-pt-2023.csv', 
+st_write(s2.ndvi.points, '../../data/sentinel-2/output/sentinel-2-kluane-ndvi-ts-pt-2023.csv', 
          layer_options = "GEOMETRY=AS_XY")
 
 
@@ -271,8 +284,8 @@ ggplot(
   theme(legend.position = "none")
 
 # 9 random pixels in detail
-#rand_id <- sample(s2.modelled.ndvi %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
-rand_id <- c(172, 343, 493, 839, 884, 1026, 1097, 1139, 1165)
+rand_id <- sample(s2.modelled.ndvi %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
+#rand_id <- c(172, 343, 493, 839, 884, 1026, 1097, 1139, 1165)
 ggplot(
   s2.modelled.ndvi %>% filter(id %in% rand_id),
   aes(x = doy, group = id)
@@ -288,16 +301,18 @@ ggplot(
 # Wide format
 s2.modelled.export.wide <- s2.modelled.ndvi %>%
   group_by(id) %>%
-  filter(row_number() == 1) %>%
-  dplyr::select(!doy & !ndvi & !ndvi.pred.doy.1)
+  filter(doy == 224) %>%
+  dplyr::select(-doy, -ndvi.pred.doy.1, -ndvi.max.date, -ndvi, -ndvi.pred.doy)
 
-st_write(st_as_sf(s2.modelled.export.wide),  '../../data/sentinel-2/output/s2_modelled_JA_point_wide.shp')
-write.csv2(s2.modelled.export.wide,  '../../data/sentinel-2/output/s2_modelled_JA_point_wide.csv')
+st_write(st_as_sf(s2.modelled.export.wide),  '../../data/sentinel-2/output/s2_kluane_modelled_smoothed_spline_point_wide.csv', 
+         layer_options = "GEOMETRY=AS_XY")
 
 # Long format
 s2.modelled.export.long <- s2.modelled.ndvi %>%
   rename(doy.obs = 'doy', 
-         ndvi.obs = 'ndvi')
+         ndvi.obs = 'ndvi', 
+         ndvi.pred = 'ndvi.pred.doy.1') %>%
+  select(-ndvi.max.date)
 
-st_write(st_as_sf(s2.modelled.export.long),  '../../data/sentinel-2/output/s2_modelled_JA_point_long.shp')
-write.csv2(s2.modelled.export.long,  '../../data/sentinel-2/output/s2_modelled_JA_point_long.csv')
+st_write(st_as_sf(s2.modelled.export.long),  '../../data/sentinel-2/output/s2_kluane_modelled_smoothed_spline_point_long.csv', 
+         layer_options = "GEOMETRY=AS_XY")
