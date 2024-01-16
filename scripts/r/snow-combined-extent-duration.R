@@ -36,27 +36,47 @@ library(DescTools)
 
 # Bring in and format the data ----
 
-# Paths to Blaesedalen data, read in as SpatRast
-t1 <- project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif'), 'epsg:32621')
-t2 <- project(rast('../../data/uav/M3M-exports/5cm/20230712-clipped-5cm-div128.tif'), 'epsg:32621') 
-t3 <- project(rast('../../data/uav/M3M-exports/5cm/20230718-clipped-5cm-div128.tif'), 'epsg:32621')
-t4 <- project(rast('../../data/uav/M3M-exports/5cm/20230726-clipped-5cm-div128.tif'), 'epsg:32621')
+# Blaesedalen ###
+t1 <- rast('../../data/uav/orthomosaics/m3m/5cm/2023-07-02-5cm-clipped.tif')
+t2 <- rast('../../data/uav/orthomosaics/m3m/5cm/2023-07-12-5cm-clipped.tif')
+t3 <- rast('../../data/uav/orthomosaics/m3m/5cm/2023-07-18-5cm-clipped.tif')
+t4 <- rast('../../data/uav/orthomosaics/m3m/5cm/2023-07-26-5cm-clipped.tif')
+
+# Kluane Low ###
+t1 <- rast('../../data/uav/orthomosaics/maia/kluane-low/5cm/2022-06-29-5cm-clipped.tif')
+t2 <- rast('../../data/uav/orthomosaics/maia/kluane-low/5cm/2022-07-05-5cm-clipped.tif')
+t3 <- rast('../../data/uav/orthomosaics/maia/kluane-low/5cm/2022-07-18-5cm-clipped.tif')
+t4 <- rast('../../data/uav/orthomosaics/maia/kluane-low/5cm/2022-08-01-5cm-clipped.tif')
+t5 <- rast('../../data/uav/orthomosaics/maia/kluane-low/5cm/2022-08-14-5cm-clipped.tif')
+
+# Kluane High ###
+t1 <- rast('../../data/uav/orthomosaics/maia/kluane-high/5cm/2022-07-09-5cm-clipped.tif')
+t2 <- rast('../../data/uav/orthomosaics/maia/kluane-high/5cm/2022-07-19-5cm-clipped.tif')
+t3 <- rast('../../data/uav/orthomosaics/maia/kluane-high/5cm/2022-07-29-5cm-clipped.tif')
+t4 <- rast('../../data/uav/orthomosaics/maia/kluane-high/5cm/2022-08-04-5cm-clipped.tif')
+t5 <- rast('../../data/uav/orthomosaics/maia/kluane-high/5cm/2022-08-13-5cm-clipped.tif')
+
 
 # Assign band names
 s2.bands <- c('violet', 'blue', 'green', 'red', 're1', 're2', 'nir1', 'nir2', 'nir3') # MAIA-S2
 m3.bands <- c('green', 'nir', 're', 'red', 'RGB-R', 'RGB-G', 'RGB-B') # Mavic M3M bands 
 
-names(t1) <- m3.bands
-names(t2) <- m3.bands
-names(t3) <- m3.bands
-names(t4) <- m3.bands
+# Choose which sensor
+bands <- s2.bands
+
+# Assign band names to spatRaster layers
+names(t1) <- bands
+names(t2) <- bands
+names(t3) <- bands
+names(t4) <- bands
+names(t5) <- bands
 
 # Create a list of the UAV rasters which can be passed to functions
-bl <- list(t1, t2, t3, t4)
+bl <- list(t1, t2, t3, t4, t5)
 
 # Plot out the first raster in RGB as logic check
 ggplot() +
-  geom_spatraster_rgb(data = t4, r = 5, g = 6, b = 7, max_col_value = 0.6)
+  geom_spatraster_rgb(data = t4, r = 4, g = 3, b = 2, max_col_value = 0.6)
 
 
 # Calculate snow cover at each time step ----
@@ -95,6 +115,7 @@ names(bl.snow[[1]]) <- ('snow.t1')
 names(bl.snow[[2]]) <- ('snow.t2')
 names(bl.snow[[3]]) <- ('snow.t3')
 names(bl.snow[[4]]) <- ('snow.t4')
+names(bl.snow[[5]]) <- ('snow.t5')
 
 
 ## Using only raw red-band reflectance values ##
@@ -104,9 +125,10 @@ t1r <- t1['red']
 t2r <- t2['red']
 t3r <- t3['red']
 t4r <- t4['red']
+t5r <- t5['red']
 
 # Red band only rasters to list, for use with function
-bl.red <- list(t1r, t2r, t3r, t4r)
+bl.red <- list(t1r, t2r, t3r, t4r, t5r)
 
 # Plot to check values
 plot(rast(bl.red))
@@ -125,6 +147,7 @@ names(bl.r.snow[[1]]) <- ('snow.t1')
 names(bl.r.snow[[2]]) <- ('snow.t2')
 names(bl.r.snow[[3]]) <- ('snow.t3')
 names(bl.r.snow[[4]]) <- ('snow.t4')
+names(bl.r.snow[[5]]) <- ('snow.t5')
 
 # Stack classed rasters
 bl.r.snow <- rast(bl.r.snow)
