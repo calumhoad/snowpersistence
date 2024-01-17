@@ -85,7 +85,8 @@ ggplot() +
 
 # Function to calculate altered NDSI
 calc_ndsi <- function(x) {
-  x <- (x$green - x$nir)
+  #x <- (x$green - x$nir) / (x$green + x$nir) # For M3M
+  x <- (x$green - x$nir3) / (x$green + x$nir3) # For S2
 }
 
 # Apply calc_ndsi over raster list
@@ -97,9 +98,11 @@ ggplot() +
                   na.rm = TRUE) +
   scale_fill_viridis_c(limits = c(-0.3, 1))
 
+plot(rast(bl.ndsi), breaks = c(0, 1))
+
 # Create function to classify snow free (NDSI < 0) and snow covered (> 0) pixels
 class_snow <- function(x) {
-  x <- terra::classify(x, rbind(c(-2, 0, 0), c(0, 2, 1)))
+  x <- terra::classify(x, rbind(c(-2, -0.21, 0), c(-0.21, 2, 1)))
 }
 
 # Apply class_snow to NDSI rasters
@@ -120,23 +123,25 @@ names(bl.snow[[5]]) <- ('snow.t5')
 
 ## Using only raw red-band reflectance values ##
 
-# Get only the red band
-t1r <- t1['red']
-t2r <- t2['red']
-t3r <- t3['red']
-t4r <- t4['red']
-t5r <- t5['red']
+# Get only the ___ band
+band.filter <- 'violet'
+
+t1r <- t1[band.filter]
+t2r <- t2[band.filter]
+t3r <- t3[band.filter]
+t4r <- t4[band.filter]
+t5r <- t5[band.filter]
 
 # Red band only rasters to list, for use with function
 bl.red <- list(t1r, t2r, t3r, t4r, t5r)
 
 # Plot to check values
-plot(rast(bl.red))
+plot(rast(bl.red), breaks = c(0, 0.25, 2))
 
 # Function to classify snow free as 0, where red reflectance < 0.4, 
 #   and snow covered as 1, where red reflectance > 0.4. 
 class_snow_red <- function(x) {
-  x <- terra::classify(x, rbind(c(-1, 0.4, 0), c(0.4, 2, 1)))
+  x <- terra::classify(x, rbind(c(-1, 0.25, 0), c(0.25, 2, 1)))
 }
 
 # Run function across list of red-band only rasters
@@ -160,6 +165,11 @@ num.pixels <- terra::classify(bl.r.snow[[2]], rbind(c(-2, 2, 1)))
 # Assign name to this
 names(num.pixels) <- c('tot.pixels')
 
+# Export classification rasters
+writeRaster(bl.snow, '../../data/uav/snow-classification/kluane-low-ndsi-0-21.tif')
+writeRaster(rast(bl.red), '../../data/uav/snow-classification/kluane-low--0-21.tif')
+writeRaster(bl.r.snow, '../../data/uav/snow-classification/kluane-low-violet-0-25.tif')
+writeRaster(rast(bl.ndsi), '../../data/uav/snow-classification/kluane-low-ndsi-raw.tif')
 
 # Get grid matching spatial resolution of EO data ----
 
