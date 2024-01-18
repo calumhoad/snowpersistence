@@ -56,6 +56,24 @@ t3 <- rast('../../data/uav/orthomosaics/maia/kluane-high/5cm/2022-07-29-5cm-clip
 t4 <- rast('../../data/uav/orthomosaics/maia/kluane-high/5cm/2022-08-04-5cm-clipped.tif')
 t5 <- rast('../../data/uav/orthomosaics/maia/kluane-high/5cm/2022-08-13-5cm-clipped.tif')
 
+# Dates of imagery for later use
+# Blaesedalen
+d1 <- '2023-07-02'
+d2 <- '2023-07-12'
+d3 <- '2023-07-18'
+d4 <- '2023-07-26'
+# Kluane low
+d1 <- '2022-06-29'
+d2 <- '2022-07-05'
+d3 <- '2022-07-18'
+d4 <- '2022-08-01'
+d5 <- '2022-08-14'
+# Kluane high
+d1 <- '2022-07-09'
+d2 <- '2022-07-19'
+d3 <- '2022-07-29'
+d4 <- '2022-08-04'
+d5 <- '2022-08-13'
 
 # Assign band names
 s2.bands <- c('violet', 'blue', 'green', 'red', 're1', 're2', 'nir1', 'nir2', 'nir3') # MAIA-S2
@@ -223,6 +241,11 @@ extracted.data <- st_as_sf(s30.snow.cover) %>%
          snow.t2 = snow.t2/tot.pixels, 
          snow.t3 = snow.t3/tot.pixels, 
          snow.t4 = snow.t4/tot.pixels) %>%
+  # Prevent impossible increases in snowcover between time steps
+  mutate(ifelse(snow.t2 > snow.t1, snow.t1, snow.t2)) %>%
+  mutate(ifelse(snow.t3 > snow.t2, snow.t2, snow.t3)) %>% # If snow greater in next step,
+  mutate(ifelse(snow.t4 > snow.t3, snow.t3, snow.t4)) %>% # take value from last step.
+  mutate(ifelse(snow.t5 > snow.t4, snow.t4, snow.t5)) %>%
   # Calculate average cover over the season
   mutate(snow.av = (0.25*snow.t1) + (0.25*snow.t2) + (0.25*snow.t3) + (0.25*snow.t4)) %>%
   # Rename time points with actual dates
