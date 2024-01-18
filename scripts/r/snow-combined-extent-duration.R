@@ -94,7 +94,7 @@ bl <- list(t1, t2, t3, t4, t5)
 
 # Plot out the first raster in RGB as logic check
 ggplot() +
-  geom_spatraster_rgb(data = t4, r = 4, g = 3, b = 2, max_col_value = 0.6)
+  geom_spatraster_rgb(data = t3, r = 4, g = 3, b = 2, max_col_value = 0.6)
 
 
 # Calculate snow cover at each time step ----
@@ -142,7 +142,7 @@ names(bl.snow[[5]]) <- ('snow.t5')
 ## Using only raw red-band reflectance values ##
 
 # Get only the ___ band
-band.filter <- 'violet'
+band.filter <- 'red'
 
 t1r <- t1[band.filter]
 t2r <- t2[band.filter]
@@ -154,7 +154,7 @@ t5r <- t5[band.filter]
 bl.red <- list(t1r, t2r, t3r, t4r, t5r)
 
 # Plot to check values
-plot(rast(bl.red), breaks = c(0, 0.25, 2))
+plot(rast(bl.red), breaks = c(0, 0.4, 2))
 
 # Function to classify snow free as 0, where red reflectance < 0.4, 
 #   and snow covered as 1, where red reflectance > 0.4. 
