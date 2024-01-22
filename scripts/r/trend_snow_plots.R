@@ -636,8 +636,10 @@ ndvi.sample <- ndvi.join %>% #filter(id == 300) %>%
 
 # Plot observations 
 ggplot() +
-  geom_line(data = ndvi.sample %>% filter(snow.auc < 2), aes(x = date, y = ndvi, group = id), color = '#9ebc9fff', size = 1) + #size = snow.auc)) +
-  geom_line(data = ndvi.sample %>% filter(snow.auc > 15), aes(x = date, y = ndvi, group = id), color = '#d08c6dff', size = 2) +
+  geom_line(data = ndvi.s %>% filter(snow.auc < 2), aes(x = doy, y = ndvi, group = id), color = '#9ebc9fff', alpha = 0.1, size = 1) + #size = snow.auc)) +
+  geom_line(data = ndvi.s %>% filter(snow.auc > 15), aes(x = doy, y = ndvi, group = id), color = '#d08c6dff', alpha = 0.1, size = 2) +
+  geom_point(data = s2.data %>% filter(snow.auc < 2), aes(x = ndvi.max.doy_s, y = ndvi.max_s), color = '#9ebc9fff', alpha = 0.2) +
+  geom_point(data = s2.data %>% filter(snow.auc > 15), aes(x = ndvi.max.doy_s, y = ndvi.max_s), color = '#d08c6dff', alpha = 0.2) +
   #scale_color_viridis_c() +
   labs( x = 'Day of Year', 
         y = 'NDVI Observation') +
@@ -664,15 +666,38 @@ ndvi.s <- left_join(ndvi.s, s2.snow, by = 'id') %>%
 # Drop NAs
 ndvi.s <- ndvi.s %>% drop_na()
 
+# Join snow data 
+
 # Plot observations 
+
+# Create variables for filtering, indicative of lots of snow and little snow AUC
+high.snow <- 10
+low.snow <- 5
+
+# Get the range of max doy from high and low snow
+s2.data.low <- s2.data %>% filter(snow.auc < low.snow)
+s2.data.high <- s2.data %>% filter(snow.auc > high.snow)
+
+# Store min and max values
+high.snow.max <- max(s2.data.high$ndvi.max.doy_s)
+high.snow.min <- min(s2.data.high$ndvi.max.doy_s)
+low.snow.max <- max(s2.data.low$ndvi.max.doy_s)
+low.snow.min <- min(s2.data.low$ndvi.max.doy_s)
+
+# Plot in the style of the conceptual plot from the beginning of this research proj.
 ggplot() +
-  geom_line(data = ndvi.s %>% filter(snow.auc < 2), aes(x = doy, y = ndvi, group = id), color = '#9ebc9fff', size = 1) + #size = snow.auc)) +
-  geom_line(data = ndvi.s %>% filter(snow.auc > 15), aes(x = doy, y = ndvi, group = id), color = '#d08c6dff', size = 2) +
+  geom_line(data = ndvi.s %>% filter(snow.auc < low.snow), aes(x = doy, y = ndvi, group = id), color = '#9ebc9fff', alpha = 0.1, size = 1) + #size = snow.auc)) +
+  geom_line(data = ndvi.s %>% filter(snow.auc > high.snow), aes(x = doy, y = ndvi, group = id), color = '#d08c6dff', alpha = 0.1, size = 1) +
+  geom_point(data = s2.data %>% filter(snow.auc < low.snow), aes(x = ndvi.max.doy_s, y = ndvi.max_s), color = '#9ebc9fff', alpha = 0.5) +
+  geom_point(data = s2.data %>% filter(snow.auc > high.snow), aes(x = ndvi.max.doy_s, y = ndvi.max_s), color = '#d08c6dff', alpha = 0.5) +
+  geom_segment(aes(x = high.snow.min, xend = high.snow.max, y = 0.07, yend = 0.07), color = '#d08c6dff', size = 1) +
+  geom_segment(aes(x = low.snow.min, xend = low.snow.max, y = 0.08, yend = 0.08), color = '#9ebc9fff', size = 1) +
   #scale_color_viridis_c() +
   labs( x = 'Day of Year', 
         y = 'NDVI Observation') +
-  xlim(c(175, 260)) +
-  ylim(c(-0.05, 0.6)) +
+ # xlim(c(175, 260)) +
+#  ylim(c(0, 0.6)) +
+  coord_cartesian(xlim = c(175, 260), ylim = c(0, 0.6)) +
   theme_cowplot()
 
 # Un-used code ----
