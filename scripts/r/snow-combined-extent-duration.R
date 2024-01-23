@@ -101,47 +101,54 @@ ggplot() +
 
 ## Using NDSI ##
 
-# Function to calculate altered NDSI
-calc_ndsi <- function(x) {
-  #x <- (x$green - x$nir) / (x$green + x$nir) # For M3M
-  x <- (x$green - x$nir3) / (x$green + x$nir3) # For S2
-}
+# NOTE:
+#   Using NDSI does not work well for either of the UAV data sets in this analysis. 
+#   As neither M3M nor MAIA has SWIR bands, the SWIR band is substituted for the 
+#   NIR band in NDSI calculation. The result is no-where near as clean an index
+#   with confusion around vegetation and other landscape features. Due to this,
+#   the classification of choice uses the Red band, code is further below.
 
-# Apply calc_ndsi over raster list
-bl.ndsi <- pblapply(bl, calc_ndsi)
-
-# Plot out the NDSI rasters
-ggplot() +
-  geom_spatraster(data = bl.ndsi[[2]], 
-                  na.rm = TRUE) +
-  scale_fill_viridis_c(limits = c(-0.3, 1))
-
-plot(rast(bl.ndsi), breaks = c(0, 1))
-
-# Create function to classify snow free (NDSI < 0) and snow covered (> 0) pixels
-class_snow <- function(x) {
-  x <- terra::classify(x, rbind(c(-2, -0.21, 0), c(-0.21, 2, 1)))
-}
-
-# Apply class_snow to NDSI rasters
-bl.snow <- pblapply(bl.ndsi, class_snow)
-
-# Stack rasters
-bl.snow <- rast(bl.snow)
-
-plot(bl.snow)
-
-# Rename snow class rasters
-names(bl.snow[[1]]) <- d1
-names(bl.snow[[2]]) <- d2
-names(bl.snow[[3]]) <- d3
-names(bl.snow[[4]]) <- d4
-names(bl.snow[[5]]) <- d5
+# # Function to calculate altered NDSI
+# calc_ndsi <- function(x) {
+#   #x <- (x$green - x$nir) / (x$green + x$nir) # For M3M
+#   x <- (x$green - x$nir3) / (x$green + x$nir3) # For S2
+# }
+# 
+# # Apply calc_ndsi over raster list
+# bl.ndsi <- pblapply(bl, calc_ndsi)
+# 
+# # Plot out the NDSI rasters
+# ggplot() +
+#   geom_spatraster(data = bl.ndsi[[2]], 
+#                   na.rm = TRUE) +
+#   scale_fill_viridis_c(limits = c(-0.3, 1))
+# 
+# plot(rast(bl.ndsi), breaks = c(0, 1))
+# 
+# # Create function to classify snow free (NDSI < 0) and snow covered (> 0) pixels
+# class_snow <- function(x) {
+#   x <- terra::classify(x, rbind(c(-2, -0.21, 0), c(-0.21, 2, 1)))
+# }
+# 
+# # Apply class_snow to NDSI rasters
+# bl.snow <- pblapply(bl.ndsi, class_snow)
+# 
+# # Stack rasters
+# bl.snow <- rast(bl.snow)
+# 
+# plot(bl.snow)
+# 
+# # Rename snow class rasters
+# names(bl.snow[[1]]) <- d1
+# names(bl.snow[[2]]) <- d2
+# names(bl.snow[[3]]) <- d3
+# names(bl.snow[[4]]) <- d4
+# names(bl.snow[[5]]) <- d5
 
 
 ## Using only raw red-band reflectance values ##
 
-# Get only the ___ band
+# Get only the red band
 band.filter <- 'red'
 
 t1r <- t1[band.filter]
@@ -165,38 +172,30 @@ class_snow_red <- function(x) {
 # Run function across list of red-band only rasters
 bl.r.snow <- pblapply(bl.red, class_snow_red)
 
-# Rename snow class rasters
+# Name the raster layers with the date they contain data from
 names(bl.r.snow[[1]]) <- d1
 names(bl.r.snow[[2]]) <- d2
 names(bl.r.snow[[3]]) <- d3
 names(bl.r.snow[[4]]) <- d4
 names(bl.r.snow[[5]]) <- d5
 
-names(bl.r.snow[[1]])
-test <- snow.fill %>% filter(date == names(bl.r.snow[[1]]))
-# Stack classed rasters
-#bl.r.snow <- rast(bl.r.snow)
-
-# Plot to check output
-plot(rast(bl.r.snow))
-
 
 # Use manual gap-filling and masking to tidy the classification ----
-test <- t1r
-names(t1r) <- '2022-08-04'
-names(t1r)
-date <- names(t1r)
-date
 
-plot(bl.r.snow[[1]])
+# Export classification rasters
+writeRaster(bl.snow, '../../data/uav/snow-classification/kluane-low-ndsi-0-21.tif')
+writeRaster(rast(bl.red), '../../data/uav/snow-classification/kluane-low--0-21.tif')
+writeRaster(bl.r.snow, '../../data/uav/snow-classification/kluane-high-red-0-4.tif')
+writeRaster(rast(bl.ndsi), '../../data/uav/snow-classification/kluane-low-ndsi-raw.tif')
 
-# Import shape files 
+# OPEN CLASSIFICATIONS IN GIS SOFTWARE AND CREATE: 
+# 1) snow-fill.shp, with polygons where there are false negative snow classifications,
+# 2) snow-mask.shp, with polygons masking out areas where there are false positive classifications.
+
+# Import shape files of manual snow fill (filling false negative) and manual 
+# snow mask (masking false positive) areas 
 snow.fill <- st_read('../../data/uav/snow-classification/kluane-snow-polygons.shp')
 snow.mask <- st_read('../../data/uav/snow-classification/kluane-snow-free-polygons.shp')
-
-test.snow.fill <- rasterize(snow.fill %>% filter(date == '2022-07-09'), bl.r.snow[[1]], background = 0)
-test.snow.mask <- rasterize(snow.mask %>% filter(date == '2022-07-09'), bl.r.snow[[1]], background )
-plot(test.snow.mask)
 
 # Function which uses manually created polygons to reclassify and reduce error
 manual_snow_class <- function(x) {
@@ -209,56 +208,23 @@ manual_snow_class <- function(x) {
   x <- ifel(class.rast == 1 | rast.snow.fill == 1, 1, 0)
   # reclassify as 0 if pixel is in snow.mask polygons, else previous value
   x <- ifel(rast.snow.mask == 1, 0, x)
+  # reinstate NA pixels from original raster
+  x <- ifel(is.na(class.rast), NA, x)
 }
 
-output <- manual_snow_class(bl.r.snow[[1]])
-
+# Run function over classified red raster 
 output <- pblapply(bl.r.snow, manual_snow_class)
 
+# Checking outputs
 output.rast <- rast(output)
 plot(output.rast)
-names(bl.r.snow[[1]])
-
-
-plot(output)
-
-plot(rast(output))
-
-help(vect2mask)
-
-
-class.rast <- bl.r.snow[[1]]
-rast.date <- names(class.rast)# get date from name of rast
-# Create rasters from polygon data  
-rast.snow.fill <- rasterize(snow.fill %>% filter(date == rast.date), class.rast, background = 0)
-rast.snow.mask <- rasterize(snow.mask %>% filter(date == rast.date), class.rast)
-test <- ifel(class.rast == 1 | rast.snow.fill == 1, 1, 0)
-test <- terra::classify(class.ra)
-print(stacked)
-names(stacked) <- c('class.rast', 'snow.fill', 'snow.mask')
-
-plot(test)
-
-class.rast
-rast.snow.fill
-plot(stacked)
-
-rast(bl.r.snow[[1]])
-
-rast.snow.fill
-rast.snow.mask
-
+plotRGB(output.rast, r = '2022-07-09', g = '2022-07-19', b = '2022-07-29', scale = 1)
 
 # Create raster where every pix = 1, to facilitate later pixel count via sum
 num.pixels <- terra::classify(bl.r.snow[[2]], rbind(c(-2, 2, 1)))
 # Assign name to this
 names(num.pixels) <- c('tot.pixels')
 
-# Export classification rasters
-writeRaster(bl.snow, '../../data/uav/snow-classification/kluane-low-ndsi-0-21.tif')
-writeRaster(rast(bl.red), '../../data/uav/snow-classification/kluane-low--0-21.tif')
-writeRaster(bl.r.snow, '../../data/uav/snow-classification/kluane-high-red-0-4.tif')
-writeRaster(rast(bl.ndsi), '../../data/uav/snow-classification/kluane-low-ndsi-raw.tif')
 
 # Get grid matching spatial resolution of EO data ----
 
