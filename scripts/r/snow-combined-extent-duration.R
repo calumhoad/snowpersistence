@@ -183,10 +183,8 @@ names(bl.r.snow[[5]]) <- d5
 # Use manual gap-filling and masking to tidy the classification ----
 
 # Export classification rasters
-writeRaster(bl.snow, '../../data/uav/snow-classification/kluane-low-ndsi-0-21.tif')
-writeRaster(rast(bl.red), '../../data/uav/snow-classification/kluane-low--0-21.tif')
-writeRaster(bl.r.snow, '../../data/uav/snow-classification/kluane-high-red-0-4.tif')
-writeRaster(rast(bl.ndsi), '../../data/uav/snow-classification/kluane-low-ndsi-raw.tif')
+writeRaster(bl.r.snow, '../../data/uav/snow-classification/kluane-high-red-0-3.tif')
+
 
 # OPEN CLASSIFICATIONS IN GIS SOFTWARE AND CREATE: 
 # 1) snow-fill.shp, with polygons where there are false negative snow classifications,
@@ -216,9 +214,8 @@ manual_snow_class <- function(x) {
 output <- pblapply(bl.r.snow, manual_snow_class)
 
 # Checking outputs
-output.rast <- rast(output)
-plot(output.rast)
-plotRGB(output.rast, r = '2022-07-09', g = '2022-07-19', b = '2022-07-29', scale = 1)
+plot(rast(output))
+plotRGB(rast(output), r = '2022-06-29', g = '2022-07-05', b = '2022-07-18', scale = 1)
 
 # Create raster where every pix = 1, to facilitate later pixel count via sum
 num.pixels <- terra::classify(bl.r.snow[[2]], rbind(c(-2, 2, 1)))
@@ -228,6 +225,8 @@ names(num.pixels) <- c('tot.pixels')
 
 # Get grid matching spatial resolution of EO data ----
 
+# Note:
+#   Need to edit this in order to get Kluane data.
 
 # HLS S30 Bring in the list of pixel centres from LandsatTS
 s30.data <- read_csv('../../data/nasa-hls/s30/output/s30_modelled_smoothed_spline_point_wide.csv') %>%
@@ -241,7 +240,16 @@ ggplot() + geom_sf(data = s30.poly) + geom_sf(data = s30.data)
 
 
 # Sentinel-2, bring in the list of pixel centres from S2 script
+# Blaesedalen
 s2.centres <- st_read('../../data/sentinel-2/output/s2_modelled_point.shp')
+# Kluane-high
+s2.centres <- read_csv('../../data/sentinel-2/output/sentinel-2-kluanehigh-ndvi-ts-pt-2023.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32608)
+# Kluane-low
+s2.centres <- read_csv('../../data/sentinel-2/output/sentinel-2-kluanelow-ndvi-ts-pt-2023.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
+  group_by(id) %>%
+  filter(row_number() == 1)
 
 # buffer square to polygon 
 s2.poly <- st_buffer(s2.centres, 5, endCapStyle = "SQUARE")

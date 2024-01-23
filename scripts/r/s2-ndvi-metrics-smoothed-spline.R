@@ -94,7 +94,7 @@ dates <- c('2022-04-04',
            '2022-09-24', 
            '2022-09-29', 
            '2022-10-06') 
-           #'2022-11-08')
+           #'2022-11-08'
 
 # Create list where each item in the list is another list,
 #   containing the filepath to each imagery band
@@ -117,10 +117,10 @@ s2.data <- list(d20220404,
 uav <- project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif'), 'epsg:32621')
 
 # Kluane, low, get uav imagery
-uav <- project(rast('../../data/uav/MAIA-exports/20220705/20220705-div32768_clipped.tif'), 'epsg:32608')
+uav <- rast('../../data/uav/orthomosaics/maia/kluane-low/5cm/2022-07-05-5cm-clipped.tif')
 
 # Kluane, high, get UAV imagery
-uav <- project(rast('../../data/uav/MAIA-exports/20220729/20220729-div32768.tif'), 'epsg:32608')
+uav <- rast('../../data/uav/orthomosaics/maia/kluane-high/5cm/2022-07-09-5cm-clipped.tif')
 
 # Create function for stacking rasters from lists of filepaths, then cropping to extent of UAV imagery
 import_s2 <- function(x) {
@@ -135,7 +135,7 @@ plot(uav)
 s2.data.import <- lapply(s2.data, import_s2)
 
 # Check import function works by plotting rasters from list
-plotRGB(s2.data.import[[6]], r = 4*0.7, g = 3*0.7, b = 2*0.7)
+plotRGB(s2.data.import[[7]], r = 4*0.7, g = 3*0.7, b = 2*0.7)
 
 # Set list of band names for Sentinel-2
 s2.bands <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
@@ -166,18 +166,18 @@ s2.ndvi <- lapply(s2.data.import, s2_ndvi)
 # Stack NDVI rasters into single spatRast
 s2.ndvi <- rast(s2.ndvi)
 
-# Plot to check
-plot(s2.ndvi)
-
 # Name spatRaster layers with dates
 names(s2.ndvi) <- dates
+
+# Plot to check
+plot(s2.ndvi)
 
 # Extract raster time series to points
 s2.ndvi.points <- st_as_sf(as.points(s2.ndvi, values = TRUE)) %>%
   mutate(id = row_number())
 
 # Write out the extracted points
-st_write(s2.ndvi.points, '../../data/sentinel-2/output/sentinel-2-kluanehigh-ndvi-ts-pt-2023.csv', 
+st_write(s2.ndvi.points, '../../data/sentinel-2/tidy-output/s2-kluane-high-ndvi-ts-pt-2023.csv', 
          layer_options = "GEOMETRY=AS_XY")
 
 
