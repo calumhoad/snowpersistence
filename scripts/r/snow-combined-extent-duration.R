@@ -211,11 +211,14 @@ manual_snow_class <- function(x) {
 }
 
 # Run function over classified red raster 
-output <- pblapply(bl.r.snow, manual_snow_class)
+snow <- pblapply(bl.r.snow, manual_snow_class)
+
+# Stack list of snow rasters into single raster
+snow <- rast(snow)
 
 # Checking outputs
-plot(rast(output))
-plotRGB(rast(output), r = '2022-06-29', g = '2022-07-05', b = '2022-07-18', scale = 1)
+plot(snow)
+plotRGB(snow, r = d1, g = d2, b = d3, scale = 1)
 
 # Create raster where every pix = 1, to facilitate later pixel count via sum
 num.pixels <- terra::classify(bl.r.snow[[2]], rbind(c(-2, 2, 1)))
@@ -243,13 +246,13 @@ ggplot() + geom_sf(data = s30.poly) + geom_sf(data = s30.data)
 # Blaesedalen
 s2.centres <- st_read('../../data/sentinel-2/output/s2_modelled_point.shp')
 # Kluane-high
-s2.centres <- read_csv('../../data/sentinel-2/output/sentinel-2-kluanehigh-ndvi-ts-pt-2023.csv') %>%
-  st_as_sf(coords = c('X', 'Y'), crs = 32608)
-# Kluane-low
-s2.centres <- read_csv('../../data/sentinel-2/output/sentinel-2-kluanelow-ndvi-ts-pt-2023.csv') %>%
+s2.centres <- read_csv('../../data/sentinel-2/tidy-output/s2-kluane-high-ndvi-ts-pt-2023.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
-  group_by(id) %>%
-  filter(row_number() == 1)
+  select(id, geometry)
+# Kluane-low
+s2.centres <- read_csv('../../data/sentinel-2/tidy-output/s2-kluane-low-ndvi-ts-pt-2023.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
+  select(id, geometry)
 
 # buffer square to polygon 
 s2.poly <- st_buffer(s2.centres, 5, endCapStyle = "SQUARE")
@@ -263,7 +266,7 @@ ggplot() + geom_sf(data = s2.poly) + geom_sf(data = s2.centres)
 
 # SENTINEL-2
 # Extract number of pixels which are snow covered from classified raster stack
-s2.r.snow.cover <- terra::extract(bl.r.snow, s2.poly, fun = 'sum', ID = TRUE, bind = TRUE) # red
+s2.r.snow.cover <- terra::extract(snow, s2.poly, fun = 'sum', ID = TRUE, bind = TRUE) # red
 
 # Extract number of pixels per polygon, using num.pixels raster (all pix = 1)
 s2.r.snow.cover <- terra::extract(num.pixels, s2.r.snow.cover, fun = 'sum', ID = TRUE, 
@@ -278,32 +281,37 @@ s30.snow.cover <- terra::extract(num.pixels, s30.snow.cover, fun = 'sum', ID = T
 
 # Calculate snow cover as percentage ----
 
+# Note: Should we just drop t5, as there's never any snow in it and it makes the
+#   script much more complex. 
+
+
 # Convert the spatvector to an sf
-extracted.data <- st_as_sf(s30.snow.cover) %>%
-#extracted.data <- st_as_sf(s2.r.snow.cover) %>%
-  # Calculate percentage cover per S2 pixel
-  mutate(snow.t1 = snow.t1/tot.pixels, 
-         snow.t2 = snow.t2/tot.pixels, 
-         snow.t3 = snow.t3/tot.pixels, 
-         snow.t4 = snow.t4/tot.pixels) %>%
+extracted.data <- st_as_sf(s2.r.snow.cover) %>%
+  select(id, geometry, tot.pixels, !!d1, !!d2, !!d3, !!d4, !!d5) %>%
+ # Calculate percentage cover per S2 pixel
+  mutate(!!d1 := .data[[d1]]/tot.pixels, 
+         !!d2 := .data[[d2]]/tot.pixels, 
+         !!d3 := .data[[d3]]/tot.pixels, 
+         !!d4 := .data[[d4]]/tot.pixels, 
+         !!d5 := .data[[d5]]/tot.pixels) %>%
   # Prevent impossible increases in snowcover between time steps
-  mutate(ifelse(snow.t2 > snow.t1, snow.t1, snow.t2)) %>%
-  mutate(ifelse(snow.t3 > snow.t2, snow.t2, snow.t3)) %>% # If snow greater in next step,
-  mutate(ifelse(snow.t4 > snow.t3, snow.t3, snow.t4)) %>% # take value from last step.
-  mutate(ifelse(snow.t5 > snow.t4, snow.t4, snow.t5)) %>%
+  mutate(!!d2 := ifelse(.data[[d2]] > .data[[d1]], .data[[d1]], .data[[d2]])) %>%
+  mutate(!!d3 := ifelse(.data[[d3]] > .data[[d2]], .data[[d2]], .data[[d3]])) %>% # If snow greater in next step,
+  mutate(!!d4 := ifelse(.data[[d4]] > .data[[d3]], .data[[d3]], .data[[d4]])) %>% # take value from last step.
+  mutate(!!d5 := ifelse(.data[[d5]] > .data[[d4]], .data[[d4]], .data[[d5]])) %>%
   # Calculate average cover over the season
-  mutate(snow.av = (0.25*snow.t1) + (0.25*snow.t2) + (0.25*snow.t3) + (0.25*snow.t4)) %>%
+  mutate(snow.av = (0.25*.data[[d1]]) + (0.25*.data[[d2]]) + (0.25*.data[[d3]]) + (0.25*.data[[d4]]) + (0.25*.data[[d5]])) #%>%
   # Rename time points with actual dates
-  rename('2023-07-02' = snow.t1,
-         '2023-07-12' = snow.t2,
-         '2023-07-18' = snow.t3,
-         '2023-07-26' = snow.t4)
+  # rename('2023-07-02' = snow.t1,
+  #        '2023-07-12' = snow.t2,
+  #        '2023-07-18' = snow.t3,
+  #        '2023-07-26' = snow.t4)
 
 # Interpolate between observations and calculate the area under the curve ----
 
 # Format the data (S2)
 snow.data <- extracted.data %>% #filter(extracted.data, id == 189) %>%
-  select(-ndvi_mx, -ndv_mx_, -tot.pixels) %>%
+  select(-tot.pixels) %>%
   pivot_longer(!id & !geometry & !snow.av, names_to = 'date', values_to = "snow.cover") %>%
   drop_na() %>%
   group_by(id)
@@ -328,8 +336,8 @@ ggplot() +
 # Store points in df?
 
 # Set the time period for which the area under the curve will be calculated
-start <- lubridate::yday('2023-07-02')
-end <- lubridate::yday('2023-07-26')
+start <- lubridate::yday(d1)
+end <- lubridate::yday(d5)
 
 # Function for AUC calculation
 calc_auc <- function(data) {
@@ -359,7 +367,7 @@ ggplot() +
 
 # Map of snow.auc values
 ggplot() +
-  geom_sf(data = st_as_sf(snow.auc), aes(fill = snow.av)) +
+  geom_sf(data = st_as_sf(snow.auc), aes(fill = snow.auc)) +
   scale_fill_viridis_c()
 
 # Plot the snow.av against the snow.auc
@@ -376,7 +384,7 @@ output.data <- pivot_wider(snow.auc, id_cols = c(id, geometry, snow.auc, snow.av
   st_centroid()
 
 # Write the file 
-st_write(output.data, "../../data/uav/snow-metrics/blaesedalen-30m-auc-snowcover.csv",
+st_write(output.data, "../../data/uav/snow-metrics/kluane-low-10m-snow-cover.csv",
          layer_options = "GEOMETRY=AS_XY")
 
 
