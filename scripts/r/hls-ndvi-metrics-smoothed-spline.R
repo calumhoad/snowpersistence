@@ -30,23 +30,39 @@ library(pbapply)
 ###
 
 # Create a list of the S2 R10m files for each S2 scene
-d20230406 <- list.files('../../data/nasa-hls/s30/2023-04-06/', full.names = TRUE)
-d20230501 <- list.files('../../data/nasa-hls/s30/2023-05-01/', full.names = TRUE)
-d20230516 <- list.files('../../data/nasa-hls/s30/2023-05-16/', full.names = TRUE)
-d20230522 <- list.files('../../data/nasa-hls/s30/2023-05-22/', full.names = TRUE)
-d20230608 <- list.files('../../data/nasa-hls/s30/2023-06-08/', full.names = TRUE)
-d20230626 <- list.files('../../data/nasa-hls/s30/2023-06-26/', full.names = TRUE)
-d20230708 <- list.files('../../data/nasa-hls/s30/2023-07-08/', full.names = TRUE)
-d20230726 <- list.files('../../data/nasa-hls/s30/2023-07-26/', full.names = TRUE)
-d20230729 <- list.files('../../data/nasa-hls/s30/2023-07-29/', full.names = TRUE)
-d20230807 <- list.files('../../data/nasa-hls/s30/2023-08-07/', full.names = TRUE)
-d20230808 <- list.files('../../data/nasa-hls/s30/2023-08-08/', full.names = TRUE)
-d20230914 <- list.files('../../data/nasa-hls/s30/2023-09-14/', full.names = TRUE)
-d20230922 <- list.files('../../data/nasa-hls/s30/2023-09-22/', full.names = TRUE)
-d20231003 <- list.files('../../data/nasa-hls/s30/2023-10-03/', full.names = TRUE)
+# Blaesedalen
+d20230406 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-04-06/', full.names = TRUE)
+d20230501 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-05-01/', full.names = TRUE)
+d20230516 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-05-16/', full.names = TRUE)
+d20230522 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-05-22/', full.names = TRUE)
+d20230608 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-06-08/', full.names = TRUE)
+d20230626 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-06-26/', full.names = TRUE)
+d20230708 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-07-08/', full.names = TRUE)
+d20230726 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-07-26/', full.names = TRUE)
+d20230729 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-07-29/', full.names = TRUE)
+d20230807 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-08-07/', full.names = TRUE)
+d20230808 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-08-08/', full.names = TRUE)
+d20230914 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-09-14/', full.names = TRUE)
+d20230922 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-09-22/', full.names = TRUE)
+d20231003 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-10-03/', full.names = TRUE)
 
-d20230406[1:13]
+#Kluane
+d20220404 <- list.files('../../data/nasa-hls/kluane/s30/2022-04-04/', full.names = TRUE)
+d20220512 <- list.files('../../data/nasa-hls/kluane/s30/2022-05-12/', full.names = TRUE)
+d20220529 <- list.files('../../data/nasa-hls/kluane/s30/2022-05-29/', full.names = TRUE)
+d20220608 <- list.files('../../data/nasa-hls/kluane/s30/2022-06-08/', full.names = TRUE)
+d20220708 <- list.files('../../data/nasa-hls/kluane/s30/2022-07-08/', full.names = TRUE)
+d20220721 <- list.files('../../data/nasa-hls/kluane/s30/2022-07-21/', full.names = TRUE)
+d20220726 <- list.files('../../data/nasa-hls/kluane/s30/2022-07-26/', full.names = TRUE)
+d20220812 <- list.files('../../data/nasa-hls/kluane/s30/2022-08-12/', full.names = TRUE)
+d20220916 <- list.files('../../data/nasa-hls/kluane/s30/2022-09-16/', full.names = TRUE)
+d20220924 <- list.files('../../data/nasa-hls/kluane/s30/2022-09-24/', full.names = TRUE)
+d20220929 <- list.files('../../data/nasa-hls/kluane/s30/2022-09-29/', full.names = TRUE)
+d20221006 <- list.files('../../data/nasa-hls/kluane/s30/2022-10-06/', full.names = TRUE)
+
+
 # List of imagery dates, for later use
+# Blaesedalen
 dates <- c('2023-04-06',
            '2023-05-01', 
            '2023-05-16',
@@ -62,10 +78,26 @@ dates <- c('2023-04-06',
            '2023-09-22', 
            '2023-10-03')
 
+# Kluane
+dates <- c('2022-04-04',
+           '2022-05-12',
+           '2022-05-29',
+           '2022-06-08',
+           '2022-07-08',
+           '2022-07-21',
+           '2022-07-26',
+           '2022-08-12',
+           '2022-09-16',
+           '2022-09-24', 
+           '2022-09-29', 
+           '2022-10-06')
+
 # Get the relevant HLS bands as raster stack, project + crop to extent of UAV imagery
 
 # Create list where each item in the list is another list,
 #   containing the filepath to each imagery band
+
+# Blaesedalen
 s30.data <- list(d20230406,
                 d20230501,
                 d20230516,
@@ -81,8 +113,27 @@ s30.data <- list(d20230406,
                 d20230922,
                 d20231003)
 
+# Kluane
+s30.data <- list(d20220404,
+                d20220512,
+                d20220529,
+                d20220608,
+                d20220708,
+                d20220721,
+                d20220726,
+                d20220812,
+                d20220916,
+                d20220924, 
+                d20220929, 
+                d20221006)
+
 # Get uAV imagery over plot to use for cropping - RE-EXPORT UAV IMAGERY SO RE-PROJECT IS AVOIDED
-uav <- project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif'), 'epsg:32621')
+# Blaesedalen
+uav <- rast('../../data/uav/orthomosaics/m3m/5cm/2023-07-02-5cm-clipped.tif')
+# Kluane-low
+uav <- rast('../../data/uav/orthomosaics/maia/kluane-low/5cm/2022-07-05-5cm-clipped.tif')
+# Kluane-high
+uav <- rast('../../data/uav/orthomosaics/maia/kluane-high/5cm/2022-07-09-5cm-clipped.tif')
 
 # Create function for stacking rasters from lists of filepaths, then cropping to extent of UAV imagery
 import_s30 <- function(x) {
@@ -108,12 +159,15 @@ s30.ndvi <- rast(s30.ndvi)
 # Name raster layers with dates
 names(s30.ndvi) <- dates
 
+# Plot for sanity check
+plot(s30.ndvi)
+
 # Extract raster time series to points
 s30.ndvi.points <- st_as_sf(as.points(s30.ndvi, values = TRUE)) %>%
   mutate(id = row_number())
 
 # Write out the extracted points
-st_write(s30.ndvi.points, '../../data/nasa-hls/s30/output/s30-ndvi-ts-pt-2023.csv', 
+st_write(s30.ndvi.points, '../../data/nasa-hls/output/s30-kluane-high-ndvi-ts-pt-2023.csv', 
          layer_options = "GEOMETRY=AS_XY")
 
 
@@ -130,19 +184,19 @@ s30.ndvi.points <- read.csv('../../data/nasa-hls/s30/output/s30-ndvi-ts-pt-2023.
 # Get a dataframe of points from the raster
 s30.ndvi.long <- s30.ndvi.points %>%
   pivot_longer(!geometry & !id, names_to = 'doy', values_to = 'ndvi') %>%
-  mutate(doy = sub('X', '', doy), 
-         doy = sub('\\.', '-', doy), 
+  mutate(#doy = sub('X', '', doy), 
+         #doy = sub('\\.', '-', doy), 
          doy = as_date(doy),
          doy = yday(doy)) %>%
   group_by(id)
 
 # Filter out obs with ndvi < 0.1, and groups where there are less than 5 obs
 s30.ndvi.long <- s30.ndvi.long %>% 
-  filter(ndvi >= 0.1) %>%
+  #filter(ndvi >= 0.1) %>%
   filter(n_distinct(doy) >= 5)
 
 
-# Function for fitting parabolic 2nd order polynomial model
+# Function for fitting smoothed spline model
 model_fit <- function(df) {
   # Using a spline smoother
   smooth.spline(x = df$doy, y = df$ndvi, spar = 0.5)
@@ -245,7 +299,7 @@ s30.modelled.export.wide <- s30.modelled.ndvi %>%
   filter(doy == 220) %>%
   dplyr::select(-doy, -ndvi.pred.doy.1, -ndvi.max.date, -ndvi, -ndvi.pred.doy)
 
-st_write(st_as_sf(s30.modelled.export.wide),  '../../data/nasa-hls/s30/output/s30_modelled_smoothed_spline_point_wide.csv', 
+st_write(st_as_sf(s30.modelled.export.wide),  '../../data/nasa-hls/output/s30_kluane-high-modelled_smoothed_spline_point_wide.csv', 
          layer_options = "GEOMETRY=AS_XY")
 
 # Long format
@@ -255,5 +309,5 @@ s30.modelled.export.long <- s30.modelled.ndvi %>%
          ndvi.pred = 'ndvi.pred.doy.1') %>%
   select(-ndvi.max.date)
 
-st_write(st_as_sf(s30.modelled.export.long),  '../../data/nasa-hls/s30/output/s30_modelled_smoothed_spline_point_long.csv', 
+st_write(st_as_sf(s30.modelled.export.long),  '../../data/nasa-hls/output/s30_kluane-high-modelled_smoothed_spline_point_long.csv', 
          layer_options = "GEOMETRY=AS_XY")

@@ -183,7 +183,7 @@ names(bl.r.snow[[5]]) <- d5
 # Use manual gap-filling and masking to tidy the classification ----
 
 # Export classification rasters
-writeRaster(bl.r.snow, '../../data/uav/snow-classification/kluane-high-red-0-3.tif')
+# writeRaster(bl.r.snow, '../../data/uav/snow-classification/kluane-high-red-0-3.tif')
 
 
 # OPEN CLASSIFICATIONS IN GIS SOFTWARE AND CREATE: 
@@ -234,6 +234,12 @@ names(num.pixels) <- c('tot.pixels')
 # HLS S30 Bring in the list of pixel centres from LandsatTS
 s30.data <- read_csv('../../data/nasa-hls/s30/output/s30_modelled_smoothed_spline_point_wide.csv') %>%
                    st_as_sf(coords = c('X', 'Y'), crs = 32621)
+# Kluane-low
+s30.data <- read_csv('../../data/nasa-hls/output/s30-kluane-low-ndvi-ts-pt-2023.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32608)
+# Kluane-high
+s30.data <- read_csv('../../data/nasa-hls/output/s30-kluane-high-ndvi-ts-pt-2023.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32608)
 
 # buffer square to polygon
 s30.poly <- st_buffer(s30.data, 15, endCapStyle = "SQUARE")
@@ -273,7 +279,7 @@ s2.r.snow.cover <- terra::extract(num.pixels, s2.r.snow.cover, fun = 'sum', ID =
                                 bind = TRUE)
 # NASA HLS S30
 # Extract number of pixels which are snow covered from classified raster stack
-s30.snow.cover <- terra::extract(bl.r.snow, s30.poly, fun = 'sum', ID = TRUE, bind = TRUE)
+s30.snow.cover <- terra::extract(snow, s30.poly, fun = 'sum', ID = TRUE, bind = TRUE)
 
 # Extract number of pixels per polygon, using num.pixels raster (all pix = 1)
 s30.snow.cover <- terra::extract(num.pixels, s30.snow.cover, fun = 'sum', ID = TRUE, bind = TRUE)
@@ -286,7 +292,7 @@ s30.snow.cover <- terra::extract(num.pixels, s30.snow.cover, fun = 'sum', ID = T
 
 
 # Convert the spatvector to an sf
-extracted.data <- st_as_sf(s2.r.snow.cover) %>%
+extracted.data <- st_as_sf(s30.snow.cover) %>%
   select(id, geometry, tot.pixels, !!d1, !!d2, !!d3, !!d4, !!d5) %>%
  # Calculate percentage cover per S2 pixel
   mutate(!!d1 := .data[[d1]]/tot.pixels, 
@@ -318,12 +324,12 @@ snow.data <- extracted.data %>% #filter(extracted.data, id == 189) %>%
 
 # Format the data (S30)
 snow.data <- extracted.data %>% #filter(extracted.data, id == 189) %>%
-  select(-ndvi.max, -ndvi.max.doy, -tot.pixels) %>%
+  select(-tot.pixels) %>%
   pivot_longer(!id & !geometry & !snow.av, names_to = 'date', values_to = "snow.cover") %>%
   drop_na() %>%
   group_by(id)
 
-# Plot the sample data
+# Plot the data
 ggplot() +
   geom_point(data = snow.data, aes(x = date, y = snow.cover)) +
   geom_line(data = snow.data, aes(x = date, y = snow.cover, group = id))
@@ -384,7 +390,7 @@ output.data <- pivot_wider(snow.auc, id_cols = c(id, geometry, snow.auc, snow.av
   st_centroid()
 
 # Write the file 
-st_write(output.data, "../../data/uav/snow-metrics/kluane-low-10m-snow-cover.csv",
+st_write(output.data, "../../data/uav/snow-metrics/kluane-high-30m-snow-cover.csv",
          layer_options = "GEOMETRY=AS_XY")
 
 
