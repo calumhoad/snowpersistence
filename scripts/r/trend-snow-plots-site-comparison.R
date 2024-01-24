@@ -100,7 +100,7 @@ xndvi <- c(0.1, 0.7)
 ysnow <- c(0, 25)
 yndvi <- c(0.1, 0.9)
 
-# SENTINEL-2, with smoothed spline
+# SENTINEL-2, with smoothed spline ----
 
 # Blaesedalen
 s2b.max.ndvi.doy.plot <- ggplot(s2.data, aes(y = ndvi.max.doy_s, x = snow.auc)) +
@@ -163,7 +163,7 @@ s2b.ndvi.metrics.plot <- ggplot(drop_na(s2.data, snow.auc), aes(x = ndvi.max.doy
   guides(color = 'none') +
   theme_cowplot()
 
-# Kluane-low ####
+# Kluane-low ##
 s2kl.max.ndvi.doy.plot <- ggplot(s2.kl.data, aes(y = ndvi.max.doy, x = snow.auc)) +
   geom_point(aes(color = ndvi.max)) +
   geom_smooth(method = 'lm', color = 'red') +
@@ -223,7 +223,7 @@ s2kl.ndvi.metrics.plot <- ggplot(drop_na(s2.kl.data, snow.auc), aes(x = ndvi.max
   theme_cowplot()
 
 
-# Kluane-high ####
+# Kluane-high ##
 s2kh.max.ndvi.doy.plot <- ggplot(s2.kh.data, aes(y = ndvi.max.doy, x = snow.auc)) +
   geom_point(aes(color = ndvi.max)) +
   geom_smooth(method = 'lm', color = 'red') +
@@ -297,7 +297,213 @@ plots_combined <-   s2b.max.ndvi.plot +
 
 plots_combined
 
-# Map plots
+
+# Plotting S30 data, smoothed spline ----
+# Set some plot parameters here:
+xdoy <- c(200, 270)
+xndvi <- c(0.1, 0.95)
+ysnow <- c(0, 25)
+yndvi <- c(0.1, 0.9)
+
+# Blaesedalen
+s30b.max.ndvi.doy.plot <- ggplot(s30.data, aes(y = ndvi.max.doy, x = snow.auc)) +
+  geom_point(aes(color = ndvi.max)) +
+  geom_smooth(method = 'lm', color = 'red') +
+  xlim(ysnow) +
+  ylim(xdoy) +
+  scale_color_viridis_c(name = "ndvi.max",
+                        breaks = seq(0.3, 
+                                     0.5, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(0.1, 0.6),# Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
+  labs(x = '', 
+       y = '\n\n———————————— Maximum NDVI DoY —————————————\n', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+
+
+# S2 max ndvi against snow persistence
+s30b.max.ndvi.plot <- ggplot(s30.data, aes(y = ndvi.max, x = snow.auc)) +
+  geom_point(aes(color = ndvi.max.doy)) +
+  geom_smooth(method = 'lm', color = 'red') +
+  xlim(ysnow) +
+  ylim(xndvi) +
+  scale_color_viridis_c(name = "ndvi.max.doy",
+                        breaks = seq(220, 
+                                     260, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(210, 270),  # Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
+  labs(x = '', 
+       y = 'Blaesedalen\nSentinel-2\nsmoothed-spline\n\n—————————————— Maximum NDVI ————————————\n', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+# S2 ndvi metrics against each other  
+s30b.ndvi.metrics.plot <- ggplot(drop_na(s30.data, snow.auc), aes(x = ndvi.max.doy, 
+                                                                y = ndvi.max)) +
+  geom_point(position = 'jitter', alpha = 0.5, aes(color = snow.auc, size = snow.auc)) +
+  #geom_smooth(method = 'lm') +
+  xlim(xdoy) +
+  ylim(yndvi) +
+  scale_color_viridis_c(name = "snow.auc",
+                        breaks = seq(0, 
+                                     0.6, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = ysnow,
+                        na.value = 'yellow',# Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'Snow\nPersist',
+                                                direction = 'vertical')) + 
+  labs(x = '', 
+       y = '\n—————————————— Maximum NDVI ————————————\n', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+# Kluane-low ##
+s30kl.max.ndvi.doy.plot <- ggplot(s30.kl.data, aes(y = ndvi.max.doy, x = snow.auc)) +
+  geom_point(aes(color = ndvi.max)) +
+  geom_smooth(method = 'lm', color = 'red') +
+  xlim(ysnow) +
+  ylim(xdoy) +
+  scale_color_viridis_c(name = "ndvi.max",
+                        breaks = seq(0.3, 
+                                     0.5, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(0.1, 0.6),# Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
+  labs(x = '', 
+       y = '\n\n———————————— Maximum NDVI DoY —————————————\n', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+# S2 max ndvi against snow persistence
+s30kl.max.ndvi.plot <- ggplot(s30.kl.data, aes(y = ndvi.max, x = snow.auc)) +
+  geom_point(aes(color = ndvi.max.doy)) +
+  geom_smooth(method = 'lm', color = 'red') +
+  xlim(ysnow) +
+  ylim(xndvi) +
+  scale_color_viridis_c(name = "ndvi.max.doy",
+                        breaks = seq(220, 
+                                     260, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(210, 270),  # Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
+  labs(x = '', 
+       y = 'Kluane-low\nSentinel-2\nsmoothed-spline\n\n—————————————— Maximum NDVI ————————————\n', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+
+# S2 ndvi metrics against each other  
+s30kl.ndvi.metrics.plot <- ggplot(drop_na(s30.kl.data, snow.auc), aes(x = ndvi.max.doy, 
+                                                                    y = ndvi.max)) +
+  geom_point(position = 'jitter', alpha = 0.5, aes(color = snow.auc, size = snow.auc)) +
+  #geom_smooth(method = 'lm') +
+  xlim(xdoy) +
+  ylim(yndvi) +
+  scale_color_viridis_c(name = "snow.auc",
+                        breaks = seq(0, 
+                                     0.6, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = ysnow,
+                        na.value = 'yellow',# Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'Snow\nPersist',
+                                                direction = 'vertical')) + 
+  labs(x = '', 
+       y = '\n—————————————— Maximum NDVI ————————————\n', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+
+# Kluane-high ##
+s30kh.max.ndvi.doy.plot <- ggplot(s30.kh.data, aes(y = ndvi.max.doy, x = snow.auc)) +
+  geom_point(aes(color = ndvi.max)) +
+  geom_smooth(method = 'lm', color = 'red') +
+  xlim(ysnow) +
+  ylim(xdoy) +
+  scale_color_viridis_c(name = "ndvi.max",
+                        breaks = seq(0.3, 
+                                     0.5, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(0.1, 0.6),# Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
+  labs(x = 'Snow persistence', 
+       y = '\n\n———————————— Maximum NDVI DoY —————————————\n', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+# S2 max ndvi against snow persistence
+s30kh.max.ndvi.plot <- ggplot(s30.kh.data, aes(y = ndvi.max, x = snow.auc)) +
+  geom_point(aes(color = ndvi.max.doy)) +
+  geom_smooth(method = 'lm', color = 'red') +
+  xlim(ysnow) +
+  ylim(xndvi) +
+  scale_color_viridis_c(name = "ndvi.max.doy",
+                        breaks = seq(220, 
+                                     260, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = c(210, 270),  # Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'NDVI\nmax\nDoY',
+                                                direction = 'vertical')) +
+  labs(x = 'Snow persistence', 
+       y = 'Kluane-high\nSentinel-2\nsmoothed-spline\n\n—————————————— Maximum NDVI ————————————\n', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+# S2 ndvi metrics against each other  
+s30kh.ndvi.metrics.plot <- ggplot(drop_na(s30.kh.data, snow.auc), aes(x = ndvi.max.doy, 
+                                                                    y = ndvi.max)) +
+  geom_point(position = 'jitter', alpha = 0.5, aes(color = snow.auc, size = snow.auc)) +
+  #geom_smooth(method = 'lm') +
+  xlim(xdoy) +
+  ylim(yndvi) +
+  scale_color_viridis_c(name = "snow.auc",
+                        breaks = seq(0, 
+                                     0.6, 
+                                     length.out = 3),  # Adjust the number of breaks as needed
+                        limits = ysnow,
+                        na.value = 'yellow',# Set the limits to cover the entire range of lsts.ndvi.max.doy
+                        guide = guide_colourbar(title = 'Snow\nPersist',
+                                                direction = 'vertical')) + 
+  labs(x = 'Maximum NDVI Day of Year', 
+       y = '\n—————————————— Maximum NDVI ————————————\n', 
+       padding = 1) +
+  guides(color = 'none') +
+  theme_cowplot()
+
+
+# Arrange plots side by side
+plots_combined <-   s30b.max.ndvi.plot +
+  s30b.max.ndvi.doy.plot +
+  s30b.ndvi.metrics.plot +
+  s30kl.max.ndvi.plot +
+  s30kl.max.ndvi.doy.plot +
+  s30kl.ndvi.metrics.plot +
+  s30kh.max.ndvi.plot +
+  s30kh.max.ndvi.doy.plot +
+  s30kh.ndvi.metrics.plot +
+  plot_layout(ncol = 3, nrow = 3)
+
+plots_combined
+
+
+
+# Map plots ----
 # Plotting NDVI metrics as map
 ggplot() +
   geom_sf(data = st_buffer(s2.data, dist = 5, endCapStyle = "SQUARE"),
