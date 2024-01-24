@@ -309,7 +309,7 @@ s2.modelled.export.wide <- s2.modelled.ndvi %>%
   filter(doy == 224) %>%
   dplyr::select(-doy, -ndvi.pred.doy.1, -ndvi.max.date, -ndvi, -ndvi.pred.doy)
 
-st_write(st_as_sf(s2.modelled.export.wide),  '../../data/sentinel-2/output/s2_kluane_modelled_smoothed_spline_point_wide.csv', 
+st_write(st_as_sf(s2.modelled.export.wide),  '../../data/sentinel-2/tidy-output/s2_kluane-high_smoothed_spline_point_wide.csv', 
          layer_options = "GEOMETRY=AS_XY")
 
 # Long format
@@ -319,5 +319,5 @@ s2.modelled.export.long <- s2.modelled.ndvi %>%
          ndvi.pred = 'ndvi.pred.doy.1') %>%
   select(-ndvi.max.date)
 
-st_write(st_as_sf(s2.modelled.export.long),  '../../data/sentinel-2/output/s2_kluane_modelled_smoothed_spline_point_long.csv', 
+st_write(st_as_sf(s2.modelled.export.long),  '../../data/sentinel-2/tidy-output/s2_kluane-high_modelled_smoothed_spline_point_long.csv', 
          layer_options = "GEOMETRY=AS_XY")

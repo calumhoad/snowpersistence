@@ -14,9 +14,11 @@ library(cowplot)
 
 # Read in the data ----
 
+# Blaesedalen ####
+
 ## Sentinel-2 ##
 
-# All modelled NDVI values for Sentinel-2
+# All modelled NDVI values for Sentinel-2, Blaesedalen
 s2.ndvi <- read.csv("../../data/sentinel-2/output/s2_all_models.csv") %>%
                st_as_sf(coords = c('X', 'Y'), crs = 32621)
 
@@ -43,8 +45,13 @@ s30.data <- left_join(s30.ndvi, s30.snow, by = 'id') %>%
   select(-X, -Y) %>%
   drop_na()
 
+# Kluane low ####
+s2.ndvi.kl <- read.csv("../../data/sentinel-2/output/s2_kluane_modelled_smoothed_spline_point_wide.csv") %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32608)
 
-## Landsat ##
+# Snow 
+
+## Landsat ## ----
 
 # Trend data from LandsatTS, with automatic screening of pixels
 trends.auto <- read.csv2('../../data/lsatTS-output/blaesedalen/blaesedalen_auto_7yr_trnds.csv')
@@ -77,7 +84,7 @@ ggplot() +
   geom_sf(data = lsatTS.pix.centres, aes(color = 'red', size = 2)) +#, aes(color = 'red')) +
   geom_sf(data = lsat.pix.centres, aes(color = 'blue', size = 1))#, aes(color = 'blue'))
 
-# Create single dataset containing snow persistence, landsat sinlgle yr ndvi preds, LandsatTS preds ----
+# Create single dataset containing snow persistence, landsat sinlgle yr ndvi preds, LandsatTS preds
 
 # Read in the output from LandsatTS
 lsatTS <- st_read('../../data/lsatTS-output/blaesedalen/lsatTS_auto_7_gs.shp') %>%
