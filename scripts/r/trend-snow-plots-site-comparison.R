@@ -552,6 +552,15 @@ ggplot() +
 ndvi.s <- st_read('../../data/sentinel-2/output/s2_modelled_JA_point_long.shp') %>%
   select(id, doy_obs, ndv_prd)
 
+# For Kluane high
+ndvi.s <- read.csv('../../data/sentinel-2/tidy-output/s2_kluane-high_modelled_smoothed_spline_point_long.csv') %>%
+  select(id, doy.obs, ndvi.pred) %>%
+  rename(doy = 'doy.obs', 
+         ndvi = 'ndvi.pred') %>%
+  left_join(s2.snow.kh, by = 'id') %>%
+  select(id, doy, ndvi, snow.auc) %>%
+  drop_na()
+
 # Rename variables
 ndvi.s <- ndvi.s %>% rename(doy = 'doy_obs',
                             ndvi = 'ndv_prd')
@@ -568,25 +577,25 @@ ndvi.s <- ndvi.s %>% drop_na()
 # Plot observations 
 
 # Create variables for filtering, indicative of lots of snow and little snow AUC
-high.snow <- 10
-low.snow <- 5
+high.snow <- 5
+low.snow <- 2
 
 # Get the range of max doy from high and low snow
-s2.data.low <- s2.data %>% filter(snow.auc < low.snow)
-s2.data.high <- s2.data %>% filter(snow.auc > high.snow)
+s2.data.low <- s2.kh.data %>% filter(snow.auc < low.snow)
+s2.data.high <- s2.kh.data %>% filter(snow.auc > high.snow)
 
 # Store min and max values
-high.snow.max <- max(s2.data.high$ndvi.max.doy_s)
-high.snow.min <- min(s2.data.high$ndvi.max.doy_s)
-low.snow.max <- max(s2.data.low$ndvi.max.doy_s)
-low.snow.min <- min(s2.data.low$ndvi.max.doy_s)
+high.snow.max <- max(s2.data.high$ndvi.max.doy) # add _s for model name if blaesedalen
+high.snow.min <- min(s2.data.high$ndvi.max.doy)
+low.snow.max <- max(s2.data.low$ndvi.max.doy)
+low.snow.min <- min(s2.data.low$ndvi.max.doy)
 
 # Plot in the style of the conceptual plot from the beginning of this research proj.
 ggplot() +
   geom_line(data = ndvi.s %>% filter(snow.auc < low.snow), aes(x = doy, y = ndvi, group = id), color = '#9ebc9fff', alpha = 0.1, size = 1) + #size = snow.auc)) +
-  geom_line(data = ndvi.s %>% filter(snow.auc > high.snow), aes(x = doy, y = ndvi, group = id), color = '#d08c6dff', alpha = 0.1, size = 1) +
-  geom_point(data = s2.data %>% filter(snow.auc < low.snow), aes(x = ndvi.max.doy_s, y = ndvi.max_s), color = '#9ebc9fff', alpha = 0.5) +
-  geom_point(data = s2.data %>% filter(snow.auc > high.snow), aes(x = ndvi.max.doy_s, y = ndvi.max_s), color = '#d08c6dff', alpha = 0.5) +
+  geom_line(data = ndvi.s %>% filter(snow.auc > high.snow), aes(x = doy, y = ndvi, group = id), color = '#d08c6dff', alpha = 0.5, size = 2) +
+  geom_point(data = s2.kh.data %>% filter(snow.auc < low.snow), aes(x = ndvi.max.doy, y = ndvi.max), color = '#9ebc9fff', alpha = 0.5) +
+  geom_point(data = s2.kh.data %>% filter(snow.auc > high.snow), aes(x = ndvi.max.doy, y = ndvi.max), color = '#d08c6dff', alpha = 0.5) +
   geom_segment(aes(x = high.snow.min, xend = high.snow.max, y = 0.07, yend = 0.07), color = '#d08c6dff', size = 1) +
   geom_segment(aes(x = low.snow.min, xend = low.snow.max, y = 0.08, yend = 0.08), color = '#9ebc9fff', size = 1) +
   #scale_color_viridis_c() +
@@ -594,7 +603,7 @@ ggplot() +
         y = 'NDVI Observation') +
  # xlim(c(175, 260)) +
 #  ylim(c(0, 0.6)) +
-  coord_cartesian(xlim = c(175, 260), ylim = c(0, 0.6)) +
+  coord_cartesian(xlim = c(175, 260), ylim = c(0, 0.9)) +
   theme_cowplot()
 
 # Un-used code ----
