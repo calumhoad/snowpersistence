@@ -23,6 +23,8 @@ library(greenbrown)
 library(ggplot2)
 library(cowplot)
 
+source('ndvi-curve-fitting-functions.R')
+
 # Part 1: Reads in Sentinel-2 data as a terra rast and clips to aoi extent,
 #   calculates NDVI per pixel, then converts raster to point geom.
 # Part 2: Reads in Sentinel-2 NDVI timeseries as sf point, then fits curves

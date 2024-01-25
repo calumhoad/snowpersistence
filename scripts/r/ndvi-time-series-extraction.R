@@ -292,9 +292,9 @@ s2.kh.ndvi.points <- s2.kh.ndvi.points %>%
 
 
 # Write out the NDVI time series ----
-st_write(s2.bl.ndvi.points, '../../data/sentinel-2/tidy-output/s2-blaesedalen-ndvi-ts-pt-2023.csv', 
+st_write(s2.bl.ndvi.points, '../../data/sentinel-2/tidy-output/s2-blaesedalen-ndvi-ts-pt.csv', 
          layer_options = "GEOMETRY=AS_XY")
-st_write(s2.kl.ndvi.points, '../../data/sentinel-2/tidy-output/s2-kluane-low-ndvi-ts-pt-2023.csv', 
+st_write(s2.kl.ndvi.points, '../../data/sentinel-2/tidy-output/s2-kluane-low-ndvi-ts-pt.csv', 
          layer_options = "GEOMETRY=AS_XY")
-st_write(s2.kh.ndvi.points, '../../data/sentinel-2/tidy-output/s2-kluane-high-ndvi-ts-pt-2023.csv', 
+st_write(s2.kh.ndvi.points, '../../data/sentinel-2/tidy-output/s2-kluane-high-ndvi-ts-pt.csv', 
          layer_options = "GEOMETRY=AS_XY")
