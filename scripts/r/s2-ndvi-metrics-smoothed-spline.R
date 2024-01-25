@@ -247,7 +247,7 @@ s2.ndvi.synth.long <- s2.ndvi.synthetic %>%
 
 ggplot() +
   geom_point(data = s2.ndvi.synth.long, aes(x = doy, y = ndvi))
-
+  
 # Write out the extracted points
 st_write(s2.ndvi.points, '../../data/sentinel-2/tidy-output/s2-kluane-high-ndvi-ts-pt-2023.csv', 
          layer_options = "GEOMETRY=AS_XY")
