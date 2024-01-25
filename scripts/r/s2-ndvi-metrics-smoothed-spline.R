@@ -18,6 +18,8 @@ library(tidyverse)
 library(purrr)
 library(broom)
 library(viridis)
+library(pbapply)
+library(tidyterra)
 #library(janitor)
 
 # Part 1: Reads in Sentinel-2 data as a terra rast and clips to aoi extent,
@@ -31,38 +33,64 @@ library(viridis)
 # Import ***Blaesedalen*** Imagery
 
 # Create a list of the S2 R10m files for each S2 scene
-d20230626 <- list.files('../../data/sentinel-2/20230626/S2B_MSIL2A_20230626T153819_N0509_R011_T21WXT_20230626T183843.SAFE/GRANULE/L2A_T21WXT_A032927_20230626T153935/IMG_DATA/R10m/', full.names = TRUE)
-d20230708 <- list.files('../../data/sentinel-2/20230708/S2A_MSIL2A_20230708T152811_N0509_R111_T21WXT_20230708T214952.SAFE/GRANULE/L2A_T21WXT_A042007_20230708T152945/IMG_DATA/R10m/', full.names = TRUE)
-d20230726 <- list.files('../../data/sentinel-2/20230726/S2B_MSIL2A_20230726T153819_N0509_R011_T21WXT_20230726T184037.SAFE/GRANULE/L2A_T21WXT_A033356_20230726T153828/IMG_DATA/R10m/', full.names = TRUE)
-d20230729 <- list.files('../../data/sentinel-2/20230729/S2B_MSIL2A_20230729T154819_N0509_R054_T21WXT_20230729T181552.SAFE/GRANULE/L2A_T21WXT_A033399_20230729T154940/IMG_DATA/R10m/', full.names = TRUE)
-d20230807 <- list.files('../../data/sentinel-2/20230807/S2A_MSIL2A_20230807T152811_N0509_R111_T21WXS_20230807T212701.SAFE/GRANULE/L2A_T21WXS_A042436_20230807T153242/IMG_DATA/R10m/', full.names = TRUE)
-d20230808 <- list.files('../../data/sentinel-2/20230808/S2B_MSIL2A_20230808T154819_N0509_R054_T21WXS_20230914T102422.SAFE/GRANULE/L2A_T21WXS_A033542_20230808T154852/IMG_DATA/R10m/', full.names = TRUE)
-d20230817 <- list.files('../../data/sentinel-2/20230817/S2A_MSIL2A_20230817T152941_N0509_R111_T21WXT_20230817T214159.SAFE/GRANULE/L2A_T21WXT_A042579_20230817T153311/IMG_DATA/R10m/', full.names = TRUE)
-d20230923 <- list.files('../../data/sentinel-2/20230923/S2A_MSIL2A_20230922T154951_N0509_R054_T21WXT_20230922T234400.SAFE/GRANULE/L2A_T21WXT_A043094_20230922T155005/IMG_DATA/R10m/', full.names = TRUE)
+d20230406 <- list.files('../../data/sentinel-2/imagery/20230406/S2A_MSIL2A_20230406T151941_N0509_R068_T21WXS_20230406T214452.SAFE/GRANULE/L2A_T21WXS_A040677_20230406T152237/IMG_DATA/R10m/', full.names = TRUE)
+d20230501 <- list.files('../../data/sentinel-2/imagery/20230501/S2B_MSIL2A_20230501T151809_N0509_R068_T21WXS_20230501T173400.SAFE/GRANULE/L2A_T21WXS_A032126_20230501T152117/IMG_DATA/R10m/', full.names = TRUE)
+d20230516 <- list.files('../../data/sentinel-2/imagery/20230516/S2A_MSIL2A_20230516T151801_N0509_R068_T21WXS_20230516T215553.SAFE/GRANULE/L2A_T21WXS_A041249_20230516T152031/IMG_DATA/R10m/', full.names = TRUE)
+d20230522 <- list.files('../../data/sentinel-2/imagery/20230522/S2A_MSIL2A_20230522T153811_N0509_R011_T21WXS_20230522T231356.SAFE/GRANULE/L2A_T21WXS_A041335_20230522T154223/IMG_DATA/R10m/', full.names = TRUE)
+d20230525 <- list.files('../../data/sentinel-2/imagery/20230525/S2A_MSIL2A_20230525T154941_N0509_R054_T22WDB_20230525T233156.SAFE/GRANULE/L2A_T22WDB_A041378_20230525T155122/IMG_DATA/R10m/', full.names = TRUE)
+d20230608 <- list.files('../../data/sentinel-2/imagery/20230608/S2A_MSIL2A_20230608T152811_N0509_R111_T21WXS_20230608T215653.SAFE/GRANULE/L2A_T21WXS_A041578_20230608T152919/IMG_DATA/R10m/', full.names = TRUE)
+d20230626 <- list.files('../../data/sentinel-2/imagery/20230626/S2B_MSIL2A_20230626T153819_N0509_R011_T21WXT_20230626T183843.SAFE/GRANULE/L2A_T21WXT_A032927_20230626T153935/IMG_DATA/R10m/', full.names = TRUE)
+d20230708 <- list.files('../../data/sentinel-2/imagery/20230708/S2A_MSIL2A_20230708T152811_N0509_R111_T21WXT_20230708T214952.SAFE/GRANULE/L2A_T21WXT_A042007_20230708T152945/IMG_DATA/R10m/', full.names = TRUE)
+d20230726 <- list.files('../../data/sentinel-2/imagery/20230726/S2B_MSIL2A_20230726T153819_N0509_R011_T21WXT_20230726T184037.SAFE/GRANULE/L2A_T21WXT_A033356_20230726T153828/IMG_DATA/R10m/', full.names = TRUE)
+d20230729 <- list.files('../../data/sentinel-2/imagery/20230729/S2B_MSIL2A_20230729T154819_N0509_R054_T21WXT_20230729T181552.SAFE/GRANULE/L2A_T21WXT_A033399_20230729T154940/IMG_DATA/R10m/', full.names = TRUE)
+d20230807 <- list.files('../../data/sentinel-2/imagery/20230807/S2A_MSIL2A_20230807T152811_N0509_R111_T21WXS_20230807T212701.SAFE/GRANULE/L2A_T21WXS_A042436_20230807T153242/IMG_DATA/R10m/', full.names = TRUE)
+d20230808 <- list.files('../../data/sentinel-2/imagery/20230808/S2B_MSIL2A_20230808T154819_N0509_R054_T21WXS_20230914T102422.SAFE/GRANULE/L2A_T21WXS_A033542_20230808T154852/IMG_DATA/R10m/', full.names = TRUE)
+d20230817 <- list.files('../../data/sentinel-2/imagery/20230817/S2A_MSIL2A_20230817T152941_N0509_R111_T21WXT_20230817T214159.SAFE/GRANULE/L2A_T21WXT_A042579_20230817T153311/IMG_DATA/R10m/', full.names = TRUE)
+d20230923 <- list.files('../../data/sentinel-2/imagery/20230923/S2A_MSIL2A_20230922T154951_N0509_R054_T21WXT_20230922T234400.SAFE/GRANULE/L2A_T21WXT_A043094_20230922T155005/IMG_DATA/R10m/', full.names = TRUE)
+d20231003 <- list.files('../../data/sentinel-2/imagery/20231003/S2A_MSIL2A_20231003T152051_N0509_R068_T21WXT_20231003T202504.SAFE/GRANULE/L2A_T21WXT_A043251_20231003T152052/IMG_DATA/R10m/', full.names = TRUE)
+d20231011 <- list.files('../../data/sentinel-2/imagery/20231011/S2B_MSIL2A_20231011T153059_N0509_R111_T21WXS_20231011T190635.SAFE/GRANULE/L2A_T21WXS_A034457_20231011T153057/IMG_DATA/R10m/', full.names = TRUE)
+d20231017 <- list.files('../../data/sentinel-2/imagery/20231017/S2B_MSIL2A_20231017T155149_N0509_R054_T21WXT_20231017T201439.SAFE/GRANULE/L2A_T21WXT_A034543_20231017T155218/IMG_DATA/R10m/', full.names = TRUE)
 
 # List of imagery dates, for later use
-dates <- c('2023-06-26', 
+dates <- c('2023-04-06', 
+           '2023-05-01', 
+           '2023-05-16', 
+           '2023-05-22', 
+           #'2023-05-25', 
+           '2023-06-08', 
+           #'2023-06-25', 
+           '2023-06-26', 
            '2023-07-08',
            '2023-07-26', 
            '2023-07-29', 
            '2023-08-07', 
            '2023-08-08', 
            '2023-08-17', 
-           '2023-09-23')
-
-# Get the Sentinel-2 10m bands as raster stack, project + crop to extent of UAV imagery
-# As function?
+           '2023-09-23',
+           '2023-10-03',
+           '2023-10-11', 
+           '2023-10-17')
 
 # Create list where each item in the list is another list,
 #   containing the filepath to each imagery band
-s2.data <- list(d20230626, 
+s2.data <- list(d20230406,
+                d20230501,
+                d20230516,
+                d20230522,
+                #d20230525, UTM22N
+                d20230608,
+                #d20230625, UTM22N
+                d20230626, 
                 d20230708, 
                 d20230726, 
                 d20230729, 
                 d20230807, 
                 d20230808, 
                 d20230817, 
-                d20230923)
+                d20230923,
+                d20231003,
+                d20231011, 
+                d20231017)
 
 # Import ***Kluane*** Imagery
 d20220404 <- list.files('../../data/sentinel-2/kluane/20220404/S2A_MSIL2A_20220404T203021_N0400_R114_T08VLN_20220404T231548.SAFE/GRANULE/L2A_T08VLN_A035432_20220404T203754/IMG_DATA/R10m/', full.names = TRUE)
@@ -114,7 +142,7 @@ s2.data <- list(d20220404,
                 #d20221108) # Unuseable? Clouds
 
 # Blaesedalen, Get uAV imagery over plot to use for cropping - RE-EXPORT UAV IMAGERY SO RE-PROJECT IS AVOIDED
-uav <- project(rast('../../data/uav/M3M-exports/5cm/20230702-clipped-5cm-div128.tif'), 'epsg:32621')
+uav <- rast('../../data/uav/orthomosaics/m3m/5cm/2023-07-02-5cm-clipped.tif')
 
 # Kluane, low, get uav imagery
 uav <- rast('../../data/uav/orthomosaics/maia/kluane-low/5cm/2022-07-05-5cm-clipped.tif')
@@ -132,7 +160,7 @@ import_s2 <- function(x) {
 plot(uav)
 
 # Import the data
-s2.data.import <- lapply(s2.data, import_s2)
+s2.data.import <- pblapply(s2.data, import_s2)
 
 # Check import function works by plotting rasters from list
 plotRGB(s2.data.import[[7]], r = 4*0.7, g = 3*0.7, b = 2*0.7)
@@ -140,19 +168,14 @@ plotRGB(s2.data.import[[7]], r = 4*0.7, g = 3*0.7, b = 2*0.7)
 # Set list of band names for Sentinel-2
 s2.bands <- c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp')
 
-# Rename bands to make reading logical
-names(s2.data.import[[1]]) <- s2.bands
-names(s2.data.import[[2]]) <- s2.bands
-names(s2.data.import[[3]]) <- s2.bands
-names(s2.data.import[[4]]) <- s2.bands
-names(s2.data.import[[5]]) <- s2.bands
-names(s2.data.import[[6]]) <- s2.bands
-names(s2.data.import[[7]]) <- s2.bands
-names(s2.data.import[[8]]) <- s2.bands
-names(s2.data.import[[9]]) <- s2.bands
-names(s2.data.import[[10]]) <- s2.bands
-names(s2.data.import[[11]]) <- s2.bands
-names(s2.data.import[[12]]) <- s2.bands
+# Function to rename bands (gives warnings, but seems to work)
+rename_bands <- function(x) {
+  names(x) <- s2.bands
+  update(x, names = TRUE)
+}
+
+# Apply function
+s2.data.import <- pblapply(s2.data.import, rename_bands)
 
 
 # Apply function to calculate NDVI ----
@@ -170,11 +193,60 @@ s2.ndvi <- rast(s2.ndvi)
 names(s2.ndvi) <- dates
 
 # Plot to check
-plot(s2.ndvi)
+ggplot() +
+  geom_spatraster(data = s2.ndvi) +
+  scale_fill_viridis_c() +
+  facet_wrap(~lyr)
 
 # Extract raster time series to points
 s2.ndvi.points <- st_as_sf(as.points(s2.ndvi, values = TRUE)) %>%
   mutate(id = row_number())
+
+# Synthesise 0 values for days late in year
+# Which dates to synthesise data for?
+s2.ndvi.long <- s2.ndvi.points %>%
+  pivot_longer(!geometry & !id, names_to = 'doy', values_to = 'ndvi') %>%
+  mutate(doy = sub('X', '', doy), 
+         doy = sub('\\.', '-', doy), 
+         doy = as_date(doy),
+         doy = yday(doy)) %>%
+  group_by(doy)
+
+summarise_at(s2.ndvi.long, 
+             vars(ndvi),
+             list(mean.ndvi = mean))
+
+diff <- (220-96)
+
+end <- 220 + diff
+
+possible.dates <- seq(290, 344, by = 3)
+
+possible.dates <- sample(x = possible.dates, size = 3)
+
+possible.dates
+
+origin <- '2023-01-01'
+
+d1 <- as.character(as_date(possible.dates[[1]], origin = origin))
+d2 <- as.character(as_date(possible.dates[[2]], origin = origin))
+d3 <- as.character(as_date(possible.dates[[3]], origin = origin)) 
+
+s2.ndvi.synthetic <- s2.ndvi.points %>%
+  mutate(!!d1 := 0, 
+         !!d2 := 0, 
+         !!d3 := 0)
+
+s2.ndvi.synth.long <- s2.ndvi.synthetic %>%
+  pivot_longer(!geometry & !id, names_to = 'doy', values_to = 'ndvi') %>%
+  mutate(#doy = sub('X', '', doy), 
+         #doy = sub('\\.', '-', doy), 
+         doy = as_date(doy),
+         doy = yday(doy)) %>%
+  group_by(id)
+
+ggplot() +
+  geom_point(data = s2.ndvi.synth.long, aes(x = doy, y = ndvi))
 
 # Write out the extracted points
 st_write(s2.ndvi.points, '../../data/sentinel-2/tidy-output/s2-kluane-high-ndvi-ts-pt-2023.csv', 
