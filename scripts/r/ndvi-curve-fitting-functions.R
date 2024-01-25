@@ -1,6 +1,25 @@
 # Functions for modelling NDVI curves and extracting key metrics
 # Calum Hoad, 25 Jan 2024, with help from Jakob Assmann
 
+# Import neccessary packages
+library(terra)
+library(dplyr)
+library(rts)
+library(ggplot2)
+library(buffeRs)
+library(sf)
+library(tidyverse)
+library(purrr)
+library(broom)
+library(viridis)
+library(tidyverse)
+library(bfast)
+library(phenopix)
+library(greenbrown)
+library(greenbrown)
+library(ggplot2)
+library(cowplot)
+
 # Parabolic 2nd order polynomial model ----
 
 # Function for fitting parabolic 2nd order polynomial model
@@ -135,7 +154,7 @@ fit_beck  <- function(df) {
     t = df$doy,
     weighting = TRUE, # Does this default to TRUE? Re-run model with this explicit.
     #tout = seq(1, 12, length = 365), # Time steps of output, test this?
-    plot = TRUE)
+    plot = FALSE)
 }
 
 # Function to generate NDVI predictions using Beck
@@ -172,6 +191,3 @@ model_ndvi_beck <- function(data) {
     mutate(geometry = geom)
   return(data)
 }
-
-
-# Test functions
