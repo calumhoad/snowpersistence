@@ -82,12 +82,37 @@ s2.kl.smooth <- s2.kl.smooth %>%
   rename(ndvi.pred = 'ndvi.pred.doy.1')
 s2.kh.smooth <- s2.kh.smooth %>%
   rename(ndvi.pred = 'ndvi.pred.doy.1')
+
 # Join data to singular dataframes?
 
 # Can join to singular sf dataframe, but Blaesedalen and Kluane have different 
 #   projections (UTM08N and 21N). 
 
-# Plot out the data for comparison of model fit
+# Outputs ----
+
+# Beck ##
+# Blaesedalen
+st_write(st_as_sf(s2.bl.beck),  '../../data/ndvi/s2-bl-beck.csv', 
+         layer_options = "GEOMETRY=AS_XY")
+# Kluane-low
+st_write(st_as_sf(s2.kl.beck),  '../../data/ndvi/s2-kl-beck.csv', 
+         layer_options = "GEOMETRY=AS_XY")
+# Kluane-high
+st_write(st_as_sf(s2.kh.beck),  '../../data/ndvi/s2-kh-beck.csv', 
+         layer_options = "GEOMETRY=AS_XY")
+# Smoothed-spline ##
+# Blaesedalen
+st_write(st_as_sf(s2.bl.smooth),  '../../data/ndvi/s2-bl-smooth.csv', 
+         layer_options = "GEOMETRY=AS_XY")
+# Kluane-low
+st_write(st_as_sf(s2.kl.smooth),  '../../data/ndvi/s2-kl-smooth.csv', 
+         layer_options = "GEOMETRY=AS_XY")
+# Kluane-high
+st_write(st_as_sf(s2.kh.smooth),  '../../data/ndvi/s2-kh-smooth.csv', 
+         layer_options = "GEOMETRY=AS_XY")
+
+
+# Plot out the data for comparison of model fit ----
 # 100 random pixels overview
 plot.data <- s2.bl.beck
 
@@ -104,6 +129,8 @@ ggplot(
 rand_id <- sample(plot.data %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
 
 # For one model
+plot.data <- s2.bl.smooth # Which model?
+
 ggplot(
   plot.data %>% filter(id %in% rand_id),
   aes(x = doy, group = id)
@@ -122,36 +149,40 @@ ggplot() +
   geom_line(data = s2.bl.beck %>% filter(id %in% rand_id),
             aes(x = doy,y = ndvi.pred, color = 'red')) +
   geom_point(data = s2.bl.beck %>% filter(id %in% rand_id),
-             aes(x = ndvi.max.doy, y = ndvi.max), color = "red") +
+             aes(x = ndvi.max.doy, y = ndvi.max), color = "blue") +
   # Smoothed spline
   geom_point(data = s2.bl.smooth %>% filter(id %in% rand_id),
              aes(x = doy, y = ndvi, group = id)) +
   geom_line(data = s2.bl.smooth %>% filter(id %in% rand_id),
             aes(x = doy, y = ndvi.pred, color = 'blue')) +
   geom_point(data = s2.bl.smooth %>% filter(id %in% rand_id),
-             aes(x = ndvi.max.doy, y = ndvi.max), color = "blue") +
+             aes(x = ndvi.max.doy, y = ndvi.max), color = "red") +
   facet_wrap(~id) +
-  theme_classic()
+  theme_cowplot() +
+  theme(legend.position = 'none')
+
+# For both models
+ggplot() +
+  # Beck
+  geom_point(data = s2.bl.beck %>% filter(id %in% rand_id),
+             aes(x = doy, y = ndvi, group = id)) +
+  geom_line(data = s2.bl.beck %>% filter(id %in% rand_id),
+            aes(x = doy, y = ndvi.pred, color = 'red')) +
+  geom_point(data = s2.bl.beck %>% filter(id %in% rand_id),
+             aes(x = ndvi.max.doy, y = ndvi.max), color = "blue") +
+  # Smoothed spline
+  geom_point(data = s2.bl.smooth %>% filter(id %in% rand_id),
+             aes(x = doy, y = ndvi, group = id)) +
+  geom_line(data = s2.bl.smooth %>% filter(id %in% rand_id),
+            aes(x = doy, y = ndvi.pred, color = 'blue')) +
+  geom_point(data = s2.bl.smooth %>% filter(id %in% rand_id),
+             aes(x = ndvi.max.doy, y = ndvi.max), color = "red") +
+  facet_wrap(~id, labeller = label_parsed) +  # Parse label
+  theme_cowplot() +
+  theme(legend.position = "none")  # Remove legend
 
 
-# Outputs ---- 
 
-# Wide format
-s2.modelled.export.wide <- s2.modelled.ndvi %>%
-  group_by(id) %>%
-  filter(doy == 224) %>%
-  dplyr::select(-doy, -ndvi.pred.doy.1, -ndvi.max.date, -ndvi, -ndvi.pred.doy)
 
-st_write(st_as_sf(s2.modelled.export.wide),  '../../data/sentinel-2/tidy-output/s2_kluane-high_smoothed_spline_point_wide.csv', 
-         layer_options = "GEOMETRY=AS_XY")
 
-# Long format
-s2.modelled.export.long <- s2.modelled.ndvi %>%
-  rename(doy.obs = 'doy', 
-         ndvi.obs = 'ndvi', 
-         ndvi.pred = 'ndvi.pred.doy.1') %>%
-  select(-ndvi.max.date)
-
-st_write(st_as_sf(s2.modelled.export.long),  '../../data/sentinel-2/tidy-output/s2_kluane-high_modelled_smoothed_spline_point_long.csv', 
-         layer_options = "GEOMETRY=AS_XY")
 
