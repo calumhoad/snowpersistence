@@ -37,7 +37,7 @@ lm.ndvi.max.doy_p <- lm(s2$ndvi.max.doy_p ~ s2$snow.persist)
 lm.ndvi.max.doy_s <- lm(s2$ndvi.max.doy_s ~ s2$snow.persist)
 
 # Check models
-summary(lm.ndvi.max.doy_b)
+stargazer(lm.ndvi.max.doy_s, type = 'text')
 
 
 # Determining neighbours and assigning weights ----
@@ -84,7 +84,7 @@ lm.LMtests(lm.ndvi.max.doy_s, s2.lw, test = 'LMlag') # Spatial lag
 # Sensitivity analysis ----
 
 # Which model to conduct sensitivity analysis on?
-model <- lm.ndvi.max
+model <- lm.ndvi.max.doy_s
 
 # Empty vector for storage of Moran's I values
 moran.I <- c()
@@ -127,13 +127,15 @@ sem.ndvi.max.doy_s <- errorsarlm(ndvi.max.doy_s ~ snow.persist,
                                  listw = s2.lw, 
                                  zero.policy = TRUE)
 
-
+stargazer(sem.ndvi.max.doy_s, type = 'text')
 # How do we know whether the spatial error model has removed enough 
 # of the spatial autocorrelation?
 
 # Run Moran's I on the output of the spatial error model
 moran.spaterr <- moran.mc(model$residuals, s2.lw, nsim = 999, zero.policy = TRUE)
-plot(moran, main = '', las = 1)
+plot(moran, main = '', las = 1)# +
+
+plot(moran.spaterr, main = '', las = 1)
 
 model <- sem.ndvi.max.doy_s
 
@@ -144,6 +146,44 @@ s2.line <- s2 %>% mutate(predict = predict(sem.ndvi.max.doy_s))
 const.coef <- model$coefficients[1]
 resp.coef <- model$coefficients[2]
 
+# Compare the lm, spaterr, and spatlagg models
+# create empty vectors for holding the Moran statistics
+moran_I_lm <- c()
+moran_I_slm <- c()
+moran_I_sem <- c()
+
+# loop through a distance vector d ranging from 50 to 2000 m
+for (d in seq(10, 200, 10)) {
+  s2.nb <- dnearneigh(s2, d1 = 0, d2 = d)
+  s2.lw <- nb2listw(s2.nb, style = "W", zero.policy = TRUE)
+  
+  moran_lm <- moran.mc(lm.ndvi.max.doy_s$residuals, s2.lw, nsim = 999, zero.policy = TRUE)
+  moran_I_lm <- c(moran_I_lm, moran_lm$statistic)
+  
+  #moran_slm <- moran.mc(zinc.slm$residuals, meuse.lw, nsim = 999, zero.policy = TRUE)
+  #moran_I_slm <- c(moran_I_slm, moran_slm$statistic)
+  
+  moran_sem <- moran.mc(sem.ndvi.max.doy_s$residuals, s2.lw, nsim = 999, zero.policy = TRUE)
+  moran_I_sem <- c(moran_I_sem, moran_sem$statistic)
+}
+
+moran_I_lm  <- data.frame(moran_I = moran_I_lm, 
+                          distance = seq(10, 200, 10), 
+                          model="Simple linear model")
+
+# moran_I_slm <- data.frame(moran_I = moran_I_slm, 
+#                           distance = seq(50, 2000, 50), 
+#                           model="Spatial lag model")
+
+moran_I_sem <- data.frame(moran_I = moran_I_sem, 
+                          distance = seq(10, 200, 10), 
+                          model="Spatial error model")
+
+moran.df <- rbind(moran_I_lm, moran_I_sem)
+
+ggplot(moran.df, aes(x = distance, y = moran_I, col=model)) + 
+  geom_point() +
+  geom_line()
 
 ggplot(s2.line, aes(x = snow.persist, y = ndvi.max.doy_s)) +
   geom_point() +

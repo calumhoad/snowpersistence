@@ -80,7 +80,7 @@ model_ndvi_parabolic <- function(data) {
 
 # Smoothed spline model ----
 
-# Function for fitting parabolic 2nd order polynomial model
+# Function to fit smoothed spline model
 model_fit_smoothedspline <- function(df) {
   # Using a spline smoother
   smooth.spline(x = df$doy, y = df$ndvi, spar = 0.5)
@@ -183,11 +183,11 @@ model_ndvi_beck <- function(data) {
   # Predict values and write back to original dataframe
   data <- suppressMessages(full_join(data, data.frame(
     doy = year_in_doys,
-    ndvi_pred = predict.dbl_log_model(model, year_in_doys)
+    ndvi.pred = predict.dbl_log_model(model, year_in_doys)
   ))) %>%
     arrange(doy) %>%
-    mutate(ndvi_max = max(ndvi_pred)) %>%
-    mutate(ndvi_max_doy = doy[which(ndvi_pred == ndvi_max[1])][1]) %>%
+    mutate(ndvi.max = max(ndvi.pred)) %>%
+    mutate(ndvi.max.doy = doy[which(ndvi.pred == ndvi.max[1])][1]) %>%
     mutate(geometry = geom)
   return(data)
 }

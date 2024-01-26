@@ -75,11 +75,13 @@ s2.kl.beck <- s2.kl %>%
 s2.kh.beck <- s2.kh %>%
   group_modify(~model_ndvi_beck(.x))
 
-
+# Format data 
+s2.bl.smooth <- s2.bl.smooth %>%
+  rename(ndvi.pred = 'ndvi.pred.doy.1')
 
 # Quick quality control plots
 # 100 random pixels overview
-plot.data <- s2.smooth
+plot.data <- s2.bl.smooth
 
 ggplot(
   plot.data %>% filter(id %in% sample(unique(plot.data$id), 100)),
@@ -92,6 +94,7 @@ ggplot(
 
 # 9 random pixels in detail
 rand_id <- sample(plot.data %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
+
 ggplot(
   plot.data %>% filter(id %in% rand_id),
   aes(x = doy, group = id)
