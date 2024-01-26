@@ -78,7 +78,10 @@ s2.kh.beck <- s2.kh %>%
 # Format data 
 s2.bl.smooth <- s2.bl.smooth %>%
   rename(ndvi.pred = 'ndvi.pred.doy.1')
-
+s2.kl.smooth <- s2.kl.smooth %>%
+  rename(ndvi.pred = 'ndvi.pred.doy.1')
+s2.kh.smooth <- s2.kh.smooth %>%
+  rename(ndvi.pred = 'ndvi.pred.doy.1')
 # Join data to singular dataframes?
 
 # Can join to singular sf dataframe, but Blaesedalen and Kluane have different 
@@ -93,20 +96,40 @@ ggplot(
   aes(x = doy, colour = id, group = id)
 ) +
   geom_point(aes(y = ndvi)) +
-  geom_line(aes(y = ndvi_pred)) +
+  geom_line(aes(y = ndvi.pred)) +
   theme_classic() +
   theme(legend.position = "none")
 
 # 9 random pixels in detail
 rand_id <- sample(plot.data %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
 
+# For one model
 ggplot(
   plot.data %>% filter(id %in% rand_id),
   aes(x = doy, group = id)
 ) +
   geom_point(aes(y = ndvi)) +
-  geom_line(aes(y = ndvi_pred)) +
-  geom_point(aes(x = ndvi_max_doy, y = ndvi_max), color = "red") +
+  geom_line(aes(y = ndvi.pred)) +
+  geom_point(aes(x = ndvi.max.doy, y = ndvi.max), color = "red") +
+  facet_wrap(~id) +
+  theme_classic()
+
+# For both models
+ggplot() +
+  # Beck
+  geom_point(data = s2.bl.beck %>% filter(id %in% rand_id),
+             aes(x = doy, y = ndvi, group = id)) +
+  geom_line(data = s2.bl.beck %>% filter(id %in% rand_id),
+            aes(x = doy,y = ndvi.pred, color = 'red')) +
+  geom_point(data = s2.bl.beck %>% filter(id %in% rand_id),
+             aes(x = ndvi.max.doy, y = ndvi.max), color = "red") +
+  # Smoothed spline
+  geom_point(data = s2.bl.smooth %>% filter(id %in% rand_id),
+             aes(x = doy, y = ndvi, group = id)) +
+  geom_line(data = s2.bl.smooth %>% filter(id %in% rand_id),
+            aes(x = doy, y = ndvi.pred, color = 'blue')) +
+  geom_point(data = s2.bl.smooth %>% filter(id %in% rand_id),
+             aes(x = ndvi.max.doy, y = ndvi.max), color = "blue") +
   facet_wrap(~id) +
   theme_classic()
 
