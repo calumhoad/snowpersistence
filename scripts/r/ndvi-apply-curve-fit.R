@@ -79,16 +79,21 @@ s2.kh.beck <- s2.kh %>%
 s2.bl.smooth <- s2.bl.smooth %>%
   rename(ndvi.pred = 'ndvi.pred.doy.1')
 
-# Quick quality control plots
+# Join data to singular dataframes?
+
+# Can join to singular sf dataframe, but Blaesedalen and Kluane have different 
+#   projections (UTM08N and 21N). 
+
+# Plot out the data for comparison of model fit
 # 100 random pixels overview
-plot.data <- s2.bl.smooth
+plot.data <- s2.bl.beck
 
 ggplot(
   plot.data %>% filter(id %in% sample(unique(plot.data$id), 100)),
   aes(x = doy, colour = id, group = id)
 ) +
   geom_point(aes(y = ndvi)) +
-  geom_line(aes(y = ndvi.pred)) +
+  geom_line(aes(y = ndvi_pred)) +
   theme_classic() +
   theme(legend.position = "none")
 
@@ -100,8 +105,8 @@ ggplot(
   aes(x = doy, group = id)
 ) +
   geom_point(aes(y = ndvi)) +
-  geom_line(aes(y = ndvi.pred)) +
-  geom_point(aes(x = ndvi.max.doy, y = ndvi.max), color = "red") +
+  geom_line(aes(y = ndvi_pred)) +
+  geom_point(aes(x = ndvi_max_doy, y = ndvi_max), color = "red") +
   facet_wrap(~id) +
   theme_classic()
 
