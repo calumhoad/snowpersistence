@@ -1,7 +1,7 @@
 # Sentinel-2 NDVI Metrics
 # Calum Hoad, 25/01/2024
 
-# Extract NDVI time series from Sentinel 2 and NASA HLS S30 data, over Kluane
+# Extract NDVI time series from Sentinel 2 data, over Kluane
 # High, Kluane Low, and Blaesedalen plot locations.
 
 # Import necessary libraries

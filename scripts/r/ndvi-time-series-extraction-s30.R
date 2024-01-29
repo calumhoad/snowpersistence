@@ -25,7 +25,7 @@ library(tidyterra)
 
 # Blaesedalen ###
 
-# Create a list of the S2 R10m files for each S2 scene
+# Create a list of the S30 files for each S30 scene
 d20230406 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-04-06/', full.names = TRUE)
 d20230501 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-05-01/', full.names = TRUE)
 d20230516 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-05-16/', full.names = TRUE)
@@ -40,6 +40,8 @@ d20230808 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-08-08/', full.
 d20230914 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-09-14/', full.names = TRUE)
 d20230922 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-09-22/', full.names = TRUE)
 d20231003 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-10-03/', full.names = TRUE)
+
+d20230922
 
 # List of imagery dates, for later use
 bl.dates <- c('2023-04-06',
@@ -75,6 +77,8 @@ s30.bl.data <- list(d20230406,
                  d20231003)
 
 # Kluane ###
+
+# Create a list of the S30 files for each S30 scene
 d20220404 <- list.files('../../data/nasa-hls/kluane/s30/2022-04-04/', full.names = TRUE)
 d20220512 <- list.files('../../data/nasa-hls/kluane/s30/2022-05-12/', full.names = TRUE)
 d20220529 <- list.files('../../data/nasa-hls/kluane/s30/2022-05-29/', full.names = TRUE)
@@ -90,24 +94,7 @@ d20221006 <- list.files('../../data/nasa-hls/kluane/s30/2022-10-06/', full.names
 
 
 # List of imagery dates, for later use
-# Blaesedalen
-dates <- c('2023-04-06',
-           '2023-05-01', 
-           '2023-05-16',
-           '2023-05-22', 
-           '2023-06-08', 
-           '2023-06-26', 
-           '2023-07-08', 
-           '2023-07-26', 
-           '2023-07-29', 
-           '2023-08-07', 
-           '2023-08-08', 
-           '2023-09-14', 
-           '2023-09-22', 
-           '2023-10-03')
-
-# Kluane
-dates <- c('2022-04-04',
+k.dates <- c('2022-04-04',
            '2022-05-12',
            '2022-05-29',
            '2022-06-08',
@@ -120,29 +107,9 @@ dates <- c('2022-04-04',
            '2022-09-29', 
            '2022-10-06')
 
-# Get the relevant HLS bands as raster stack, project + crop to extent of UAV imagery
-
 # Create list where each item in the list is another list,
 #   containing the filepath to each imagery band
-
-# Blaesedalen
-s30.data <- list(d20230406,
-                d20230501,
-                d20230516,
-                d20230522,
-                d20230608,
-                d20230626,
-                d20230708,
-                d20230726,
-                d20230729,
-                d20230807,
-                d20230808,
-                d20230914,
-                d20230922,
-                d20231003)
-
-# Kluane
-s30.data <- list(d20220404,
+s30.k.data <- list(d20220404,
                 d20220512,
                 d20220529,
                 d20220608,
@@ -155,44 +122,78 @@ s30.data <- list(d20220404,
                 d20220929, 
                 d20221006)
 
-# Get uAV imagery over plot to use for cropping - RE-EXPORT UAV IMAGERY SO RE-PROJECT IS AVOIDED
+
+# Import UAV data for each site, to give area for NDVI time series extraction
+
 # Blaesedalen
-uav <- rast('../../data/uav/orthomosaics/m3m/5cm/2023-07-02-5cm-clipped.tif')
-# Kluane-low
-uav <- rast('../../data/uav/orthomosaics/maia/kluane-low/5cm/2022-07-05-5cm-clipped.tif')
-# Kluane-high
-uav <- rast('../../data/uav/orthomosaics/maia/kluane-high/5cm/2022-07-09-5cm-clipped.tif')
+bl.uav <- rast('../../data/uav/orthomosaics/m3m/5cm/2023-07-02-5cm-clipped.tif')
+
+# Kluane, low, get uav imagery
+kl.uav <- rast('../../data/uav/orthomosaics/maia/kluane-low/5cm/2022-07-05-5cm-clipped.tif')
+
+# Kluane, high, get UAV imagery
+kh.uav <- rast('../../data/uav/orthomosaics/maia/kluane-high/5cm/2022-07-09-5cm-clipped.tif')
+
 
 # Create function for stacking rasters from lists of filepaths, then cropping to extent of UAV imagery
-import_s30 <- function(x) {
+import_s30 <- function(x, plot) {
   x <- rast(x[1:13]) %>%
-    crop(uav)
-  #x <- set.names(object = x, nm = c('aot', 'blue', 'green', 'red', 'nir', 'tci1', 'tci2', 'tci3', 'wvp'))
+    crop(plot)
 }
 
-# Import the S30 data using function
-s30.data.import <- pblapply(s30.data, import_s30)
+# Import the data
+s30.bl.import <- pblapply(s30.bl.data, import_s30, plot = bl.uav) # Blaesedalen
+s30.kl.import <- pblapply(s30.k.data, import_s30, plot = kl.uav) # Kluane-low
+s30.kh.import <- pblapply(s30.k.data, import_s30, plot = kh.uav) # Kluane-high
+
+# Check import function works by plotting rasters from list
+plotRGB(s30.bl.import[[2]], r = 4, g = 3, b = 2)
 
 # Function to calculate NDVI (B8A = narrow NIR, B4 = red)
 s30_ndvi <- function(x) {
   x <- (x$NIR_Narrow-x$Red)/(x$NIR_Narrow+x$Red)
 }
 
-# Apply function to stacked S30 raster list
-s30.ndvi <- pblapply(s30.data.import, s30_ndvi)
+# Apply function to calculate S2 NDVI
+s30.bl.ndvi <- pblapply(s30.bl.import, s30_ndvi)
+s30.kl.ndvi <- pblapply(s30.kl.import, s30_ndvi)
+s30.kh.ndvi <- pblapply(s30.kh.import, s30_ndvi)
 
 # Stack NDVI rasters into single spatRast
-s30.ndvi <- rast(s30.ndvi)
+s30.bl.ndvi <- rast(s30.bl.ndvi)
+s30.kl.ndvi <- rast(s30.kl.ndvi)
+s30.kh.ndvi <- rast(s30.kh.ndvi)
 
-# Name raster layers with dates
-names(s30.ndvi) <- dates
+# Name spatRaster layers with dates
+names(s30.bl.ndvi) <- bl.dates
+names(s30.kl.ndvi) <- k.dates
+names(s30.kh.ndvi) <- k.dates
 
-# Plot for sanity check
-plot(s30.ndvi)
+# Plot to check
+ggplot() +
+  geom_spatraster(data = s30.bl.ndvi) +
+  scale_fill_viridis_c() +
+  facet_wrap(~lyr)
 
 # Extract raster time series to points
-s30.ndvi.points <- st_as_sf(as.points(s30.ndvi, values = TRUE)) %>%
+s30.bl.ndvi.points <- st_as_sf(as.points(s30.bl.ndvi, values = TRUE)) %>%
   mutate(id = row_number())
+
+s30.kl.ndvi.points <- st_as_sf(as.points(s30.kl.ndvi, values = TRUE)) %>%
+  mutate(id = row_number())
+
+s30.kh.ndvi.points <- st_as_sf(as.points(s30.kh.ndvi, values = TRUE)) %>%
+  mutate(id = row_number())
+
+test <- s30.bl.ndvi.points %>% 
+  pivot_longer(!id & !geometry, names_to = 'date', values_to = 'ndvi') %>%
+  group_by(id)
+
+ggplot() +
+  geom_line(data = test, aes(x = as_date(date), y = ndvi, group = id))
+
+ggplot() +
+  geom_spatraster_rgb(data = rast(s30.bl.data[[14]]), r = 4, g = 3, b = 2)
 
 # Write out the extracted points
 st_write(s30.ndvi.points, '../../data/nasa-hls/output/s30-kluane-high-ndvi-ts-pt-2023.csv', 
