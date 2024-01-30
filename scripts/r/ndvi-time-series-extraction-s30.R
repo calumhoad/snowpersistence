@@ -169,7 +169,7 @@ names(s30.kh.ndvi) <- k.dates
 
 # Plot to check
 ggplot() +
-  geom_spatraster(data = s30.kl.ndvi) +
+  geom_spatraster(data = s30.bl.ndvi) +
   scale_fill_viridis_c() +
   facet_wrap(~lyr)
 
@@ -185,8 +185,43 @@ s30.kl.ndvi.points <- st_as_sf(as.points(s30.kl.ndvi, values = TRUE)) %>%
 s30.kh.ndvi.points <- st_as_sf(as.points(s30.kh.ndvi, values = TRUE)) %>%
   mutate(id = row_number())
 
-# Checking the data is logical
-test <- s30.kl.ndvi.points %>% 
+
+# Synthesise 0 values for days late in year, due to assymetry of the datasets ----
+
+# Using the same dates as for the S2 data
+
+# Blaesedalen ###
+origin <- '2023-01-01'
+d1 <- as.character(as_date(290, origin = origin)) # S30 data not available, but S2 data available, and 0 value predominant
+d2 <- as.character(as_date(329, origin = origin)) # as per S2 synthetic imagery dates, and d3 and d4 the same
+d3 <- as.character(as_date(331, origin = origin))
+d4 <- as.character(as_date(344, origin = origin))
+
+# Assign 0 NDVI value to the synthetic imagery dates generated above
+s30.bl.ndvi.points <- s30.bl.ndvi.points %>%
+  mutate(!!d1 := 0, 
+         !!d2 := 0, 
+         !!d3 := 0,
+         !!d4 := 0)
+
+# Kluane ###
+origin <- '2022-01-01'
+d1 <- as.character(as_date(315, origin = origin)) 
+d2 <- as.character(as_date(324, origin = origin)) 
+d3 <- as.character(as_date(346, origin = origin))
+
+# Assign 0 NDVI value to the synthetic imagery dates generated above
+s30.kl.ndvi.points <- s30.kl.ndvi.points %>%
+  mutate(!!d1 := 0,
+         !!d2 := 0, 
+         !!d3 := 0)
+s30.kh.ndvi.points <- s30.kl.ndvi.points %>%
+  mutate(!!d1 := 0,
+         !!d2 := 0, 
+         !!d3 := 0)
+
+# Checking the data is logical ----
+test <- s30.bl.ndvi.points %>% 
   pivot_longer(!id & !geometry, names_to = 'date', values_to = 'ndvi') %>%
   group_by(id)
 
@@ -195,34 +230,7 @@ ggplot() +
 
 ggplot() +
   geom_spatraster_rgb(data = rast(s30.bl.data[[14]]), r = 4, g = 3, b = 2, max_col_value = .3 ) #+
-  geom_sf(data = s30.bl.ndvi.points, aes(color = 'red', size = 4))
-
-# Write out the extracted points
-st_write(s30.ndvi.points, '../../data/nasa-hls/output/s30-kluane-high-ndvi-ts-pt-2023.csv', 
-         layer_options = "GEOMETRY=AS_XY")
-
-# Synthesise 0 values for days late in year, due to assymetry of the datasets ----
-
-# Using the same dates as for the S2 data
-
-# Blaesedalen ###
-d1 <- 290 # S30 data not available, but S2 data available, and 0 value predominant
-d2 <- 329 # as per S2 synthetic imagery dates, and d3 and d4 the same
-d3 <- 331
-d4 <- 344
-
-# Assign 0 NDVI value to the synthetic imagery dates generated above
-s2.bl.ndvi.points <- s2.bl.ndvi.points %>%
-  mutate(!!d1 := 0, 
-         !!d2 := 0, 
-         !!d3 := 0,
-         !!d4 := 0)
-
-# Kluane ###
-d1 <-
-d2
-d3
-d4
+geom_sf(data = s30.bl.ndvi.points, aes(color = 'red', size = 4))
 
 # Outputs ---- 
 
