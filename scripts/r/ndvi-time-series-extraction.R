@@ -269,7 +269,7 @@ k.last.diff <- last.k - mid.season
 
 # Work out what a symmetrical last image day would be
 synth.last.k <- mid.season + k.first.diff
-
+synth.last.k
 # Take the 'symmetrical' last image date as our synthetic last image day
 origin <- '2022-01-01'
 d3 <- as.character(as_date(synth.last.k, origin = origin)) 

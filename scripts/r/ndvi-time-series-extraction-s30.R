@@ -38,7 +38,8 @@ d20230729 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-07-29/', full.
 d20230807 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-08-07/', full.names = TRUE)
 d20230808 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-08-08/', full.names = TRUE)
 d20230914 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-09-14/', full.names = TRUE)
-d20230922 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-09-22/', full.names = TRUE)
+d20230922 <- list.files('../../data/nasa-hls/blaesedalen/s30/X2023-09-22/', full.names = TRUE)
+d20230923 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-09-23/', full.names = TRUE)
 d20231003 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-10-03/', full.names = TRUE)
 
 # List of imagery dates, for later use
@@ -53,8 +54,9 @@ bl.dates <- c('2023-04-06',
            '2023-07-29', 
            '2023-08-07', 
            '2023-08-08', 
-           '2023-09-14', 
-           '2023-09-22', 
+           '2023-09-14',
+           #'2023-09-22',
+           '2023-09-23', 
            '2023-10-03')
 
 # Create list where each item in the list is another list,
@@ -71,7 +73,8 @@ s30.bl.data <- list(d20230406,
                  d20230807,
                  d20230808,
                  d20230914,
-                 d20230922,
+                 #d20230922,
+                 d20230923,
                  d20231003)
 
 # Kluane ###
@@ -145,8 +148,27 @@ s30.kl.import <- pblapply(s30.k.data, import_s30, plot = kl.uav) # Kluane-low
 s30.kh.import <- pblapply(s30.k.data, import_s30, plot = kh.uav) # Kluane-high
 
 # Check import function works by plotting rasters from list
-plotRGB(s30.bl.import[[2]], r = 4, g = 3, b = 2)
+ggplot() +
+  geom_spatraster_rgb(data = s30.bl.import[[13]], r = 4, g = 3, b = 2, 
+                      max_col_value = 0.2, 
+                      interpolate = FALSE)
 
+ggplot() +
+  geom_spatraster(data = s30.bl.import[[13]], r = 4, g = 3, b = 2, 
+                      max_col_value = 0.2, 
+                      interpolate = FALSE) +
+  facet_wrap(~lyr)
+
+# What is going on with weird NDVI values?
+crs(s30.bl.import[[14]])
+
+d2023
+test <- crop(rast(c(d20230922[[4]], d20230922[[13]])), bl.uav)
+test$NDVI <- (test$NIR_Narrow-test$Red)/(test$NIR_Narrow+test$Red)
+ggplot() +
+  geom_spatraster(data = test) +
+  scale_color_viridis_c() +
+  facet_wrap(~lyr)
 # Function to calculate NDVI (B8A = narrow NIR, B4 = red)
 s30_ndvi <- function(x) {
   x <- (x$NIR_Narrow-x$Red)/(x$NIR_Narrow+x$Red)

@@ -166,11 +166,19 @@ plot(s30.ndvi)
 s30.ndvi.points <- st_as_sf(as.points(s30.ndvi, values = TRUE)) %>%
   mutate(id = row_number())
 
+# Checking the data is logical ----
+test <- s30.ndvi.points %>% 
+  pivot_longer(!id & !geometry, names_to = 'date', values_to = 'ndvi') %>%
+  group_by(id)
+
+ggplot() +
+  geom_line(data = test, aes(x = as_date(date), y = ndvi, group = id))
+
 # Write out the extracted points
 st_write(s30.ndvi.points, '../../data/nasa-hls/output/s30-kluane-high-ndvi-ts-pt-2023.csv', 
          layer_options = "GEOMETRY=AS_XY")
 
-
+as_date(275, origin = '2023-01-01')
 ###
 # PART 2
 ###
