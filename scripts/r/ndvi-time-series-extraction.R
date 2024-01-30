@@ -195,7 +195,7 @@ names(s2.kh.ndvi) <- k.dates
 
 # Plot to check
 ggplot() +
-  geom_spatraster(data = s2.kh.ndvi) +
+  geom_spatraster(data = s2.bl.ndvi) +
   scale_fill_viridis_c() +
   facet_wrap(~lyr)
 
@@ -209,6 +209,13 @@ s2.kl.ndvi.points <- st_as_sf(as.points(s2.kl.ndvi, values = TRUE)) %>%
 s2.kh.ndvi.points <- st_as_sf(as.points(s2.kh.ndvi, values = TRUE)) %>%
   mutate(id = row_number())
 
+# Plotting to check consisency of ts
+test <- s2.bl.ndvi.points %>% 
+  pivot_longer(!id & !geometry, names_to = 'date', values_to = 'ndvi') %>%
+  group_by(id)
+
+ggplot() +
+  geom_line(data = test, aes(x = as_date(date), y = ndvi, group = id))
 
 # Synthesise 0 values for days late in year, due to assymetry of the datasets ----
 
