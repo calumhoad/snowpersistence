@@ -17,6 +17,7 @@ library(broom)
 library(viridis)
 library(pbapply)
 library(tidyterra)
+library(cowplot)
 #library(janitor)
 
 ###
@@ -24,7 +25,7 @@ library(tidyterra)
 ###
 
 # Blaesedalen ###
-
+d20230406
 # Create a list of the S30 files for each S30 scene
 d20230406 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-04-06/', full.names = TRUE)
 d20230501 <- list.files('../../data/nasa-hls/blaesedalen/s30/2023-05-01/', full.names = TRUE)
@@ -55,7 +56,7 @@ bl.dates <- c('2023-04-06',
            '2023-08-07', 
            '2023-08-08', 
            '2023-09-14',
-           #'2023-09-22',
+           '2023-09-22',
            '2023-09-23', 
            '2023-10-03')
 
@@ -73,7 +74,7 @@ s30.bl.data <- list(d20230406,
                  d20230807,
                  d20230808,
                  d20230914,
-                 #d20230922,
+                 d20230922,
                  d20230923,
                  d20231003)
 
@@ -160,6 +161,70 @@ ggplot() +
   facet_wrap(~lyr)
 
 # What is going on with weird NDVI values?
+
+# Get Fmask for all of the rasters
+get_fmask <- function(x) {
+  x <- crop(rast(x[14]), bl.uav)
+}
+
+fmask.ts <- pblapply(s30.bl.data, get_fmask)
+
+names(fmask.ts) <- bl.dates
+
+toBinary <- function(i){
+  valuesbin = paste0(as.integer(intToBits(i)[1:8]), collapse = "")
+  valuesbin = unlist(strsplit(valuesbin, split = ""))
+  as.numeric(valuesbin) 
+}
+
+toB <- function(x) {
+  t(sapply(x, toBinary))
+}
+
+fmask.ts <- pblapply(fmask.ts, terra::app, toB)
+
+rename_bands <- function(x, bands) {
+  names(x) <- bands
+  update(x, names = TRUE)
+}
+
+bits <- c('Cirrus', 'Cloud', 'Adjacent C', 'Shadow', 'Snow/ice', 'Water', 'Aerosol1', 'Aerosol2')
+fmask.ts <- pblapply(fmask.ts, rename_bands, bits)
+
+# Plot as a large grid
+ggplot() +
+  geom_spatraster(data = fmask.ts[[1]]) +
+  scale_fill_viridis_c() +
+  facet_grid(~lyr)
+
+# Iterate over the list of spatraster objects
+plots <- list()
+for (i in seq_along(fmask.ts)) {
+  # Plot each spatraster and store the ggplot object in the list
+  plot <- ggplot() +
+    geom_spatraster(data = fmask.ts[[i]]) +
+    scale_fill_viridis_c() +
+    facet_grid(~lyr) +
+    theme_void() +
+    guides(fill = FALSE) +
+    labs(title = '')
+  
+  plots[[i]] <- plot
+}
+
+plots[[2]]
+bl.dates
+# Combine all ggplot objects in the list into a single plot
+combined_plot <- cowplot::plot_grid(plotlist = plots, nrow = 14, ncol = 1,
+                                    labels = bl.dates,
+                                    label_x = 0.34, label_y = 0.5)
+
+combined_plot
+# Print or save the combined plot
+print(combined_plot)
+  
+rast(fmask.ts)
+
 crs(s30.bl.import[[14]])
 
 d2023
@@ -169,6 +234,64 @@ ggplot() +
   geom_spatraster(data = test) +
   scale_color_viridis_c() +
   facet_wrap(~lyr)
+
+# Try plotting histogram of values 
+s30.bl.import[[1]]$NIR_Narrow
+
+# Get only NIR_Narrow or Red
+select_band <- function(x) {
+  x <- x$NIR_Narrow
+}
+
+test <- pblapply(s30.bl.import, select_band)
+
+test <- rast(test)
+
+names(test) <- bl.dates
+
+plot(test)
+ggplot() +
+  geom_bar(data = s30.bl.import[[1]]$NIR_Narrow)
+
+ndvi <- pblapply(s30.bl.import, s30_ndvi)
+ndvi <- rast(ndvi)
+names(ndvi) <- bl.dates
+plot(ndvi)
+
+terra::hist(s30.bl.import[[1]])
+
+(0.25 - 0.25)/(0.25 + 0.25)
+
+# Load your Fmask raster
+fmask_raster <- crop(rast('../../data/nasa-hls/blaesedalen/s30/2023-09-23/HLS.S30.T21WXT.2023266T151941.v2.0.Fmask.tif'), bl.uav)
+fmask_raster
+# Function to get FMask values
+toBinary <- function(i){
+  valuesbin = paste0(as.integer(rev(intToBits(i)[1:8])), collapse = "")
+  valuesbin = unlist(strsplit(valuesbin, split = ""))
+  as.numeric(valuesbin) 
+}
+
+toB <- function(x) {
+  t(sapply(x, toBinary))
+}
+
+r <- fmask_raster
+a <- terra::app(r, toB)
+a
+
+ggplot() +
+  geom_spatraster(data = a) +
+  scale_fill_viridis_c() +
+  facet_grid(~lyr)
+# Apply the mask to your Fmask raster
+masked_fmask <- mask_quality_bits(fmask_raster)
+
+# Apply the mask to your Fmask raster
+masked_fmask <- mask_quality_bits(fmask_raster)
+
+# Now 'masked_fmask' contains the Fmask values with pixels omitted where quality bits 6 and 7 are both set to 1
+
 # Function to calculate NDVI (B8A = narrow NIR, B4 = red)
 s30_ndvi <- function(x) {
   x <- (x$NIR_Narrow-x$Red)/(x$NIR_Narrow+x$Red)
