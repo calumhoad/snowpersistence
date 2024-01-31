@@ -28,15 +28,14 @@ source('ndvi-curve-fitting-functions.R')
 
 # SENTINEL-2 ## 
 # Blaesedalen
-s2.bl <- read.csv('../../data/sentinel-2/tidy-output/s2-blaesedalen-ndvi-ts-pt.csv') %>%
+s2.bl <- read.csv('../../data/ndvi/s2-blaesedalen-ndvi-ts-pt.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32621)
 # Kluane-low
-s2.kl <- read.csv('../../data/sentinel-2/tidy-output/s2-kluane-low-ndvi-ts-pt.csv') %>%
+s2.kl <- read.csv('../../data/ndvi/s2-kluane-low-ndvi-ts-pt.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32608)
 # Kluane-high
-s2.kh <- read.csv('../../data/sentinel-2/tidy-output/s2-kluane-high-ndvi-ts-pt.csv') %>%
+s2.kh <- read.csv('../../data/ndvi/s2-kluane-high-ndvi-ts-pt.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32608)
-
 
 # Format the data ----
 
@@ -58,6 +57,13 @@ s2.bl <- long_ndvi(s2.bl)
 s2.kl <- long_ndvi(s2.kl)
 s2.kh <- long_ndvi(s2.kh)
 
+# Check the time raw time series data ----
+ggplot() +
+  geom_line(data = s2.bl, aes(x = doy, y = ndvi, group = id))
+ggplot() +
+  geom_line(data = s2.kl, aes(x = doy, y = ndvi, group = id))
+ggplot() +
+  geom_line(data = s2.kh, aes(x = doy, y = ndvi, group = id))
 
 # Fit smoothed spline model to the data ----
 s2.bl.smooth <- s2.bl %>%
