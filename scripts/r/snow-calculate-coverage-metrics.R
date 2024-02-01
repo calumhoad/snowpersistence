@@ -162,7 +162,7 @@ t5r <- t5[band.filter]
 bl.red <- list(t1r, t2r, t3r, t4r, t5r)
 
 # Plot to check values
-plot(rast(bl.red), breaks = c(0, 0.4, 2))
+plot(rast(bl.red), breaks = c(0, 0.3, 2))
 
 # Function to classify snow free as 0, where red reflectance < 0.4, 
 #   and snow covered as 1, where red reflectance > 0.4. 
@@ -258,7 +258,7 @@ s2.centres <- read_csv('../../data/ndvi/s2-blaesedalen-ndvi-ts-pt.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32621) %>%
   select(id, geometry)
 # Kluane-high
-s2.centres <- read_csv('../../data/sentinel-2/tidy-output/s2-kluane-high-ndvi-ts-pt-2023.csv') %>%
+s2.centres <- read_csv('../../data/ndvi/s2-kluane-high-ndvi-ts-pt.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
   select(id, geometry)
 # Kluane-low
@@ -395,7 +395,7 @@ output.data <- pivot_wider(snow.auc, id_cols = c(id, geometry, snow.auc, snow.av
   st_centroid()
 
 # Write the file 
-st_write(output.data, "../../data/snow/snow-cover-10m-kluane-low.csv",
+st_write(output.data, "../../data/snow/snow-cover-10m-kluane-high.csv",
          layer_options = "GEOMETRY=AS_XY")
 
 
