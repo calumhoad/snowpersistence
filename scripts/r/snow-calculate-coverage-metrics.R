@@ -254,8 +254,9 @@ ggplot() + geom_sf(data = s30.poly) + geom_sf(data = s30.data)
 
 # Sentinel-2, bring in the list of pixel centres from S2 script
 # Blaesedalen
-s2.centres <- read_csv('../../data/sentinel-2/tidy-output/s2-blaesedalen-ndvi-ts-pt.csv') %>%
-  st_as_sf(coords = c('X', 'Y'), crs = 32621)
+s2.centres <- read_csv('../../data/ndvi/s2-blaesedalen-ndvi-ts-pt.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32621) %>%
+  select(id, geometry)
 # Kluane-high
 s2.centres <- read_csv('../../data/sentinel-2/tidy-output/s2-kluane-high-ndvi-ts-pt-2023.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
@@ -294,7 +295,6 @@ s30.snow.cover <- terra::extract(num.pixels, s30.snow.cover, fun = 'sum', ID = T
 
 # Note: Should we just drop t5, as there's never any snow in it and it makes the
 #   script much more complex. 
-
 
 # Convert the spatvector to an sf
 extracted.data <- st_as_sf(s2.r.snow.cover) %>%
