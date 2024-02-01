@@ -35,11 +35,11 @@ s2.bl.snow <- read.csv('../../data/snow/snow-cover-10m-blaesedalen.csv')
 
 # Join data
 s2.bl <- left_join(s2.bl.ndvi, s2.bl.snow, by = 'id') %>%
-  drop_na() %>% # drop pixel ids for which we have no snow data
+  drop_na(snow.auc) %>% # drop pixel ids for which we have no snow data
   select(-X, -Y, -ndvi.pred.doy, -X2023.07.02, -X2023.07.12, -X2023.07.18, -X2023.07.26)
 
 s2.bl.no <- left_join(s2.bl.ndvi.no, s2.bl.snow, by = 'id') %>%
-  drop_na() %>% # drop pixel ids for which we have no snow data
+  drop_na(snow.auc) %>% # drop pixel ids for which we have no snow data
   select(-X, -Y, -ndvi.pred.doy, -X2023.07.02, -X2023.07.12, -X2023.07.18, -X2023.07.26)
 
 # Output
@@ -62,7 +62,7 @@ s2.kl.snow <- read.csv('../../data/snow/snow-cover-10m-kluane-low.csv')
 
 # Join data
 s2.kl <- left_join(s2.kl.ndvi, s2.kl.snow, by = 'id') %>%
-  drop_na() %>% # drop pixel ids for which we have no snow data
+  drop_na(snow.auc) %>% # drop pixel ids for which we have no snow data
   select(-X, -Y, -ndvi.pred.doy, -X2022.06.29, -X2022.07.05, -X2022.07.18, -X2022.08.01, -X2022.08.14)
 
 # Output
@@ -82,7 +82,7 @@ s2.kh.snow <- read.csv("../../data/snow/snow-cover-10m-kluane-high.csv")
 
 # Join data
 s2.kh <- left_join(s2.kh.ndvi, s2.kh.snow, by = 'id') %>%
-  drop_na() %>%
+  drop_na(snow.auc) %>%
   select(-X, -Y, -ndvi.pred.doy, -X2022.07.09, -X2022.07.19, -X2022.07.29, -X2022.08.04, -X2022.08.13)
 
 # Output

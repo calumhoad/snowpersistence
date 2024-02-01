@@ -22,7 +22,6 @@ s2.bl <- read.csv('../../data/combined-ndvi-snow/s2-bl-smooth-joined.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32621) %>%
   group_by(id) %>%
   filter(row_number() == 1) %>%
-  filter(ndvi.max > 0.15) %>%
   ungroup()
 
 # Kluane low
