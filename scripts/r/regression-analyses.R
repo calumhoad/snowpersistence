@@ -16,28 +16,55 @@ library(stargazer)
 # Turn off scientific notation
 options(scipen = 999)
 
-# Read in the data
-s2 <- read.csv('../../data/sentinel-2/output/s2_all_models.csv') %>%
+# Read in the data and reduce to unique id
+# Blaesedalen
+s2.bl <- read.csv('../../data/combined-ndvi-snow/s2-bl-smooth-joined.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32621) %>%
-  drop_na() # drop rows where snow persistence is NA (edge of dataset)
+  group_by(id) %>%
+  filter(row_number() == 1) %>%
+  filter(ndvi.max > 0.15) %>%
+  ungroup()
 
-# Plot the data
-ggplot() + geom_sf(data = s2)
+# Kluane low
+s2.kl <- read.csv('../../data/combined-ndvi-snow/s2-kl-smooth-joined.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
+  group_by(id) %>%
+  filter(row_number() == 1) %>%
+  ungroup()
+
+# Kluane high
+s2.kh <- read.csv('../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
+  group_by(id) %>%
+  filter(row_number() ==1) %>%
+  ungroup()
+  
+ggplot(data = s2.bl, aes(x = snow.auc, y = ndvi.max)) +
+  geom_point(aes(color = snow.auc, size = snow.auc)) +
+  scale_color_viridis_c() +
+  geom_smooth(method = 'lm', aes(x = snow.auc, y = ndvi.max)) +
+  geom_line(data = prediction, aes(x = snow.auc, y = ndvi), color = 'red')
 
 # Create linear models for later testing with Moran's I ----
 
 # Maximum NDVI is a function of snow persistence
-lm.ndvi.max_p <- lm(s2$ndvi.max_p ~ s2$snow.persist)
-lm.ndvi.max_s <- lm(s2$ndvi.max_s ~ s2$snow.persist)
-lm.ndvi.max_b <- lm(s2$ndvi.max_b ~ s2$snow.persist)
+# Blaesedalen
+lm.s2.bl.max <- lm(s2.bl$ndvi.max ~ s2.bl$snow.auc)
+lm.s2.bl.doy <- lm(s2.bl$ndvi.max.doy ~ s2.bl$snow.auc)
+# kluane low
+lm.s2.kl.max <- lm(s2.kl$ndvi.max ~ s2.kl$snow.auc)
+lm.s2.kl.doy <- lm(s2.kl$ndvi.max.doy ~ s2.kl$snow.auc)
+# Kluane high
+lm.s2.kh.max <- lm(s2.kh$ndvi.max ~ s2.kh$snow.auc)
+lm.s2.kh.doy <- lm(s2.kh$ndvi.max.doy ~ s2.kh$snow.auc)
 
-# Maximum NDVI day of year is a function of snow persistence 
-lm.ndvi.max.doy_b <- lm(s2$ndvi.max.doy_b ~ s2$snow.persist)
-lm.ndvi.max.doy_p <- lm(s2$ndvi.max.doy_p ~ s2$snow.persist)
-lm.ndvi.max.doy_s <- lm(s2$ndvi.max.doy_s ~ s2$snow.persist)
+# Make a list of the linear model objects
+lm.list <- list(lm.s2.bl.max, lm.s2.bl.doy,
+             lm.s2.kl.max, lm.s2.kl.doy, 
+             lm.s2.kh.max, lm.s2.kh.doy)
 
 # Check models
-stargazer(lm.ndvi.max.doy_s, type = 'text')
+stargazer(lm.s2.bl.max, lm.s2.bl.doy, type = 'text')
 
 
 # Determining neighbours and assigning weights ----
@@ -47,65 +74,112 @@ stargazer(lm.ndvi.max.doy_s, type = 'text')
 #   - Adjacency
 #   - Distance
 #   - k-nearest
-#   It would seem to make sense in this use case to use distance, due to
-#   arbitary pixel size?
+#   It would seem to make sense in this use case to use adjacency? All touching
+#   pixels (i.e. 'QUEEN')
 
 # Get neighbours for s2 pixels
-s2.nb <- spdep::dnearneigh(s2, d1 = 0, d2 = 10)
+s2.bl.nb <- spdep::dnearneigh(s2.bl, d1 = 0, d2 = 10)
+s2.kl.nb <- spdep::dnearneigh(s2.kl, d1 = 0, d2 = 10)
+s2.kh.nb <- spdep::dnearneigh(s2.kh, d1 = 0, d2 = 10)
 
 # Assign weights to the neighbours. Here the weights assigned are equal ('W')
-s2.lw <- nb2listw(s2.nb, style = "W", zero.policy = TRUE)
+s2.bl.lw <- nb2listw(s2.bl.nb, style = "W", zero.policy = TRUE)
+s2.kl.lw <- nb2listw(s2.kl.nb, style = "W", zero.policy = TRUE)
+s2.kh.lw <- nb2listw(s2.kh.nb, style = "W", zero.policy = TRUE)
 
+
+
+# List of lw objects
+lw.list <- list(s2.bl.lw, s2.bl.lw, 
+                s2.kl.lw, s2.kl.lw, 
+                s2.kh.lw, s2.kh.lw)
 
 # Moran's Index test ----
 
 # Moran's test, without zero policy as all samples have neighbours
-lm.morantest(lm.ndvi.max.doy_s, s2.lw)
+# Blaesedalen
+mt.lm.s2.bl.max <- lm.morantest(lm.s2.bl.max, s2.bl.lw)
+mt.lm.s2.bl.doy <- lm.morantest(lm.s2.bl.doy, s2.bl.lw)
+# kluane low
+mt.lm.s2.kl.max <- lm.morantest(lm.s2.kl.max, s2.kl.lw)
+mt.lm.s2.kl.doy <- lm.morantest(lm.s2.kl.doy, s2.kl.lw)
+# Kluane high
+mt.lm.s2.kh.max <- lm.morantest(lm.s2.kh.max, s2.kh.lw)
+mt.lm.s2.kh.doy <- lm.morantest(lm.s2.kh.doy, s2.kh.lw)
 
+length(lm.list)  
+  
 # Plot the spatially lagged values using Moran plot
-moran.plot(lm.ndvi.max.doy_s$residuals, s2.lw)
+moran.plot(lm.s2.bl.max$residuals, s2.bl.lw)
+moran.plot(lm.s2.bl.doy$residuals, s2.bl.lw)
+moran.plot(lm.s2.kl.max$residuals, s2.kl.lw)
+moran.plot(lm.s2.kl.doy$residuals, s2.kl.lw)
+moran.plot(lm.s2.kh.max$residuals, s2.kh.lw)
+moran.plot(lm.s2.kh.doy$residuals, s2.kh.lw)
+
 
 # Monte-carlo simulation to assess for significance
-moran <- moran.mc(lm.ndvi.max.doy_s$residuals, 
-                  s2.lw,
-                  nsim = 999)
+mc.lm.s2.bl.max <- moran.mc(lm.s2.bl.max$residuals, 
+                            s2.bl.lw,
+                            nsim = 999)
+mc.lm.s2.bl.doy <- moran.mc(lm.s2.bl.doy$residuals, 
+                            s2.bl.lw,
+                            nsim = 999)
+mc.lm.s2.kl.max <- moran.mc(lm.s2.kl.max$residuals, 
+                            s2.kl.lw,
+                            nsim = 999)
+mc.lm.s2.kl.doy <- moran.mc(lm.s2.kl.doy$residuals, 
+                            s2.kl.lw,
+                            nsim = 999)
+mc.lm.s2.kh.max <- moran.mc(lm.s2.kh.max$residuals, 
+                            s2.kh.lw,
+                            nsim = 999)
+mc.lm.s2.kh.doy <- moran.mc(lm.s2.kh.doy$residuals, 
+                            s2.kh.lw,
+                            nsim = 999)
 
 # Plot the monte-carlo simulation
-plot(moran, main = '', las = 1)
-
-
-# Lagrange multiplier test ----
-
-# Test for whether Spatial error or spatial lag models is more appropriate
-lm.LMtests(lm.ndvi.max.doy_s, s2.lw, test = 'LMerr') # Spatial error
-lm.LMtests(lm.ndvi.max.doy_s, s2.lw, test = 'LMlag') # Spatial lag
+plot(mc.lm.s2.bl.max, main = '', las = 1)
+plot(mc.lm.s2.bl.doy, main = '', las = 1)
+plot(mc.lm.s2.kl.max, main = '', las = 1)
+plot(mc.lm.s2.kl.doy, main = '', las = 1)
+plot(mc.lm.s2.kh.max, main = '', las = 1)
+plot(mc.lm.s2.kh.doy, main = '', las = 1)
 
 
 # Sensitivity analysis ----
 
 # Which model to conduct sensitivity analysis on?
-model <- lm.ndvi.max.doy_s
+#model <- lm.s2.bl.doy
 
-# Empty vector for storage of Moran's I values
-moran.I <- c()
 
-# Loop d through a sequence ranging from 10 to 100
-for (d in seq(10, 200, 10)) {
-  s2.sens.nb <- dnearneigh(s2, d1 = 0, d2 = d)
-  s2.sens.lw <- nb2listw(s2.sens.nb, style = 'W', zero.policy = TRUE)
-  moran <- moran.mc(model$residuals, s2.sens.lw, 
-                    nsim = 999, zero.policy = TRUE)
-  moran.I <- c(moran.I, moran$statistic)
+
+# Loop d through a sequence ranging from 10 to 200m to check for sensitivity
+sensit_check <- function(model, data) {
+  # Empty vector for storage of Moran's I values
+  moran.I <- c()
+  for (d in seq(10, 200, 10)) {
+    s2.sens.nb <- dnearneigh(data, d1 = 0, d2 = d)
+    s2.sens.lw <- nb2listw(s2.sens.nb, style = 'W', zero.policy = TRUE)
+    moran <- moran.mc(model$residuals, s2.sens.lw, 
+                      nsim = 999, zero.policy = TRUE)
+    moran.I <- c(moran.I, moran$statistic)
+  }
+
+  moran.I <- data.frame(moran = moran.I,
+                        distance = seq(10, 200, 10))
+
+  ggplot(data = moran.I, aes(x = distance, y = moran)) +
+    geom_point(aes(y = moran)) +
+    geom_line(aes(y = moran))
 }
 
-moran.I <- data.frame(moran = moran.I,
-                      distance = seq(10, 200, 10))
-
-ggplot(moran.I, aes(x = distance, y = moran)) +
-  geom_point() +
-  geom_line()
-
-help(seq)
+sensit_check(lm.s2.bl.max, s2.bl)
+sensit_check(lm.s2.bl.doy, s2.bl)
+sensit_check(lm.s2.kl.max, s2.kl)
+sensit_check(lm.s2.kl.doy, s2.kl)
+sensit_check(lm.s2.kh.max, s2.kh)
+sensit_check(lm.s2.kh.doy, s2.kh)
 
 
 # Spatial error model ----
@@ -116,78 +190,82 @@ help(seq)
 # In this case, it contextually makes most sense to use a spatial error model,
 # as any autocorrelation is an artefact of no interest to the phenomenon in question.
 
-# Redefine spatial neighbourhoods
-s2.nb <- dnearneigh(s2, d1 = 0, d2 = 10)
+# Query whether to use dnearneigh or poly2nb(data, queen = TRUE).
 
+###
+# Blaesedalen Spatial Error Models
+###
+
+#s2.bl.nb <- dnearneigh(s2.bl, d1 = 0, d2 = 10)
+s2.bl.nb <- poly2nb(st_buffer(s2.bl, dist = 5, endCapStyle = "SQUARE"), queen = TRUE)
 # Redefine spatial weights for neighbourhoods
-s2.lw <- nb2listw(s2.nb, style = 'W', zero.policy = TRUE)
+s2.bl.lw <- nb2listw(s2.bl.nb, style = 'W', zero.policy = FALSE)
 
-sem.ndvi.max.doy_s <- errorsarlm(ndvi.max.doy_s ~ snow.persist,
-                                 data = s2,
-                                 listw = s2.lw, 
-                                 zero.policy = TRUE)
+sem.s2.bl.max <- errorsarlm(ndvi.max ~ snow.auc,
+                            data = s2.bl, 
+                            listw = s2.bl.lw,
+                            zero.policy = FALSE)
 
-stargazer(sem.ndvi.max.doy_s, type = 'text')
-# How do we know whether the spatial error model has removed enough 
-# of the spatial autocorrelation?
+sem.s2.bl.doy <- errorsarlm(ndvi.max.doy ~ snow.auc,
+                                 data = s2.bl,
+                                 listw = s2.bl.lw, 
+                                 zero.policy = FALSE)
 
-# Run Moran's I on the output of the spatial error model
-moran.spaterr <- moran.mc(model$residuals, s2.lw, nsim = 999, zero.policy = TRUE)
-plot(moran, main = '', las = 1)# +
+stargazer(sem.s2.bl.max, sem.s2.bl.doy, type = 'text', title = 'Blaesedalen', 
+          out = '../../data/statistical-output/sem-blaesedalen.html')
 
-plot(moran.spaterr, main = '', las = 1)
+# Generate predicted values based on model
+to.predict <- seq(0, 25, 0.5)
+to.predict
 
-model <- sem.ndvi.max.doy_s
+predicted.values <- data.frame(snow.auc = to.predict)
 
-stargazer(sem.ndvi.max.doy_s, type = 'text')
+prediction <- predicted.values %>%
+  mutate(ndvi = predict(sem.s2.bl.max, newdata = predicted.values))
 
-s2.line <- s2 %>% mutate(predict = predict(sem.ndvi.max.doy_s))
+prediction
+?predict.MODELFUNCTION
+###
+# Kluane low Spatial Error Models
+###
 
-const.coef <- model$coefficients[1]
-resp.coef <- model$coefficients[2]
+s2.kl.nb <- poly2nb(st_buffer(s2.kl, dist = 5, endCapStyle = "SQUARE"), queen = TRUE)
+s2.kl.lw <- nb2listw(s2.kl.nb, style = 'W', zero.policy = TRUE)
 
-# Compare the lm, spaterr, and spatlagg models
-# create empty vectors for holding the Moran statistics
-moran_I_lm <- c()
-moran_I_slm <- c()
-moran_I_sem <- c()
+sem.s2.kl.max <- errorsarlm(ndvi.max ~ snow.auc, 
+                            data = s2.kl, 
+                            listw = s2.kl.lw, 
+                            zero.policy = TRUE)
 
-# loop through a distance vector d ranging from 50 to 2000 m
-for (d in seq(10, 200, 10)) {
-  s2.nb <- dnearneigh(s2, d1 = 0, d2 = d)
-  s2.lw <- nb2listw(s2.nb, style = "W", zero.policy = TRUE)
-  
-  moran_lm <- moran.mc(lm.ndvi.max.doy_s$residuals, s2.lw, nsim = 999, zero.policy = TRUE)
-  moran_I_lm <- c(moran_I_lm, moran_lm$statistic)
-  
-  #moran_slm <- moran.mc(zinc.slm$residuals, meuse.lw, nsim = 999, zero.policy = TRUE)
-  #moran_I_slm <- c(moran_I_slm, moran_slm$statistic)
-  
-  moran_sem <- moran.mc(sem.ndvi.max.doy_s$residuals, s2.lw, nsim = 999, zero.policy = TRUE)
-  moran_I_sem <- c(moran_I_sem, moran_sem$statistic)
-}
+sem.s2.kl.doy <- errorsarlm(ndvi.max.doy ~ snow.auc, 
+                            data = s2.kl, 
+                            listw = s2.kl.lw, 
+                            zero.policy = TRUE)
 
-moran_I_lm  <- data.frame(moran_I = moran_I_lm, 
-                          distance = seq(10, 200, 10), 
-                          model="Simple linear model")
+stargazer(sem.s2.kl.max, sem.s2.kl.doy, type = 'html', title = 'Kluane low',
+          out = '../../data/statistical-output/sem-kluane-low.html')
 
-# moran_I_slm <- data.frame(moran_I = moran_I_slm, 
-#                           distance = seq(50, 2000, 50), 
-#                           model="Spatial lag model")
+###
+# Kluane high
+###
 
-moran_I_sem <- data.frame(moran_I = moran_I_sem, 
-                          distance = seq(10, 200, 10), 
-                          model="Spatial error model")
+s2.kh.nb <- poly2nb(st_buffer(s2.kh, dist = 5, endCapStyle = "SQUARE"), queen = TRUE)
+s2.kh.lw <- nb2listw(s2.kh.nb, style = 'W', zero.policy = TRUE)
 
-moran.df <- rbind(moran_I_lm, moran_I_sem)
+sem.s2.kh.max <- errorsarlm(ndvi.max ~ snow.auc, 
+                            data = s2.kh, 
+                            listw = s2.kh.lw,
+                            zero.policy = TRUE)
 
-ggplot(moran.df, aes(x = distance, y = moran_I, col=model)) + 
-  geom_point() +
-  geom_line()
+sem.s2.kh.doy <- errorsarlm(ndvi.max.doy ~ snow.auc,
+                            data = s2.kh, 
+                            listw = s2.kh.lw, 
+                            zero.policy = TRUE)
 
-ggplot(s2.line, aes(x = snow.persist, y = ndvi.max.doy_s)) +
-  geom_point() +
-  geom_abline(intercept = const.coef, slope = resp.coef, color = 'red') +
-  stat_smooth(method = 'lm')
+stargazer(sem.s2.kh.max, sem.s2.kh.doy, type = 'html', title = 'Kluane high',
+          out = '../../data/statistical-output/sem-kluane-high.html')
 
-                   
+
+check.lm <- moran.mc(lm.s2.bl.doy$residuals, s2.bl.lw, nsim = 999, zero.policy = TRUE)
+check.sem <- moran.mc(sem.s2.bl.doy$residuals, s2.bl.lw, nsim = 999, zero.policy = TRUE)
+plot(check.sem, main = '', las = 1)
