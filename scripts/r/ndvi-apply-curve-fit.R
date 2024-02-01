@@ -57,6 +57,9 @@ s2.bl <- long_ndvi(s2.bl)
 s2.kl <- long_ndvi(s2.kl)
 s2.kh <- long_ndvi(s2.kh)
 
+# Create a test dataset, where the outlying value on 2023-10-03 for Kluane is removed
+s2.bl <- s2.bl %>% filter(doy != yday('2023-10-03'))
+
 # Check the time raw time series data ----
 ggplot() +
   geom_line(data = s2.bl, aes(x = doy, y = ndvi, group = id))
@@ -98,7 +101,7 @@ s2.kh.smooth <- s2.kh.smooth %>%
 
 # Beck ##
 # Blaesedalen
-st_write(st_as_sf(s2.bl.beck),  '../../data/ndvi/s2-bl-beck.csv', 
+st_write(st_as_sf(s2.bl.beck),  '../../data/ndvi/s2-bl-beck-outlier-removed.csv', 
          layer_options = "GEOMETRY=AS_XY")
 # Kluane-low
 st_write(st_as_sf(s2.kl.beck),  '../../data/ndvi/s2-kl-beck.csv', 
@@ -108,7 +111,7 @@ st_write(st_as_sf(s2.kh.beck),  '../../data/ndvi/s2-kh-beck.csv',
          layer_options = "GEOMETRY=AS_XY")
 # Smoothed-spline ##
 # Blaesedalen
-st_write(st_as_sf(s2.bl.smooth),  '../../data/ndvi/s2-bl-smooth.csv', 
+st_write(st_as_sf(s2.bl.smooth),  '../../data/ndvi/s2-bl-smooth-outlier-removed.csv', 
          layer_options = "GEOMETRY=AS_XY")
 # Kluane-low
 st_write(st_as_sf(s2.kl.smooth),  '../../data/ndvi/s2-kl-smooth.csv', 
