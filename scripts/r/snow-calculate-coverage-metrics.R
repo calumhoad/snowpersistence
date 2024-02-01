@@ -81,7 +81,7 @@ s2.bands <- c('violet', 'blue', 'green', 'red', 're1', 're2', 'nir1', 'nir2', 'n
 m3.bands <- c('green', 'nir', 're', 'red', 'RGB-R', 'RGB-G', 'RGB-B') # Mavic M3M bands 
 
 # Choose which sensor
-bands <- m3.bands
+bands <- s2.bands
 
 # Assign band names to spatRaster layers
 names(t1) <- bands
@@ -91,7 +91,7 @@ names(t4) <- bands
 names(t5) <- bands
 
 # Create a list of the UAV rasters which can be passed to functions
-bl <- list(t1, t2, t3, t4)
+bl <- list(t1, t2, t3, t4, t5)
 
 # Plot out the first raster in RGB as logic check
 ggplot() +
@@ -159,7 +159,7 @@ t4r <- t4[band.filter]
 t5r <- t5[band.filter]
 
 # Red band only rasters to list, for use with function
-bl.red <- list(t1r, t2r, t3r, t4r)
+bl.red <- list(t1r, t2r, t3r, t4r, t5r)
 
 # Plot to check values
 plot(rast(bl.red), breaks = c(0, 0.4, 2))
@@ -184,10 +184,10 @@ names(bl.r.snow[[5]]) <- d5
 # Use manual gap-filling and masking to tidy the classification ----
 
 # Convert to rast
-bl.r.snow <- rast(bl.r.snow)
-plot(bl.r.snow)
+#bl.r.snow <- rast(bl.r.snow)
+#plot(bl.r.snow)
 # Export classification rasters
-writeRaster(bl.r.snow, '../../data/uav/snow-classification/blaesedalen-red-0-3.tif')
+#writeRaster(bl.r.snow, '../../data/uav/snow-classification/blaesedalen-red-0-3.tif')
 
 
 # OPEN CLASSIFICATIONS IN GIS SOFTWARE AND CREATE: 
@@ -221,7 +221,7 @@ snow <- pblapply(bl.r.snow, manual_snow_class)
 snow <- rast(snow)
 
 # Checking outputs
-plot(bl.r.snow)
+plot(snow)
 plotRGB(bl.r.snow, r = d1, g = d2, b = d3, scale = 1)
 
 # Create raster where every pix = 1, to facilitate later pixel count via sum
@@ -262,7 +262,7 @@ s2.centres <- read_csv('../../data/sentinel-2/tidy-output/s2-kluane-high-ndvi-ts
   st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
   select(id, geometry)
 # Kluane-low
-s2.centres <- read_csv('../../data/sentinel-2/tidy-output/s2-kluane-low-ndvi-ts-pt-2023.csv') %>%
+s2.centres <- read_csv('../../data/ndvi/s2-kluane-low-ndvi-ts-pt.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
   select(id, geometry)
 
@@ -278,7 +278,7 @@ ggplot() + geom_sf(data = s2.poly) + geom_sf(data = s2.centres)
 
 # SENTINEL-2
 # Extract number of pixels which are snow covered from classified raster stack
-s2.r.snow.cover <- terra::extract(bl.r.snow, s2.poly, fun = 'sum', ID = TRUE, bind = TRUE) # red
+s2.r.snow.cover <- terra::extract(snow, s2.poly, fun = 'sum', ID = TRUE, bind = TRUE) # red
 
 # Extract number of pixels per polygon, using num.pixels raster (all pix = 1)
 s2.r.snow.cover <- terra::extract(num.pixels, s2.r.snow.cover, fun = 'sum', ID = TRUE, 
@@ -292,26 +292,26 @@ s30.snow.cover <- terra::extract(num.pixels, s30.snow.cover, fun = 'sum', ID = T
 
 
 # Calculate snow cover as percentage ----
-
+check <- st_as_sf(s2.r.snow.cover)
 # Note: Should we just drop t5, as there's never any snow in it and it makes the
 #   script much more complex. 
 
 # Convert the spatvector to an sf
 extracted.data <- st_as_sf(s2.r.snow.cover) %>%
-  select(id, geometry, tot.pixels, !!d1, !!d2, !!d3, !!d4) %>%#!!d5) %>%
+  select(id, geometry, tot.pixels, !!d1, !!d2, !!d3, !!d4, !!d5) %>%
  # Calculate percentage cover per S2 pixel
   mutate(!!d1 := .data[[d1]]/tot.pixels, 
          !!d2 := .data[[d2]]/tot.pixels, 
          !!d3 := .data[[d3]]/tot.pixels, 
-         !!d4 := .data[[d4]]/tot.pixels) %>%#, 
-         #!!d5 := .data[[d5]]/tot.pixels) %>%
+         !!d4 := .data[[d4]]/tot.pixels, 
+         !!d5 := .data[[d5]]/tot.pixels) %>%
   # Prevent impossible increases in snowcover between time steps
   mutate(!!d2 := ifelse(.data[[d2]] > .data[[d1]], .data[[d1]], .data[[d2]])) %>%
   mutate(!!d3 := ifelse(.data[[d3]] > .data[[d2]], .data[[d2]], .data[[d3]])) %>% # If snow greater in next step,
   mutate(!!d4 := ifelse(.data[[d4]] > .data[[d3]], .data[[d3]], .data[[d4]])) %>% # take value from last step.
-  #mutate(!!d5 := ifelse(.data[[d5]] > .data[[d4]], .data[[d4]], .data[[d5]])) %>%
+  mutate(!!d5 := ifelse(.data[[d5]] > .data[[d4]], .data[[d4]], .data[[d5]])) %>%
   # Calculate average cover over the season
-  mutate(snow.av = (0.25*.data[[d1]]) + (0.25*.data[[d2]]) + (0.25*.data[[d3]]) + (0.25*.data[[d4]])) #+ (0.25*.data[[d5]])) #%>%
+  mutate(snow.av = (0.2*.data[[d1]]) + (0.2*.data[[d2]]) + (0.2*.data[[d3]]) + (0.2*.data[[d4]]) + (0.2*.data[[d5]])) #%>%
   # Rename time points with actual dates
   # rename('2023-07-02' = snow.t1,
   #        '2023-07-12' = snow.t2,
@@ -395,7 +395,7 @@ output.data <- pivot_wider(snow.auc, id_cols = c(id, geometry, snow.auc, snow.av
   st_centroid()
 
 # Write the file 
-st_write(output.data, "../../data/snow/snow-cover-10m-blaesedalen.csv",
+st_write(output.data, "../../data/snow/snow-cover-10m-kluane-low.csv",
          layer_options = "GEOMETRY=AS_XY")
 
 
