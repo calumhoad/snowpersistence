@@ -377,19 +377,16 @@ ggplot() +
   geom_spatraster_rgb(data = rast(s30.bl.data[[14]]), r = 4, g = 3, b = 2, max_col_value = .3 ) #+
 geom_sf(data = s30.bl.ndvi.points, aes(color = 'red', size = 4))
 
+s30.bl.ndvi.points
 # Outputs ---- 
 
 # Wide format
-s30.modelled.export.wide <- s30.modelled.ndvi %>%
-  group_by(id) %>%
-  filter(doy == 220) %>%
-  dplyr::select(-doy, -ndvi.pred.doy.1, -ndvi.max.date, -ndvi, -ndvi.pred.doy)
-
-st_write(st_as_sf(s30.modelled.export.wide),  '../../data/nasa-hls/output/s30_kluane-high-modelled_smoothed_spline_point_wide.csv', 
+st_write(st_as_sf(s30.bl.ndvi.points),  '../../data/ndvi/s30-blaesedalen-ndvi-ts-pt.csv', 
          layer_options = "GEOMETRY=AS_XY")
 
 # Long format
-s30.modelled.export.long <- s30.modelled.ndvi %>%
+s30.modelled.export.long <- s30.bl.ndvi.points %>%
+  pivot_longer(!id & !geometry, names_to = 'doy', values_to = 'ndvi')
   rename(doy.obs = 'doy', 
          ndvi.obs = 'ndvi', 
          ndvi.pred = 'ndvi.pred.doy.1') %>%

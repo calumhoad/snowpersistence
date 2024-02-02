@@ -89,7 +89,25 @@ s2.kh <- left_join(s2.kh.ndvi, s2.kh.snow, by = 'id') %>%
 st_write(st_as_sf(s2.kh), "../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv", 
          layer_options = "GEOMETRY=AS_XY")
 
+
+# NASA HLS S30 ----
+
 ###
-# NASA HLS S30
+# Blaesedalen
 ###
 
+# NDVI
+s30.bl.ndvi <- read.csv('../../data/ndvi/s30-bl-smooth.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32621)
+
+# Snow data
+s30.bl.snow <- read.csv('../../data/snow/snow-cover-30m-blaesedalen.csv')
+
+# Join data
+s30.bl <- left_join(s30.bl.ndvi, s30.bl.snow, by = 'id') %>%
+  drop_na(snow.auc) %>%
+  select(-X, -Y, -ndvi.pred.doy, -X2023.07.02, -X2023.07.12, -X2023.07.18, -X2023.07.26)
+
+# Output
+st_write(st_as_sf(s30.bl), '../../data/combined-ndvi-snow/s30-bl-smooth-joined.csv', 
+         layer_options = "GEOMETRY=AS_XY")

@@ -37,6 +37,10 @@ s2.kl <- read.csv('../../data/ndvi/s2-kluane-low-ndvi-ts-pt.csv') %>%
 s2.kh <- read.csv('../../data/ndvi/s2-kluane-high-ndvi-ts-pt.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32608)
 
+# NASA HLS S30 ###
+s30.bl <- read.csv('../../data/ndvi/s30-blaesedalen-ndvi-ts-pt.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32621)
+
 # Format the data ----
 
 # Function for formatting the data, 
@@ -52,10 +56,16 @@ long_ndvi <- function(df) {
     group_by(id)
 }
 
+# For S30, drop all data from Sept onwards due to quality error
+s30.bl <- s30.bl %>% 
+  select(-X2023.09.14, -X2023.09.22, -X2023.09.23, -X2023.10.03)
+
 # Apply function
 s2.bl <- long_ndvi(s2.bl)
 s2.kl <- long_ndvi(s2.kl)
 s2.kh <- long_ndvi(s2.kh)
+
+s30.bl <- long_ndvi(s30.bl)
 
 # Create a test dataset, where the outlying value on 2023-10-03 for Kluane is removed
 s2.bl <- s2.bl %>% filter(doy != yday('2023-10-03'))
@@ -67,6 +77,8 @@ ggplot() +
   geom_line(data = s2.kl, aes(x = doy, y = ndvi, group = id))
 ggplot() +
   geom_line(data = s2.kh, aes(x = doy, y = ndvi, group = id))
+ggplot() +
+  geom_line(data = s30.bl, aes(x = doy, y = ndvi, group = id))
 
 # Fit smoothed spline model to the data ----
 s2.bl.smooth <- s2.bl %>%
@@ -74,6 +86,9 @@ s2.bl.smooth <- s2.bl %>%
 s2.kl.smooth <- s2.kl %>%
   group_modify(~model_ndvi_smoothedspline(.x))
 s2.kh.smooth <- s2.kh %>%
+  group_modify(~model_ndvi_smoothedspline(.x))
+
+s30.bl.smooth <- s30.bl %>%
   group_modify(~model_ndvi_smoothedspline(.x))
 
 # Fit Beck double logistic to the data ----
@@ -90,6 +105,9 @@ s2.bl.smooth <- s2.bl.smooth %>%
 s2.kl.smooth <- s2.kl.smooth %>%
   rename(ndvi.pred = 'ndvi.pred.doy.1')
 s2.kh.smooth <- s2.kh.smooth %>%
+  rename(ndvi.pred = 'ndvi.pred.doy.1')
+
+s30.bl.smooth <- s30.bl.smooth %>%
   rename(ndvi.pred = 'ndvi.pred.doy.1')
 
 # Join data to singular dataframes?
@@ -120,10 +138,14 @@ st_write(st_as_sf(s2.kl.smooth),  '../../data/ndvi/s2-kl-smooth.csv',
 st_write(st_as_sf(s2.kh.smooth),  '../../data/ndvi/s2-kh-smooth.csv', 
          layer_options = "GEOMETRY=AS_XY")
 
+# S30 Blaesedalen smooth
+st_write(st_as_sf(s30.bl.smooth), '../../data/ndvi/s30-bl-smooth.csv',
+         layer_options = 'GEOMETRY=AS_XY')
+
 
 # Plot out the data for comparison of model fit ----
 # 100 random pixels overview
-plot.data <- s2.bl.beck
+plot.data <- s30.bl.smooth
 
 ggplot(
   plot.data %>% filter(id %in% sample(unique(plot.data$id), 100)),
@@ -138,7 +160,7 @@ ggplot(
 rand_id <- sample(plot.data %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
 
 # For one model
-plot.data <- s2.bl.smooth # Which model?
+plot.data <- s30.bl.smooth # Which model?
 
 ggplot(
   plot.data %>% filter(id %in% rand_id),

@@ -9,6 +9,7 @@ library(spdep)
 library(spatialreg)
 library(stargazer)
 library(cowplot)
+library(tidyr)
 
 # Data ----
 # Read in the data and reduce to unique id
