@@ -39,8 +39,8 @@ s2.kh <- read.csv('../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv') %>%
 # Blaesedalen Spatial Error Models
 ###
 
-#s2.bl.nb <- dnearneigh(s2.bl, d1 = 0, d2 = 10)
-s2.bl.nb <- poly2nb(st_buffer(s2.bl, dist = 5, endCapStyle = "SQUARE"), queen = TRUE)
+s2.bl.nb <- dnearneigh(s2.bl, d1 = 0, d2 = 60)
+#s2.bl.nb <- poly2nb(st_buffer(s2.bl, dist = 5, endCapStyle = "SQUARE"), queen = TRUE)
 # Redefine spatial weights for neighbourhoods
 s2.bl.lw <- nb2listw(s2.bl.nb, style = 'W', zero.policy = FALSE)
 
@@ -59,8 +59,8 @@ stargazer(sem.s2.bl.max, sem.s2.bl.doy, type = 'text')
 ###
 # Kluane low Spatial Error Models
 ###
-
-s2.kl.nb <- poly2nb(st_buffer(s2.kl, dist = 5, endCapStyle = "SQUARE"), queen = TRUE)
+s2.kl.nb <- dnearneigh(s2.kl, d1 = 0, d2 = 60)
+#s2.kl.nb <- poly2nb(st_buffer(s2.kl, dist = 5, endCapStyle = "SQUARE"), queen = TRUE)
 s2.kl.lw <- nb2listw(s2.kl.nb, style = 'W', zero.policy = TRUE)
 
 sem.s2.kl.max <- errorsarlm(ndvi.max ~ snow.auc, 
@@ -78,8 +78,8 @@ stargazer(sem.s2.kl.max, sem.s2.kl.doy, type = 'text')
 ###
 # Kluane high
 ###
-
-s2.kh.nb <- poly2nb(st_buffer(s2.kh, dist = 5, endCapStyle = "SQUARE"), queen = TRUE)
+s2.kh.nb <- dnearneigh(s2.kh, d1 = 0, d2 = 60)
+#s2.kh.nb <- poly2nb(st_buffer(s2.kh, dist = 5, endCapStyle = "SQUARE"), queen = TRUE)
 s2.kh.lw <- nb2listw(s2.kh.nb, style = 'W', zero.policy = TRUE)
 
 sem.s2.kh.max <- errorsarlm(ndvi.max ~ snow.auc, 

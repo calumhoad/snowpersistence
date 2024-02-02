@@ -11,6 +11,8 @@ library(mapview)
 library(spdep)
 library(spatialreg)
 library(stargazer)
+library(tidyr)
+library(dplyr)
 
 
 # Turn off scientific notation
@@ -21,21 +23,21 @@ options(scipen = 999)
 s2.bl <- read.csv('../../data/combined-ndvi-snow/s2-bl-smooth-joined.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32621) %>%
   group_by(id) %>%
-  filter(row_number() == 1) %>%
+  filter(row_number() == 7) %>%
   ungroup()
 
 # Kluane low
 s2.kl <- read.csv('../../data/combined-ndvi-snow/s2-kl-smooth-joined.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
   group_by(id) %>%
-  filter(row_number() == 1) %>%
+  filter(row_number() == 7) %>%
   ungroup()
 
 # Kluane high
 s2.kh <- read.csv('../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
   group_by(id) %>%
-  filter(row_number() ==1) %>%
+  filter(row_number() ==7) %>%
   ungroup()
   
 ggplot(data = s2.bl, aes(x = snow.auc, y = ndvi.max)) +
@@ -194,9 +196,9 @@ sensit_check(lm.s2.kh.doy, s2.kh)
 ###
 # Blaesedalen Spatial Error Models
 ###
-
-#s2.bl.nb <- dnearneigh(s2.bl, d1 = 0, d2 = 10)
-s2.bl.nb <- poly2nb(st_buffer(s2.bl, dist = 5, endCapStyle = "SQUARE"), queen = TRUE)
+# Run this at 60m
+s2.bl.nb <- dnearneigh(s2.bl, d1 = 0, d2 = 100)
+#s2.bl.nb <- poly2nb(st_buffer(s2.bl, dist = 5, endCapStyle = "SQUARE"), queen = TRUE)
 # Redefine spatial weights for neighbourhoods
 s2.bl.lw <- nb2listw(s2.bl.nb, style = 'W', zero.policy = FALSE)
 
@@ -210,7 +212,7 @@ sem.s2.bl.doy <- errorsarlm(ndvi.max.doy ~ snow.auc,
                                  listw = s2.bl.lw, 
                                  zero.policy = FALSE)
 
-stargazer(sem.s2.bl.max, sem.s2.bl.doy, type = 'text', title = 'Blaesedalen', 
+stargazer(sem.s2.bl.max, sem.s2.bl.doy, type = 'text', title = 'Blaesedalen')#, 
           out = '../../data/statistical-output/sem-blaesedalen.html')
 
 # Generate predicted values based on model
