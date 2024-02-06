@@ -80,7 +80,7 @@ plot_data <- function(data, snow.greater, snow.lesser) {
     #scale_color_viridis_c() +
     labs( x = '', 
           y = '') +
-    scale_x_discrete(breaks = c(200, 250),
+    scale_x_continuous(breaks = c(200, 250),
                      labels = c('200', '250')) +
     # xlim(c(175, 260)) +
     #  ylim(c(0, 0.6)) +
@@ -107,3 +107,7 @@ combined.plots <- plot_grid(#logo.plot,
                             labels = c('(a)', '(b)', '(c)'))
 
 combined.plots
+
+# output the plot
+
+cowplot::save_plot('../../plots/figures/figure-2v1.png', combined.plots, base_height = 80, base_width = 180, units = 'mm')
