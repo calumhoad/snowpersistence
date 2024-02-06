@@ -11,6 +11,7 @@ library(spatialreg)
 library(stargazer)
 library(cowplot)
 library(terra)
+library(magick)
 
 # Data ----
 # Read in the data and reduce to unique id
@@ -36,13 +37,21 @@ ggplot() +
   geom_point(data = s2.kh %>% filter(snow.auc == 1), aes(x = snow.auc, y = ndvi.max))
 # Plotting ----
 
+# Figure out the quantiles
+s2.kl.test <- s2.kl %>% filter(snow.auc <= quantile(s2.kl$snow.auc, probs = 0.5))
+
+quantile(s2.kl$snow.auc, probs = 0.75)
 # Function for plotting the data
 plot_data <- function(data, snow.greater, snow.lesser) {
   
-  # Get the range of max doy from high and low snow
-  s2.data.low <- data %>% filter(snow.auc < snow.lesser)
-  s2.data.high <- data %>% filter(snow.auc > snow.greater)
+  # # Get the range of max doy from high and low snow
+  # s2.data.low <- data %>% filter(snow.auc < snow.lesser)
+  # s2.data.high <- data %>% filter(snow.auc > snow.greater)
 
+  # Use quantiles to standardise the data plotted for each site
+  s2.data.low <- data %>% filter(snow.auc <= quantile(data$snow.auc, probs = 0.25))
+  s2.data.high <- data %>% filter(snow.auc >= quantile(data$snow.auc, probs = 0.75))
+  
   # Store min and max values
   high.snow.max <- max(s2.data.high$ndvi.max.doy)
   high.snow.min <- min(s2.data.high$ndvi.max.doy)
@@ -85,11 +94,16 @@ kl <- plot_data(s2.kl, snow.greater = 2, snow.lesser = 2)
 
 kh <- plot_data(s2.kh, snow.greater = 2, snow.lesser = 2)
 
-combined.plots <- plot_grid(bl,
+logo <- ('../../illustration/both-lower-later-03.png')
+
+logo.plot <- ggdraw() + draw_image(logo, scale = 0.4)
+
+combined.plots <- plot_grid(#logo.plot,
+                            bl,
                             kl,
                             kh,
                             ncol = 3,
                             align = 'h',
-                            labels = 'AUTO')
+                            labels = c('(a)', '(b)', '(c)'))
 
 combined.plots
