@@ -26,9 +26,13 @@ s30.bl <- read.csv('../../data/combined-ndvi-snow/s30-bl-smooth-joined.csv') %>%
 # Function for plotting the data
 plot_data <- function(data, snow.greater, snow.lesser) {
   
-  # Get the range of max doy from high and low snow
-  s2.data.low <- data %>% filter(snow.auc < snow.lesser)
-  s2.data.high <- data %>% filter(snow.auc > snow.greater)
+  # # Get the range of max doy from high and low snow
+  # s2.data.low <- data %>% filter(snow.auc < snow.lesser)
+  # s2.data.high <- data %>% filter(snow.auc > snow.greater)
+  
+  # Use quantiles to standardise the data plotted for each site
+  s2.data.low <- data %>% filter(snow.auc <= quantile(data$snow.auc, probs = 0.25))
+  s2.data.high <- data %>% filter(snow.auc >= quantile(data$snow.auc, probs = 0.75))
   
   # Store min and max values
   high.snow.max <- max(s2.data.high$ndvi.max.doy)
@@ -58,8 +62,8 @@ plot_data <- function(data, snow.greater, snow.lesser) {
     #scale_color_viridis_c() +
     labs( x = '', 
           y = '') +
-    scale_x_discrete(breaks = c(200, 250),
-                     labels = c('200', '250')) +
+    scale_x_continuous(breaks = c(200, 250),
+                       labels = c('200', '250')) +
     # xlim(c(175, 260)) +
     #  ylim(c(0, 0.6)) +
     coord_cartesian(xlim = c(180, 250), ylim = c(0, 0.8)) + # 175, 260
@@ -149,6 +153,9 @@ scatter <- plot_grid(plot.3,
                      ncol = 1, 
                      align = 'v')
 combined <- plot_grid(plot.2, 
-                      scatter, 
+                      scatter,
+                      #align = 'h',
                       ncol = 2)
 combined
+
+cowplot::save_plot('../../plots/figures/figure-5v2.png', combined, base_height = 80, base_width = 180, units = 'mm')

@@ -160,10 +160,13 @@ kluane.plot <- plot_grid(kl, kh,
                          ncol = 2, 
                          align = 'h')
 
+                         labels = c('(b) ', '(c) '))
+
 combined.plots <- plot_grid(bl,
                             kluane.plot,
                             nrow = 2, 
-                            align = 'h', 
-                            labels = 'AUTO')
+                            align = 'h') 
+                            labels = c('(a) ', '', ''))
 combined.plots
 
+cowplot::save_plot('../../plots/figures/figure-3v5.png', combined.plots, base_height = 140, base_width = 180, units = 'mm')
