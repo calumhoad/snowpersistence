@@ -33,14 +33,11 @@ s2.kh <- read.csv('../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv') %>%
   group_by(id) %>%
   drop_na(ndvi.max)
 
-ggplot() +
-  geom_point(data = s2.kh %>% filter(snow.auc == 1), aes(x = snow.auc, y = ndvi.max))
+
 # Plotting ----
 
 # Figure out the quantiles
-s2.kl.test <- s2.kl %>% filter(snow.auc <= quantile(s2.kl$snow.auc, probs = 0.5))
 
-quantile(s2.kl$snow.auc, probs = 0.75)
 # Function for plotting the data
 plot_data <- function(data, snow.greater, snow.lesser) {
   
