@@ -54,7 +54,8 @@ sem.s2.bl.doy <- errorsarlm(ndvi.max.doy ~ snow.auc,
                             listw = s2.bl.lw, 
                             zero.policy = FALSE)
 
-stargazer(sem.s2.bl.max, sem.s2.bl.doy, type = 'text')
+stargazer(sem.s2.bl.max, sem.s2.bl.doy, type = 'html', 
+          out = '../../data/statistical-output/sem-blaesedalen-nb-60.html')
 
 ###
 # Kluane low Spatial Error Models
@@ -73,7 +74,8 @@ sem.s2.kl.doy <- errorsarlm(ndvi.max.doy ~ snow.auc,
                             listw = s2.kl.lw, 
                             zero.policy = TRUE)
 
-stargazer(sem.s2.kl.max, sem.s2.kl.doy, type = 'text')
+stargazer(sem.s2.kl.max, sem.s2.kl.doy, type = 'html',
+          out = '../../data/statistical-output/sem-kluane-low-nb-60.html')
 
 ###
 # Kluane high
@@ -92,7 +94,8 @@ sem.s2.kh.doy <- errorsarlm(ndvi.max.doy ~ snow.auc,
                             listw = s2.kh.lw, 
                             zero.policy = TRUE)
 
-stargazer(sem.s2.kh.max, sem.s2.kh.doy, type = 'text')
+stargazer(sem.s2.kh.max, sem.s2.kh.doy, type = 'html', 
+          out = '../../data/statistical-output/sem-kluane-high-nb-60.html')
 
 # Predictions ----
 # Generate predicted values based on model

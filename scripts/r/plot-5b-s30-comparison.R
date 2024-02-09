@@ -82,7 +82,7 @@ s30.bl.p3 <- read.csv('../../data/combined-ndvi-snow/s30-bl-smooth-joined.csv') 
   ungroup() %>%
   drop_na(ndvi.max)
 
-#s2.bl.nb <- dnearneigh(s2.bl, d1 = 0, d2 = 10)
+s30.bl.nb <- dnearneigh(s30.bl.p3, d1 = 0, d2 = 60)
 s30.bl.nb <- poly2nb(st_buffer(s30.bl.p3, dist = 15, endCapStyle = "SQUARE"), queen = TRUE)
 # Redefine spatial weights for neighbourhoods
 s30.bl.lw <- nb2listw(s30.bl.nb, style = 'W', zero.policy = FALSE)
@@ -98,7 +98,7 @@ sem.s30.bl.doy <- errorsarlm(ndvi.max.doy ~ snow.auc,
                             zero.policy = FALSE)
 
 stargazer(sem.s30.bl.max, sem.s30.bl.doy, type = 'html', 
-          out = '../../data/statistical-output/sem-s30-blaesedalen.html')
+          out = '../../data/statistical-output/sem-s30-blaesedalen-nb-queen.html')
 
 # Predictions
 # Blaesedalen
