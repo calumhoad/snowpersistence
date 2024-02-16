@@ -18,7 +18,12 @@ library(viridis)
 # Load LandsatTS package
 library(LandsatTS)
 
+# Load altered functions
+source('LandsatTS/ch_lsat_clean_data.R')
+source('LandsatTS/ch_lsat_format_data.R')
+
 # Intialize the Earth Engine with rgee
+ee_Authenticate()
 ee_Initialize()
 
 
@@ -65,7 +70,7 @@ kluane_low_only <- pixel_list[334:488, ]
 # Extract data using GEE ----
 
 # Export time-series using lsat_export_ts()
-task_list <- lsat_export_ts(kluane_low_only)
+task_list <- lsat_export_ts(blaesedalen_only)
 
 # Monitor the progress of the task set for GEE
 ee_monitoring()
@@ -84,7 +89,7 @@ lsat.dt <- do.call("rbind", lapply(blaesedalen_path, fread))
 # Step through the LandsatTS package functions ----
 
 # Format the data
-lsat.dt <- lsat_format_data(lsat.dt)
+lsat.dt <- ch_lsat_format_data(lsat.dt)
 
 # Clean the surface reflectance data
 lsat.dt <- ch_lsat_clean_data(lsat.dt, 
@@ -151,7 +156,7 @@ kh_trend_sf <- st_as_sf(lsat.trnds.dt, coords = c("longitude", "latitude"))
 bl_map <- leaflet() %>%
   addProviderTiles('OpenStreetMap.Mapnik') %>%
   addCircleMarkers(data = bl_trend_sf,
-                   color = ~ifelse(trend.cat == 'no_trend', 'blue', 'green'))
+                   color = ~ifelse(trend.cat == 'no_trend', 'blue', 'brown'))
 
 bl_map
 

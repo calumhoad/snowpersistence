@@ -79,9 +79,9 @@ stargazer(lm.s2.bl.max, lm.s2.bl.doy, type = 'text')
 #   pixels (i.e. 'QUEEN')
 
 # Get neighbours for s2 pixels
-s2.bl.nb <- spdep::dnearneigh(s2.bl, d1 = 0, d2 = 10)
-s2.kl.nb <- spdep::dnearneigh(s2.kl, d1 = 0, d2 = 10)
-s2.kh.nb <- spdep::dnearneigh(s2.kh, d1 = 0, d2 = 10)
+s2.bl.nb <- spdep::dnearneigh(s2.bl, d1 = 0, d2 = 60)
+s2.kl.nb <- spdep::dnearneigh(s2.kl, d1 = 0, d2 = 60)
+s2.kh.nb <- spdep::dnearneigh(s2.kh, d1 = 0, d2 = 60)
 
 # Assign weights to the neighbours. Here the weights assigned are equal ('W')
 s2.bl.lw <- nb2listw(s2.bl.nb, style = "W", zero.policy = TRUE)
@@ -270,3 +270,10 @@ stargazer(sem.s2.kh.max, sem.s2.kh.doy, type = 'html', title = 'Kluane high',
 check.lm <- moran.mc(lm.s2.bl.doy$residuals, s2.bl.lw, nsim = 999, zero.policy = TRUE)
 check.sem <- moran.mc(sem.s2.bl.doy$residuals, s2.bl.lw, nsim = 999, zero.policy = TRUE)
 plot(check.sem, main = '', las = 1)
+
+
+# Lagrange multiplier test
+LM <- lm.LMtests(lm.s2.bl.doy, s2.bl.lw, test = "all")
+LM
+
+stargazer(LM, type = 'text')
