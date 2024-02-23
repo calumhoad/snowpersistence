@@ -60,6 +60,7 @@ stargazer(sem.s2.bl.max, sem.s2.bl.doy, type = 'html',
 ###
 # Kluane low Spatial Error Models
 ###
+
 s2.kl.nb <- dnearneigh(s2.kl, d1 = 0, d2 = 60)
 #s2.kl.nb <- poly2nb(st_buffer(s2.kl, dist = 5, endCapStyle = "SQUARE"), queen = TRUE)
 s2.kl.lw <- nb2listw(s2.kl.nb, style = 'W', zero.policy = TRUE)
@@ -97,6 +98,7 @@ sem.s2.kh.doy <- errorsarlm(ndvi.max.doy ~ snow.auc,
 stargazer(sem.s2.kh.max, sem.s2.kh.doy, type = 'html', 
           out = '../../data/statistical-output/sem-kluane-high-nb-60.html')
 
+
 # Predictions ----
 # Generate predicted values based on model
 
@@ -126,6 +128,8 @@ kh.pred <- kh.pred %>%
 
 
 # Plot ----
+
+# Blaesedalen
 bl.coefficients <- sem.s2.bl.max$coefficients
 bl.equation <- sprintf("y = %.3f + %.3f * x", bl.coefficients[1], bl.coefficients[2])
 
@@ -137,6 +141,7 @@ bl <- ggplot() +
   ylab('') +
   theme_cowplot()
 
+# Kluane low
 kl.coefficients <- sem.s2.kl.max$coefficients
 kl.equation <- sprintf("y = %.3f + %.3f * x", kl.coefficients[1], kl.coefficients[2])
 
@@ -148,6 +153,7 @@ kl <- ggplot() +
   ylab('') +
   theme_cowplot()
 
+# Kluane high
 kh.coefficients <- sem.s2.kh.max$coefficients
 kh.equation <- sprintf("y = %.3f + %.3f * x", kh.coefficients[1], kh.coefficients[2])
 
@@ -159,17 +165,22 @@ kh <- ggplot() +
   ylab('') +
   theme_cowplot()
 
+# Combine Kluane plots to single row
 kluane.plot <- plot_grid(kl, kh, 
                          ncol = 2, 
                          align = 'h')
 
                          labels = c('(b) ', '(c) '))
 
+# Add Blaesedalen plot as extra row
 combined.plots <- plot_grid(bl,
                             kluane.plot,
                             nrow = 2, 
                             align = 'h') 
                             labels = c('(a) ', '', ''))
+
+# Show plots
 combined.plots
 
+# Save plots
 cowplot::save_plot('../../plots/figures/figure-3v5.png', combined.plots, base_height = 140, base_width = 180, units = 'mm')

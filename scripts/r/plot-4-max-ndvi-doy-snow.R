@@ -75,6 +75,7 @@ sem.s2.kl.doy <- errorsarlm(ndvi.max.doy ~ snow.auc,
                             zero.policy = TRUE)
 
 stargazer(sem.s2.kl.max, sem.s2.kl.doy, type = 'text')
+
 ###
 # Kluane high
 ###
@@ -123,6 +124,7 @@ kh.pred <- kh.pred %>%
 
 # Plot ----
 
+# Blaesedalen
 bl.coefficients <- sem.s2.bl.doy$coefficients
 bl.equation <- sprintf("y = %.2f + %.2f * x", bl.coefficients[1], bl.coefficients[2])
 bl.equation
@@ -134,6 +136,7 @@ bl <- ggplot() +
   ylab('') +
   theme_cowplot()
 
+# Kluane low
 kl.coefficients <- sem.s2.kl.doy$coefficients
 kl.equation <- sprintf("y = %.2f + %.2f * x", kl.coefficients[1], kl.coefficients[2])
 kl.equation
@@ -145,6 +148,7 @@ kl <- ggplot() +
   ylab('') +
   theme_cowplot()
 
+# kluane high
 kh.coefficients <- sem.s2.kh.doy$coefficients
 kh.equation <- sprintf("y = %.2f + %.2f * x", kh.coefficients[1], kh.coefficients[2])
 kh.equation
@@ -156,16 +160,20 @@ kh <- ggplot() +
   ylab('') +
   theme_cowplot()
 
+# Kluane plots together in single row
 kluane.plot <- plot_grid(kl, kh, 
                          ncol = 2, 
                          align = 'h')#, 
                          #labels = c('(b)', '(c)'))
 
+# Add Blaesedalen plot in its own row
 combined.plots <- plot_grid(bl,
                             kluane.plot,
                             nrow = 2, 
                             align = 'h')#, 
                             #labels = c('(a)', '', ''))
+# Show plots
 combined.plots
 
+# Save plots
 cowplot::save_plot('../../plots/figures/figure-4v1.png', combined.plots, base_height = 140, base_width = 180, units = 'mm')

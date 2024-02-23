@@ -5,6 +5,7 @@
 # focal sites (Blaesedalen, Greenland; Kluane, Yukon), while accounting for
 # spatial autocorrelation.
 
+# Libraries and options ----
 library(ggplot2)
 library(sf)
 library(mapview)
@@ -18,7 +19,9 @@ library(dplyr)
 # Turn off scientific notation
 options(scipen = 999)
 
-# Read in the data and reduce to unique id
+
+# Read in the data ----
+
 # Blaesedalen
 s2.bl <- read.csv('../../data/combined-ndvi-snow/s2-bl-smooth-joined.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32621) %>%
@@ -40,15 +43,16 @@ s2.kh <- read.csv('../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv') %>%
   filter(row_number() ==7) %>%
   ungroup()
   
-ggplot(data = s2.bl, aes(x = snow.auc, y = ndvi.max)) +
-  geom_point(aes(color = snow.auc, size = snow.auc)) +
-  scale_color_viridis_c() +
-  geom_smooth(method = 'lm', aes(x = snow.auc, y = ndvi.max)) +
-  geom_line(data = prediction, aes(x = snow.auc, y = ndvi), color = 'red')
+# ggplot(data = s2.bl, aes(x = snow.auc, y = ndvi.max)) +
+#   geom_point(aes(color = snow.auc, size = snow.auc)) +
+#   scale_color_viridis_c() +
+#   geom_smooth(method = 'lm', aes(x = snow.auc, y = ndvi.max)) +
+#   geom_line(data = prediction, aes(x = snow.auc, y = ndvi), color = 'red')
+
 
 # Create linear models for later testing with Moran's I ----
 
-# Maximum NDVI is a function of snow persistence
+# Maximum NDVI and NDVI DoY is a function of snow persistence
 # Blaesedalen
 lm.s2.bl.max <- lm(s2.bl$ndvi.max ~ s2.bl$snow.auc)
 lm.s2.bl.doy <- lm(s2.bl$ndvi.max.doy ~ s2.bl$snow.auc)
@@ -75,10 +79,8 @@ stargazer(lm.s2.bl.max, lm.s2.bl.doy, type = 'text')
 #   - Adjacency
 #   - Distance
 #   - k-nearest
-#   It would seem to make sense in this use case to use adjacency? All touching
-#   pixels (i.e. 'QUEEN')
 
-# Get neighbours for s2 pixels
+# Get neighbours for s2 pixels, distancen = 60 m
 s2.bl.nb <- spdep::dnearneigh(s2.bl, d1 = 0, d2 = 60)
 s2.kl.nb <- spdep::dnearneigh(s2.kl, d1 = 0, d2 = 60)
 s2.kh.nb <- spdep::dnearneigh(s2.kh, d1 = 0, d2 = 60)
@@ -88,16 +90,16 @@ s2.bl.lw <- nb2listw(s2.bl.nb, style = "W", zero.policy = TRUE)
 s2.kl.lw <- nb2listw(s2.kl.nb, style = "W", zero.policy = TRUE)
 s2.kh.lw <- nb2listw(s2.kh.nb, style = "W", zero.policy = TRUE)
 
-
-
 # List of lw objects
 lw.list <- list(s2.bl.lw, s2.bl.lw, 
                 s2.kl.lw, s2.kl.lw, 
                 s2.kh.lw, s2.kh.lw)
 
+
 # Moran's Index test ----
 
 # Moran's test, without zero policy as all samples have neighbours
+
 # Blaesedalen
 mt.lm.s2.bl.max <- lm.morantest(lm.s2.bl.max, s2.bl.lw)
 mt.lm.s2.bl.doy <- lm.morantest(lm.s2.bl.doy, s2.bl.lw)
@@ -107,31 +109,35 @@ mt.lm.s2.kl.doy <- lm.morantest(lm.s2.kl.doy, s2.kl.lw)
 # Kluane high
 mt.lm.s2.kh.max <- lm.morantest(lm.s2.kh.max, s2.kh.lw)
 mt.lm.s2.kh.doy <- lm.morantest(lm.s2.kh.doy, s2.kh.lw)
-
-length(lm.list)  
   
 # Plot the spatially lagged values using Moran plot
+# Blaesedalen
 moran.plot(lm.s2.bl.max$residuals, s2.bl.lw)
 moran.plot(lm.s2.bl.doy$residuals, s2.bl.lw)
+# Kluane low
 moran.plot(lm.s2.kl.max$residuals, s2.kl.lw)
 moran.plot(lm.s2.kl.doy$residuals, s2.kl.lw)
+# Kluane high
 moran.plot(lm.s2.kh.max$residuals, s2.kh.lw)
 moran.plot(lm.s2.kh.doy$residuals, s2.kh.lw)
 
 
 # Monte-carlo simulation to assess for significance
+# Blaesedalen
 mc.lm.s2.bl.max <- moran.mc(lm.s2.bl.max$residuals, 
                             s2.bl.lw,
                             nsim = 999)
 mc.lm.s2.bl.doy <- moran.mc(lm.s2.bl.doy$residuals, 
                             s2.bl.lw,
                             nsim = 999)
+# Kluane low
 mc.lm.s2.kl.max <- moran.mc(lm.s2.kl.max$residuals, 
                             s2.kl.lw,
                             nsim = 999)
 mc.lm.s2.kl.doy <- moran.mc(lm.s2.kl.doy$residuals, 
                             s2.kl.lw,
                             nsim = 999)
+# Kluane high
 mc.lm.s2.kh.max <- moran.mc(lm.s2.kh.max$residuals, 
                             s2.kh.lw,
                             nsim = 999)
@@ -150,10 +156,7 @@ plot(mc.lm.s2.kh.doy, main = '', las = 1)
 
 # Sensitivity analysis ----
 
-# Which model to conduct sensitivity analysis on?
-#model <- lm.s2.bl.doy
-
-
+# Function to run sensitivity analysis with increasing distance of neighbourhood
 
 # Loop d through a sequence ranging from 10 to 200m to check for sensitivity
 sensit_check <- function(model, data) {
@@ -175,30 +178,59 @@ sensit_check <- function(model, data) {
     geom_line(aes(y = moran))
 }
 
+# Run function on each model
+# Blaesedalen
 sensit_check(lm.s2.bl.max, s2.bl)
 sensit_check(lm.s2.bl.doy, s2.bl)
+# Kluane low
 sensit_check(lm.s2.kl.max, s2.kl)
 sensit_check(lm.s2.kl.doy, s2.kl)
+# Kluane high
 sensit_check(lm.s2.kh.max, s2.kh)
 sensit_check(lm.s2.kh.doy, s2.kh)
 
 
+# Lagrange multiplier test, to check whether Spatial Lagg or Spatial Error appropriate ----
+
+# Looking at the p-value of RLMerr and RLMlag for the model with p < 0.01, or lower p. 
+
+# Blaesedalen
+bl.max.lmt <- lm.LMtests(lm.s2.bl.max, s2.bl.lw, test = "all") # no indication
+bl.doy.lmt <- lm.LMtests(lm.s2.bl.doy, s2.bl.lw, test = "all") # spatial error
+# Kluane low
+kl.max.lmt <- lm.LMtests(lm.s2.kl.max, s2.kl.lw, test = "all") # spatial error, though both sig.
+kl.doy.lmt <- lm.LMtests(lm.s2.kl.doy, s2.kl.lw, test = "all") # spatial error
+# Kluane high
+kh.max.lmt <- lm.LMtests(lm.s2.kh.max, s2.kh.lw, test = "all") # no indication
+kh.doy.lmt <- lm.LMtests(lm.s2.kh.doy, s2.kh.lw, test = "all") # spatial error, though both sig.
+
+
+# The Lagrange multiplier test indicates for use of spatial error model over 
+#   spatial lag model. Though some tests inconclusive, never recommends
+#   spatial lag over spatial error.
+
+
+######################
+## GO TO SCRIPTS "PLOT-4-MAX-NDVI-DOY-SNOW.R" and "PLOT-3-MAX-NDVI-SNOW.R"
+######################
+
+
+# Code beyond here is duplicated in plotting scripts, and is more messy here.
+# Will tidy in future.
+
+
 # Spatial error model ----
-
-# The Lagrange multiplier test does not give a clear preference of 
-# spatial lag model or spatial error model. 
-
-# In this case, it contextually makes most sense to use a spatial error model,
-# as any autocorrelation is an artefact of no interest to the phenomenon in question.
 
 # Query whether to use dnearneigh or poly2nb(data, queen = TRUE).
 
 ###
 # Blaesedalen Spatial Error Models
 ###
+
 # Run this at 60m
-s2.bl.nb <- dnearneigh(s2.bl, d1 = 0, d2 = 100)
+s2.bl.nb <- dnearneigh(s2.bl, d1 = 0, d2 = 60)
 #s2.bl.nb <- poly2nb(st_buffer(s2.bl, dist = 5, endCapStyle = "SQUARE"), queen = TRUE)
+
 # Redefine spatial weights for neighbourhoods
 s2.bl.lw <- nb2listw(s2.bl.nb, style = 'W', zero.policy = FALSE)
 
@@ -224,8 +256,6 @@ predicted.values <- data.frame(snow.auc = to.predict)
 prediction <- predicted.values %>%
   mutate(ndvi = predict(sem.s2.bl.max, newdata = predicted.values))
 
-prediction
-?predict.MODELFUNCTION
 ###
 # Kluane low Spatial Error Models
 ###
@@ -270,10 +300,3 @@ stargazer(sem.s2.kh.max, sem.s2.kh.doy, type = 'html', title = 'Kluane high',
 check.lm <- moran.mc(lm.s2.bl.doy$residuals, s2.bl.lw, nsim = 999, zero.policy = TRUE)
 check.sem <- moran.mc(sem.s2.bl.doy$residuals, s2.bl.lw, nsim = 999, zero.policy = TRUE)
 plot(check.sem, main = '', las = 1)
-
-
-# Lagrange multiplier test
-LM <- lm.LMtests(lm.s2.bl.doy, s2.bl.lw, test = "all")
-LM
-
-stargazer(LM, type = 'text')
