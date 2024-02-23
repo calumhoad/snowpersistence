@@ -170,14 +170,14 @@ kluane.plot <- plot_grid(kl, kh,
                          ncol = 2, 
                          align = 'h')
 
-                         labels = c('(b) ', '(c) '))
+                         #labels = c('(b) ', '(c) '))
 
 # Add Blaesedalen plot as extra row
 combined.plots <- plot_grid(bl,
                             kluane.plot,
                             nrow = 2, 
                             align = 'h') 
-                            labels = c('(a) ', '', ''))
+                            #labels = c('(a) ', '', ''))
 
 # Show plots
 combined.plots
