@@ -17,7 +17,7 @@ library(DescTools)
 # Load in the data ----
 
 # Trend data
-lsat.trnds <- read_csv("../../data/landsat-ts/trends/bl-auto-5-trends.csv") %>%
+lsat.trnds <- read_csv("../../data/landsat-ts/trends/bl-auto-7-trends.csv") %>%
   st_as_sf(coords = c("X", "Y"), crs = 4326) %>%
   st_transform(crs = 32621) %>%
   st_buffer(dist = 15, endCapStyle = "SQUARE")
@@ -43,7 +43,8 @@ ggplot(data = lsat.trnds) +
   scale_fill_manual(values = c('#DB9B3B', '#F1EDE7', '#518663'))
 
 # Statistical testing ----
-browning <- filter(lsat.trnds, trend.cat == 'browning')
+browning <- filter(lsat.trnds, trend.cat == 'browning') %>%
+  drop_na()
 notrend <- filter(lsat.trnds, trend.cat == 'no_trend')
 
 wilcox.test(browning$snow.auc, notrend$snow.auc)
