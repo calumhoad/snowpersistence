@@ -224,6 +224,17 @@ snow <- rast(snow)
 plot(snow)
 plotRGB(bl.r.snow, r = d1, g = d2, b = d3, scale = 1)
 
+
+# Stack classified rasters to single spatRast object ----
+
+# Stack
+bl.r.snow <- rast(bl.r.snow)
+# Check
+plot(bl.r.snow)
+
+
+# Raster where all cells assigned value of 1 ----
+
 # Create raster where every pix = 1, to facilitate later pixel count via sum
 num.pixels <- terra::classify(bl.r.snow[[2]], rbind(c(-2, 2, 1)))
 # Assign name to this
@@ -251,68 +262,18 @@ ggplot() + geom_sf(data = lsat.poly, aes(fill = lsat.poly$total.change))# + geom
 
 ggplot() +
   geom_spatraster(data = t1, aes(fill = red)) +
-  geom_sf(data = lsat.data) 
+  geom_sf(data = lsat.poly) 
   
-
-
-plot(lsat.poly)
-# HLS S30 Bring in the list of pixel centres from LandsatTS
-s30.data <- read_csv('../../data/ndvi/s30-blaesedalen-ndvi-ts-pt.csv') %>%
-  st_as_sf(coords = c('X', 'Y'), crs = 32621) %>%
-  select(id, geometry)
-  
-# Kluane-low
-s30.data <- read_csv('../../data/nasa-hls/output/s30-kluane-low-ndvi-ts-pt-2023.csv') %>%
-  st_as_sf(coords = c('X', 'Y'), crs = 32608)
-# Kluane-high
-s30.data <- read_csv('../../data/nasa-hls/output/s30-kluane-high-ndvi-ts-pt-2023.csv') %>%
-  st_as_sf(coords = c('X', 'Y'), crs = 32608)
-
-# buffer square to polygon
-s30.poly <- st_buffer(s30.data, 15, endCapStyle = "SQUARE")
-
-# plot to check
-ggplot() + geom_sf(data = s30.poly) + geom_sf(data = s30.data)
-
-
-# Sentinel-2, bring in the list of pixel centres from S2 script
-# Blaesedalen
-s2.centres <- read_csv('../../data/ndvi/s2-blaesedalen-ndvi-ts-pt.csv') %>%
-  st_as_sf(coords = c('X', 'Y'), crs = 32621) %>%
-  select(id, geometry)
-# Kluane-high
-s2.centres <- read_csv('../../data/ndvi/s2-kluane-high-ndvi-ts-pt.csv') %>%
-  st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
-  select(id, geometry)
-# Kluane-low
-s2.centres <- read_csv('../../data/ndvi/s2-kluane-low-ndvi-ts-pt.csv') %>%
-  st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
-  select(id, geometry)
-
-# buffer square to polygon 
-s2.poly <- st_buffer(s2.centres, 5, endCapStyle = "SQUARE")
-
-# plot to check
-ggplot() + geom_sf(data = s2.poly) + geom_sf(data = s2.centres)  
-
-bl.r.snow <- rast(bl.r.snow)
-plot(bl.r.snow)
 
 # Use pixel polygons to extract the sum of the reclassed snow pixels ----
 
-# SENTINEL-2
+# LandsatTS
 # Extract number of pixels which are snow covered from classified raster stack
 lsat.snow.cover <- terra::extract(bl.r.snow, lsat.poly, fun = 'sum', ID = TRUE, bind = TRUE) # red
 
 # Extract number of pixels per polygon, using num.pixels raster (all pix = 1)
 lsat.snow.cover <- terra::extract(num.pixels, lsat.snow.cover, fun = 'sum', ID = TRUE, 
                                 bind = TRUE)
-# NASA HLS S30
-# Extract number of pixels which are snow covered from classified raster stack
-s30.snow.cover <- terra::extract(bl.r.snow, s30.poly, fun = 'sum', ID = TRUE, bind = TRUE)
-
-# Extract number of pixels per polygon, using num.pixels raster (all pix = 1)
-s30.snow.cover <- terra::extract(num.pixels, s30.snow.cover, fun = 'sum', ID = TRUE, bind = TRUE)
 
 
 # Calculate snow cover as percentage ----
@@ -322,7 +283,7 @@ check <- st_as_sf(lsat.snow.cover)
 
 # Convert the spatvector to an sf
 extracted.data <- st_as_sf(lsat.snow.cover) %>%
-  #select(id, geometry, tot.pixels, !!d1, !!d2, !!d3, !!d4) %>% #, !!d5) %>%
+  select(sample.id, geometry, tot.pixels, !!d1, !!d2, !!d3, !!d4) %>% #, !!d5) %>%
  # Calculate percentage cover per S2 pixel
   mutate(!!d1 := .data[[d1]]/tot.pixels, 
          !!d2 := .data[[d2]]/tot.pixels, 
@@ -349,26 +310,23 @@ ggplot() +
   geom_sf(data = extracted.data, aes(fill = trend.cat)) #+
   #scale_fill_viridis_c()
 
+ggplot() +
+  geom_point(data = extracted.data, aes(x = snow.av, y = total.change.pcnt, color = trend.cat))
+
+
 # Interpolate between observations and calculate the area under the curve ----
 
-# Format the data (S2)
+# Format the data (LandsatTS)
 snow.data <- extracted.data %>% #filter(extracted.data, id == 189) %>%
   select(-tot.pixels) %>%
-  pivot_longer(!id & !geometry & !snow.av, names_to = 'date', values_to = "snow.cover") %>%
+  pivot_longer(!sample.id & !geometry & !snow.av, names_to = 'date', values_to = "snow.cover") %>%
   drop_na() %>%
-  group_by(id)
-
-# Format the data (S30)
-snow.data <- extracted.data %>% #filter(extracted.data, id == 189) %>%
-  select(-tot.pixels) %>%
-  pivot_longer(!id & !geometry & !snow.av, names_to = 'date', values_to = "snow.cover") %>%
-  drop_na() %>%
-  group_by(id)
+  group_by(sample.id)
 
 # Plot the data
 ggplot() +
   geom_point(data = snow.data, aes(x = date, y = snow.cover)) +
-  geom_line(data = snow.data, aes(x = date, y = snow.cover, group = id))
+  geom_line(data = snow.data, aes(x = date, y = snow.cover, group = sample.id))
 
 # Create predicted values for July 1st and 31st?
 # Draw a line between t1 and t2,
@@ -419,14 +377,14 @@ ggplot() +
 # Write the output ----
 
 # Format to wide data for output
-output.data <- pivot_wider(snow.auc, id_cols = c(id, geometry, snow.auc, snow.av), 
+output.data <- pivot_wider(snow.auc, id_cols = c(sample.id, geometry, snow.auc, snow.av), 
                            names_from = date, 
                            values_from = c(snow.cover)) %>%
   st_as_sf() %>%
   st_centroid()
 
 # Write the file 
-st_write(output.data, "../../data/snow/snow-cover-30m-blaesedalen.csv",
+st_write(output.data, "../../data/landsat-ts/snow/snow-cover-30m-blaesedalen-landsatts.csv",
          layer_options = "GEOMETRY=AS_XY")
 
 
