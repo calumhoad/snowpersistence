@@ -9,6 +9,7 @@ library(spdep)
 library(spatialreg)
 library(stargazer)
 library(cowplot)
+library(broom)
 
 # Data ----
 # Read in the data and reduce to unique id
@@ -107,9 +108,25 @@ bl.pred <- data.frame(snow.auc = seq(min(s2.bl$snow.auc),
                                      max(s2.bl$snow.auc), 
                                      0.5))
 
+common.ids <- intersect(bl.pred$snow.auc, s2.bl$snow.auc)
+
+bl.ci <- confint(sem.s2.bl.max, level = 0.95)
+bl.ci.low.int <- bl.ci[2,1]
+bl.ci.low.slo <- bl.ci[3,1]
+bl.ci.high.int <- bl.ci[2,2]
+bl.ci.high.slo <- bl.ci[3,2]
+
+y.low <- (bl.ci.low.slo * bl.pred$snow.auc) + bl.ci.low.int  # Low CI line
+y.high <- (bl.ci.high.slo * bl.pred$snow.auc) + bl.ci.high.int
+
+bl.model <- tidy(sem.s2.bl.max, conf.int = TRUE, conf.level = 0.95)
+bl.model
+bl.pred <- bl.pred %>% filter(!snow.auc %in% common.ids)
+
 bl.pred <- bl.pred %>% 
-  mutate(ndvi = predict(sem.s2.bl.max, newdata = bl.pred))# %>%
-  
+  mutate(ndvi = predict(sem.s2.bl.max, newdata = bl.pred))#,
+         #ci.low = bl.m#, interval = "confidence", level = 0.9))
+
 
 # kluane low
 kl.pred <- data.frame(snow.auc = seq(min(s2.kl$snow.auc),
@@ -136,11 +153,13 @@ bl.equation <- sprintf("y = %.3f + %.3f * x", bl.coefficients[1], bl.coefficient
 bl <- ggplot() +
   geom_point(data = s2.bl, aes(x = snow.auc, y = ndvi.max), alpha = 0.5, color = '#4984BF') +
   geom_line(data = bl.pred, aes(x = snow.auc, y = ndvi), color = 'black', linewidth = 1) +
+  geom_ribbon(aes(x = bl.pred$snow.auc, ymin = y.low, ymax = y.high), fill = '#4984BF', alpha = 0.15, color = NA) +
   annotate("text", x = max(s2.bl$snow.auc), y = 0.6, label = bl.equation, hjust = 1, vjust = 1) +
   xlab('') +
   ylab('') +
   theme_cowplot()
 
+bl
 # Kluane low
 kl.coefficients <- sem.s2.kl.max$coefficients
 kl.equation <- sprintf("y = %.3f + %.3f * x", kl.coefficients[1], kl.coefficients[2])
