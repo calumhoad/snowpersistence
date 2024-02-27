@@ -108,21 +108,24 @@ bl.pred <- data.frame(snow.auc = seq(min(s2.bl$snow.auc),
                                      max(s2.bl$snow.auc), 
                                      0.5))
 
-common.ids <- intersect(bl.pred$snow.auc, s2.bl$snow.auc)
-
+# Extract confidence intervals
 bl.ci <- confint(sem.s2.bl.max, level = 0.95)
 bl.ci.low.int <- bl.ci[2,1]
 bl.ci.low.slo <- bl.ci[3,1]
 bl.ci.high.int <- bl.ci[2,2]
 bl.ci.high.slo <- bl.ci[3,2]
 
-y.low <- (bl.ci.low.slo * bl.pred$snow.auc) + bl.ci.low.int  # Low CI line
-y.high <- (bl.ci.high.slo * bl.pred$snow.auc) + bl.ci.high.int
+# Use slope and intercept of high and low CI to predict values
+bl.y.low <- (bl.ci.low.slo * bl.pred$snow.auc) + bl.ci.low.int  # Low CI line
+bl.y.high <- (bl.ci.high.slo * bl.pred$snow.auc) + bl.ci.high.int
 
-bl.model <- tidy(sem.s2.bl.max, conf.int = TRUE, conf.level = 0.95)
-bl.model
+bl.model <- tidy(sem.s2.bl.max, conf.int = TRUE, conf.level = 0.95)s
+
+# Remove snow.auc which occur in both the original data and predict
+common.ids <- intersect(bl.pred$snow.auc, s2.bl$snow.auc)
 bl.pred <- bl.pred %>% filter(!snow.auc %in% common.ids)
 
+# Predict
 bl.pred <- bl.pred %>% 
   mutate(ndvi = predict(sem.s2.bl.max, newdata = bl.pred))#,
          #ci.low = bl.m#, interval = "confidence", level = 0.9))
