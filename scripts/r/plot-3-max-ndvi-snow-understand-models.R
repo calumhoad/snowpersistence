@@ -150,7 +150,8 @@ sem.s2.kh.max <- errorsarlm(ndvi.max ~ snow.auc,
 
 
 # Examine model summaries ----
-stargazer(sem.s2.bl.max, sem.s2.kl.max, sem.s2.kh.max, type = 'text')
+stargazer(sem.s2.bl.max, sem.s2.kl.max, sem.s2.kh.max, type = 'html',
+          out = paste0('../../plots/moran-sensitivity/model-summaries/models-maxndvi-', dist2, '.html'))
 
 
 # Checking what is going on with models ----
@@ -185,13 +186,14 @@ out.plot
 kl.maps <- plot_grid(
   ggplot() +
     geom_sf(data = s2.kl, aes(colour = ndvi.max, size = snow.auc)) +
-    scale_colour_viridis_c(),
-  #scale_colour_viridis_c(limits = c(0.1, 0.6)),
+    #scale_colour_viridis_c(),
+    scale_colour_viridis_c(limits = c(0.1, 0.6)),
   ggplot() +
     geom_sf(data = s2.kl %>% mutate(
       fitted = fitted(sem.s2.kl.max)),
       mapping = aes(colour = fitted, size = snow.auc)) +
-    scale_colour_viridis_c(), 
+    #scale_colour_viridis_c(),
+    scale_colour_viridis_c(limits = c(0.1, 0.6)),
   labels = c('KL', dist2)
 )
 
@@ -201,13 +203,14 @@ cowplot::save_plot(paste0('../../plots/moran-sensitivity/kl-maps/neighbourhood-'
 kh.maps <- plot_grid(
   ggplot() +
     geom_sf(data = s2.kh, aes(colour = ndvi.max, size = snow.auc)) +
-    scale_colour_viridis_c(),
-  #scale_colour_viridis_c(limits = c(0.1, 0.6)),
+    #scale_colour_viridis_c(),
+    scale_colour_viridis_c(limits = c(0.1, 0.6)),
   ggplot() +
     geom_sf(data = s2.kh %>% mutate(
       fitted = fitted(sem.s2.kh.max)),
       mapping = aes(colour = fitted, size = snow.auc)) +
-    scale_colour_viridis_c(),
+    #scale_colour_viridis_c(),
+    scale_colour_viridis_c(limits = c(0.1, 0.6)),
   labels = c('KH', dist2)
 )
 
@@ -223,7 +226,8 @@ bl.maps <- plot_grid(
     geom_sf(data = s2.bl %>% mutate(
       fitted = fitted(sem.s2.bl.max)),
       mapping = aes(colour = fitted, size = snow.auc)) +
-    scale_colour_viridis_c(), 
+   # scale_colour_viridis_c(),
+    scale_colour_viridis_c(limits = c(0.1, 0.6)),
   labels = c('BL', dist2)
 )
 
