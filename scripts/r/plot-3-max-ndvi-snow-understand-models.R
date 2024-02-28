@@ -34,14 +34,84 @@ s2.kh <- read.csv('../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv') %>%
   filter(row_number() == 7) %>%
   ungroup()
 
-# Models ----
+
+# Create linear models for later testing with Moran's I ----
+
+# Maximum NDVI and NDVI DoY is a function of snow persistence
+# Blaesedalen
+lm.s2.bl.max <- lm(s2.bl$ndvi.max ~ s2.bl$snow.auc)
+lm.s2.bl.doy <- lm(s2.bl$ndvi.max.doy ~ s2.bl$snow.auc)
+# kluane low
+lm.s2.kl.max <- lm(s2.kl$ndvi.max ~ s2.kl$snow.auc)
+lm.s2.kl.doy <- lm(s2.kl$ndvi.max.doy ~ s2.kl$snow.auc)
+# Kluane high
+lm.s2.kh.max <- lm(s2.kh$ndvi.max ~ s2.kh$snow.auc)
+lm.s2.kh.doy <- lm(s2.kh$ndvi.max.doy ~ s2.kh$snow.auc)
+
+
+# Sensitivity plots for determining d2 ----
+sensit.df <- data.frame()
+# Function for calculating moran's I with increasing neighbourhood dist, plotting result
+sensit_check <- function(site.name, model, data) {
+  # Empty vector for storage of Moran's I values
+  moran.I <- c()
+  for (d in seq(10, 400, 10)) {
+    s2.sens.nb <- dnearneigh(data, d1 = 0, d2 = d)
+    s2.sens.lw <- nb2listw(s2.sens.nb, style = 'W', zero.policy = TRUE)
+    moran <- moran.mc(model$residuals, s2.sens.lw, 
+                      nsim = 999, zero.policy = TRUE)
+    moran.I <- c(moran.I, moran$statistic)
+  }
+  
+  moran.I <- data.frame(moran = moran.I,
+                        distance = seq(10, 400, 10))
+  
+  ggplot(data = moran.I, aes(x = distance, y = moran)) +
+    geom_point(aes(y = moran)) +
+    geom_line(aes(y = moran))
+  
+  sensit.df <<- moran.I %>%
+    mutate(site = site.name)
+  
+}
+
+sensit.df
+# Run function on each model
+# Blaesedalen
+sensit_check('blaesedalen', lm.s2.bl.max, s2.bl)
+sensit.bl <- sensit.df
+# Kluane low
+sensit_check('kluane-low', lm.s2.kl.max, s2.kl)
+sensit.kl <- sensit.df
+# Kluane high
+sensit_check('kluane-high', lm.s2.kh.max, s2.kh)
+sensit.kh <- sensit.df
+
+# Bind the sensitivity dataframe for each site together
+sensit.all <- rbind(sensit.bl, sensit.kl, sensit.kh)
+sensit.all
+# Output this df to prevent running sensitivity checks again (slow)
+write_csv(sensit.all, '../../data/statistical-output/morans-i-sensitivity-neighbourhood.csv')
+
+# Combined plot of the sensitivity check for Moran's I
+ggplot() +
+  geom_line(data = sensit.all, aes(x = distance, y = moran, group = site, colour = site)) #+
+  #geom_vline(aes(x = dist2))
+
+# read in the moran's i data with increasing distance of neighbourhood, sensitivity check
+sensit.data <- read_csv('../../data/statistical-output/morans-i-sensitivity-neighbourhood.csv')
+
+# Spatial Error Models ----
+
+# Set maximum distance of neighbourhood
+dist2 <- 200
+
+# For loop to iterate through increasing neighbourhood dist and produce plots
+for (dist2 in seq(10, 400, 10)) {
 
 ###
 # Blaesedalen Spatial Error Models
 ###
-
-dist2 <- 200
-
 s2.bl.nb <- dnearneigh(s2.bl, d1 = 0, d2 = dist2)
 #s2.bl.nb <- poly2nb(st_buffer(s2.bl, dist = 5, endCapStyle = "SQUARE"), queen = TRUE)
 # Redefine spatial weights for neighbourhoods
@@ -51,14 +121,6 @@ sem.s2.bl.max <- errorsarlm(ndvi.max ~ snow.auc,
                             data = s2.bl, 
                             listw = s2.bl.lw,
                             zero.policy = FALSE)
-
-sem.s2.bl.doy <- errorsarlm(ndvi.max.doy ~ snow.auc,
-                            data = s2.bl,
-                            listw = s2.bl.lw, 
-                            zero.policy = FALSE)
-
-stargazer(sem.s2.bl.max, sem.s2.bl.doy, type = 'html', 
-          out = '../../data/statistical-output/sem-blaesedalen-nb-60.html')
 
 ###
 # Kluane low Spatial Error Models
@@ -73,13 +135,6 @@ sem.s2.kl.max <- errorsarlm(ndvi.max ~ snow.auc,
                             listw = s2.kl.lw, 
                             zero.policy = TRUE)
 
-sem.s2.kl.doy <- errorsarlm(ndvi.max.doy ~ snow.auc, 
-                            data = s2.kl, 
-                            listw = s2.kl.lw, 
-                            zero.policy = TRUE)
-
-stargazer(sem.s2.kl.max, sem.s2.kl.doy, type = 'text')#,
-          out = '../../data/statistical-output/sem-kluane-low-nb-60.html')
 
 ###
 # Kluane high
@@ -93,126 +148,88 @@ sem.s2.kh.max <- errorsarlm(ndvi.max ~ snow.auc,
                             listw = s2.kh.lw,
                             zero.policy = TRUE)
 
-sem.s2.kh.doy <- errorsarlm(ndvi.max.doy ~ snow.auc,
-                            data = s2.kh, 
-                            listw = s2.kh.lw, 
-                            zero.policy = TRUE)
 
-stargazer(sem.s2.kh.max, sem.s2.kh.doy, type = 'html', 
-          out = '../../data/statistical-output/sem-kluane-high-nb-60.html')
-
-
-# Predictions ----
-# Generate predicted values based on model
-
-# Blaesedalen
-bl.pred <- data.frame(snow.auc = seq(min(s2.bl$snow.auc), 
-                                     max(s2.bl$snow.auc), 
-                                     0.5))
-
-# Extract confidence intervals
-bl.ci <- confint(sem.s2.bl.max, level = 0.95)
-bl.ci.low.int <- bl.ci[2,1]
-bl.ci.low.slo <- bl.ci[3,1]
-bl.ci.high.int <- bl.ci[2,2]
-bl.ci.high.slo <- bl.ci[3,2]
-
-# Use slope and intercept of high and low CI to predict values
-bl.y.low <- (bl.ci.low.slo * bl.pred$snow.auc) + bl.ci.low.int  # Low CI line
-bl.y.high <- (bl.ci.high.slo * bl.pred$snow.auc) + bl.ci.high.int
-
-bl.model <- tidy(sem.s2.bl.max, conf.int = TRUE, conf.level = 0.95)
-
-str(sem.s2.bl.max)
-
-# Remove snow.auc which occur in both the original data and predict
-common.ids <- intersect(bl.pred$snow.auc, s2.bl$snow.auc)
-bl.pred <- bl.pred %>% filter(!snow.auc %in% common.ids)
-
-# Predict
-bl.pred <- bl.pred %>% 
-  mutate(ndvi = predict(sem.s2.bl.max, newdata = bl.pred))#,
-         #ci.low = bl.m#, interval = "confidence", level = 0.9))
-
-
-# kluane low
-kl.pred <- data.frame(snow.auc = seq(min(s2.kl$snow.auc),
-                                     max(s2.kl$snow.auc),
-                                     0.5))
-
-kl.pred <- kl.pred %>%
-  mutate(ndvi = predict(sem.s2.kl.max, newdata = kl.pred))
-
-# Kluane high
-kh.pred <- data.frame(snow.auc = seq(min(s2.kh$snow.auc),
-                                     max(s2.kh$snow.auc),
-                                     0.5))
-kh.pred <- kh.pred %>%
-  mutate(ndvi = predict(sem.s2.kh.max, newdata = kh.pred))
-
-
-# Plot ----
-
-# Blaesedalen
-bl.coefficients <- sem.s2.bl.max$coefficients
-bl.equation <- sprintf("y = %.3f + %.3f * x", bl.coefficients[1], bl.coefficients[2])
-
-bl <- ggplot() +
-  geom_point(data = s2.bl, aes(x = snow.auc, y = ndvi.max), alpha = 0.5, color = '#4984BF') +
-  geom_line(data = bl.pred, aes(x = snow.auc, y = ndvi), color = 'black', linewidth = 1) +
-  geom_ribbon(aes(x = bl.pred$snow.auc, ymin = y.low, ymax = y.high), fill = '#4984BF', alpha = 0.15, color = NA) +
-  annotate("text", x = max(s2.bl$snow.auc), y = 0.6, label = bl.equation, hjust = 1, vjust = 1) +
-  xlab('') +
-  ylab('') +
-  theme_cowplot()
-
-bl
-# Kluane low
-kl.coefficients <- sem.s2.kl.max$coefficients
-kl.equation <- sprintf("y = %.3f + %.3f * x", kl.coefficients[1], kl.coefficients[2])
-
-kl <- ggplot() +
-  geom_point(data = s2.kl, aes(x = snow.auc, y = ndvi.max), alpha = 0.5, color = '#F5A40C') +
-  geom_line(data = kl.pred, aes(x = snow.auc, y = ndvi), color = 'black', linewidth = 1) +
-  annotate("text", x = max(s2.kl$snow.auc), y = 0.6, label = kl.equation, hjust = 1, vjust = 1) + 
-   xlab('') +
-  ylab('') +
-  theme_cowplot()
-
-# Kluane high
-kh.coefficients <- sem.s2.kh.max$coefficients
-kh.equation <- sprintf("y = %.3f + %.3f * x", kh.coefficients[1], kh.coefficients[2])
-
-kh <- ggplot() +
-  geom_point(data = s2.kh, aes(x = snow.auc, y = ndvi.max), alpha = 0.5, color = '#F23835') +
-  geom_line(data = kh.pred, aes(x = snow.auc, y = ndvi), color = 'black', linewidth = 1) +
-  annotate("text", x = max(s2.kh$snow.auc), y = 0.6, label = kh.equation, hjust = 1, vjust = 1) +  
-  xlab('') +
-  ylab('') +
-  theme_cowplot()
-
-# Combine Kluane plots to single row
-kluane.plot <- plot_grid(kl, kh, 
-                         ncol = 2, 
-                         align = 'h')
-
-                         #labels = c('(b) ', '(c) '))
-
-# Add Blaesedalen plot as extra row
-combined.plots <- plot_grid(bl,
-                            kluane.plot,
-                            nrow = 2, 
-                            align = 'h') 
-                            #labels = c('(a) ', '', ''))
-
-# Show plots
-combined.plots
-
-# Save plots
-cowplot::save_plot('../../plots/figures/figure-3v5.png', combined.plots, base_height = 140, base_width = 180, units = 'mm')
+# Examine model summaries ----
+stargazer(sem.s2.bl.max, sem.s2.kl.max, sem.s2.kh.max, type = 'text')
 
 
 # Checking what is going on with models ----
+
+# Scatter plots of actual and fitted values
+out.plot <- plot_grid(
+ggplot() +
+  geom_point(data = s2.kl, aes(x = snow.auc, y = ndvi.max), colour = 'red') +
+  geom_point(data = s2.kl %>% mutate(fitted = fitted(sem.s2.kl.max)), aes(x = snow.auc, y = fitted), colour = 'blue') +
+  ylim(0, 0.8),
+ggplot() +
+  geom_point(data = s2.kh, aes(x = snow.auc, y = ndvi.max), colour = 'red') +
+  geom_point(data = s2.kh %>% mutate(fitted = fitted(sem.s2.kh.max)), aes(x = snow.auc, y = fitted), colour = 'blue') +
+  ylim(0, 0.6),
+ggplot() +
+  geom_point(data = s2.bl, aes(x = snow.auc, y = ndvi.max), colour = 'red') +
+  geom_point(data = s2.bl %>% mutate(fitted = fitted(sem.s2.bl.max)), aes(x = snow.auc, y = fitted), colour = 'blue') +
+  ylim(0, 0.55),
+ggplot() +
+  geom_line(data = sensit.all, aes(x = distance, y = moran, group = site, colour = site)) +
+  geom_vline(xintercept = dist2),
+labels = c('KL', 'KH', 'BL', paste0('nb =', dist2, 'm'))
+)
+
+out.plot
+
+#cowplot::save_plot(paste0('../../plots/moran-sensitivity/neighbourhood-', dist2, '-metres.png'), out.plot, base_height = 140, base_width = 260, units = 'mm')
+
+
+# Maps of observed and fitted data
+# Kluane Low
+kl.maps <- plot_grid(
+  ggplot() +
+    geom_sf(data = s2.kl, aes(colour = ndvi.max, size = snow.auc)) +
+    scale_colour_viridis_c(),
+  #scale_colour_viridis_c(limits = c(0.1, 0.6)),
+  ggplot() +
+    geom_sf(data = s2.kl %>% mutate(
+      fitted = fitted(sem.s2.kl.max)),
+      mapping = aes(colour = fitted, size = snow.auc)) +
+    scale_colour_viridis_c(), 
+  labels = c('KL', dist2)
+)
+
+cowplot::save_plot(paste0('../../plots/moran-sensitivity/kl-maps/neighbourhood-', dist2, '-metres.png'), kl.maps, base_height = 140, base_width = 260, units = 'mm')
+
+# Kluane high
+kh.maps <- plot_grid(
+  ggplot() +
+    geom_sf(data = s2.kh, aes(colour = ndvi.max, size = snow.auc)) +
+    scale_colour_viridis_c(),
+  #scale_colour_viridis_c(limits = c(0.1, 0.6)),
+  ggplot() +
+    geom_sf(data = s2.kh %>% mutate(
+      fitted = fitted(sem.s2.kh.max)),
+      mapping = aes(colour = fitted, size = snow.auc)) +
+    scale_colour_viridis_c(),
+  labels = c('KH', dist2)
+)
+
+cowplot::save_plot(paste0('../../plots/moran-sensitivity/kh-maps/neighbourhood-', dist2, '-metres.png'), kh.maps, base_height = 140, base_width = 260, units = 'mm')
+
+# Blaesedalen
+bl.maps <- plot_grid(
+  ggplot() +
+    geom_sf(data = s2.bl, aes(colour = ndvi.max, size = snow.auc)) +
+    scale_colour_viridis_c(),
+  #scale_colour_viridis_c(limits = c(0.1, 0.6)),
+  ggplot() +
+    geom_sf(data = s2.bl %>% mutate(
+      fitted = fitted(sem.s2.bl.max)),
+      mapping = aes(colour = fitted, size = snow.auc)) +
+    scale_colour_viridis_c(), 
+  labels = c('BL', dist2)
+)
+
+cowplot::save_plot(paste0('../../plots/moran-sensitivity/bl-maps/neighbourhood-', dist2, '-metres.png'), bl.maps, base_height = 140, base_width = 260, units = 'mm')
+
+}
 
 # Plot predictor and response variables and model parameters to understand data better (Jakob code)
 plot_grid(
@@ -231,31 +248,29 @@ plot_grid(
   ggplot() +
     geom_sf(data = s2.kl, aes(colour = ndvi.max, size = snow.auc)) +
     scale_colour_viridis_c(),
+    #scale_colour_viridis_c(limits = c(0.1, 0.6)),
   ggplot() +
     geom_sf(data = s2.kl %>% mutate(
       fitted = fitted(sem.s2.kl.max)),
       mapping = aes(colour = fitted, size = snow.auc)) +
-    scale_colour_viridis_c(), 
+      scale_colour_viridis_c(),
+    #scale_colour_viridis_c(limits = c(0.1, 0.6)), 
   ggplot() +
     geom_sf(data = s2.bl, aes(colour = ndvi.max, size = snow.auc)) +
     scale_colour_viridis_c(),
+    #scale_colour_viridis_c(limits = c(0.1, 0.6)),
   ggplot() +
     geom_sf(data = s2.bl %>% mutate(
       fitted = fitted(sem.s2.bl.max)),
       mapping = aes(colour = fitted, size = snow.auc)) +
-    scale_colour_viridis_c()
+      scale_colour_viridis_c()
+    #scale_colour_viridis_c(limits = c(0.1, 0.6))
 )
 
-# Scatter plots of actual and fitted values
-plot_grid(
-ggplot() +
-  geom_point(data = s2.kl, aes(x = snow.auc, y = ndvi.max), colour = 'red') +
-  geom_point(data = s2.kl %>% mutate(fitted = fitted(sem.s2.kl.max)), aes(x = snow.auc, y = fitted), colour = 'blue'),
-ggplot() +
-  geom_point(data = s2.kh, aes(x = snow.auc, y = ndvi.max), colour = 'red') +
-  geom_point(data = s2.kh %>% mutate(fitted = fitted(sem.s2.kh.max)), aes(x = snow.auc, y = fitted), colour = 'blue'),
-ggplot() +
-  geom_point(data = s2.bl, aes(x = snow.auc, y = ndvi.max), colour = 'red') +
-  geom_point(data = s2.bl %>% mutate(fitted = fitted(sem.s2.bl.max)), aes(x = snow.auc, y = fitted), colour = 'blue'), 
-labels = c('KL', 'KH', 'BL')
-)
+# Sensitivity plot on its own
+sens.plot <- ggplot() +
+  geom_line(data = sensit.all, aes(x = distance, y = moran, group = site, colour = site)) #+
+  #geom_vline(xintercept = dist2),
+
+
+cowplot::save_plot(paste0('../../plots/moran-sensitivity/sensitivity-plot.png'), sens.plot, base_height = 140, base_width = 260, units = 'mm')
