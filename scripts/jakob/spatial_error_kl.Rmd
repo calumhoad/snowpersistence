@@ -1,0 +1,638 @@
+---
+title: "Calum`s spatial error model Kluane Low"
+author: "Jakob J. Assmann"
+date: "2024-03-01"
+output: html_document
+---
+
+## Set up R session
+```{r setup, echo = TRUE, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Dependencies
+library(tidyverse)
+library(sp)
+library(gstat)
+library(spdep)
+library(spatialreg)
+library(ggplot2)
+library(cowplot)
+library(colorspace)
+library(pbapply)
+library(broom)
+library(kableExtra)
+
+# Load data
+kl_data <- read_csv("s2-kl-smooth-joined.csv", show_col_types = FALSE) %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
+  group_by(id) %>%
+  filter(row_number() == 7) %>%
+  ungroup()
+```
+
+## Data overview
+
+The data set consist of the **center coordinates for 660 pixels** arranged in a grid. Each 
+pixel is 10 m x 10 m. The cooridnates are projected in UTM zone 8N (a planar metric projection), 
+distances are in m.
+
+```{r data vis}
+ggplot() +
+  geom_sf(data = st_geometry(kl_data), col = "red") +
+  geom_sf(data = st_geometry(kl_data) %>% st_buffer(5, endCapStyle = "SQUARE"),
+          fill = NA) +
+  theme_map()
+```
+
+Each pixel has two attributes of interest: 
+
+1) peak-seasons greenness (NDVI)
+
+```{r NDVI}
+plot_grid(
+  ggplot(st_drop_geometry(kl_data)) + 
+    geom_histogram(aes(x = ndvi.max), binwidth = 0.01) +
+    scale_x_continuous(breaks = seq(0.3, 0.7, 0.05)) +
+    theme_cowplot(),
+  ggplot() +
+    geom_sf(data = kl_data, mapping = aes(colour = ndvi.max)) +
+    scale_colour_continuous_sequential(palette = "viridis", rev = F,
+                                       limits = c(0.35, 0.75)) +
+    theme_map(),
+  labels = c("a) ndvi distribution", "b) ndvi in space"),
+  hjust = 0,
+  scale = 0.9
+)
+```
+
+2) snow persistence across the season (snow.auc)
+
+```{r snow.auc}
+plot_grid(
+  ggplot(st_drop_geometry(kl_data)) + 
+    geom_histogram(aes(x = snow.auc), binwidth = 1) +
+    scale_x_continuous(breaks = seq(0, 12, 1)) +
+    theme_cowplot(),
+  ggplot() +
+    geom_sf(data = kl_data, mapping = aes(colour = snow.auc)) +
+    scale_colour_continuous_sequential(rev = F,
+                                       limits = c(0,12)) +
+    theme_map(),
+  labels = c("a) snow.auc distribution", "b) snow.auc in space"),
+  hjust = 0,
+  scale = 0.9
+)
+``` 
+
+## Hypothesis
+
+We predict that a higher snow presistance (snow.auc) is associated with a lower 
+peak season greenness (ndvi.max):
+
+ ndvi.max ~ (-a) * snow.auc + c
+ 
+Here is a simple linear model fit:
+
+```{r linear_model}
+kl_lm <- lm(ndvi.max ~ snow.auc, data = kl_data)
+tidy(kl_lm)
+```
+
+```{r linear_model_vis}
+ggplot(kl_data, aes(x = snow.auc, y = ndvi.max)) +
+  geom_point() +
+  geom_line(aes(x = snow.auc, y = fitted(kl_lm)), colour = "blue")  +
+  annotate("text", x = 12, y = 0.65, hjust = 1, vjust = 1, 
+           label = "predictions in blue") +
+  theme_cowplot()
+```
+
+However, we know that there are many other factors that are influencing peak 
+season greenness (ndvi.max), for example nutrient clusters etc... We haven't 
+measured these, but they are also not of interest to us.We therefore chose a 
+spatial error model to account for them implicitly and to avoid pseudo replication. 
+
+## Spatial autocoreelation in the response variable
+
+Here is a variogram for the ndv.max and the residuals for the linera model
+with a spherical model fitted. 
+
+```{r vario_ndvi_residuals, fig.height = 7, fig.width = 7}
+# Fit variogram ndvi
+vario_ndvi.max <- as_Spatial(kl_data) %>% as("SpatialPointsDataFrame") %>%
+  variogram(ndvi.max ~ 1, data = ., cutoff = 130, width = 10)
+vario_ndvi.max_fit <- fit.variogram(vario_ndvi.max, model = vgm(model = "Sph")) 
+# Fit variogram residuals
+vario_resid <- kl_data %>% mutate(resid = kl_lm$residuals) %>%
+  as_Spatial() %>% 
+  as("SpatialPointsDataFrame") %>%
+  variogram(resid ~ 1, data = ., cutoff = 130, width = 10)
+vario_resid_fit <- fit.variogram(vario_resid, model = vgm(model = "Sph")) 
+
+# Visualise results
+plot_grid(
+ggplot(vario_ndvi.max) +
+  geom_point(aes(x = dist, y = gamma)) +
+  geom_line(aes(x = dist, y = gamma), 
+            data = variogramLine(vario_ndvi.max_fit, 
+                                 dist_vector = seq(10,130,10))) +
+  geom_vline(xintercept = vario_ndvi.max_fit$range) +
+  annotate("text", x = vario_ndvi.max_fit$range, y  = Inf, 
+           label = paste0(" range = ", round(vario_ndvi.max_fit$range, 1), " m"),
+           hjust = 0, vjust = 1.5) +
+  scale_x_continuous(limits = c(10, 130), breaks = seq(10,130,10)) +
+  labs(x = "lag distance (m)", y = "semivariance (gamma)") +
+  theme_cowplot(),
+ggplot(vario_resid) +
+  geom_point(aes(x = dist, y = gamma)) +
+  geom_line(aes(x = dist, y = gamma), 
+            data = variogramLine(vario_resid_fit, 
+                                 dist_vector = seq(10,130,10))) +
+  geom_vline(xintercept = vario_resid_fit$range) +
+  annotate("text", x = vario_resid_fit$range, y  = Inf, 
+           label = paste0(" range = ", round(vario_resid_fit$range, 1), " m"),
+           hjust = 0, vjust = 1.5) +
+  scale_x_continuous(limits = c(10, 130), breaks = seq(10,130,10)) +
+  labs(x = "lag distance (m)", y = "semivariance (gamma)") +
+  theme_cowplot(),
+  labels = c("a) ndvi.max variogram", "b) residual variogram lm(ndvi.max ~ snow.auc)"),
+  hjust = 0,
+  scale = 0.9,
+  nrow = 2,
+  ncol = 1
+)
+```
+
+Arguably, the both fits are a bit crude as the data does not seem to fully level 
+off beyond the largest lag distance assessed (130 m = 1/3 of diagonal of dataset). 
+However,the range of 87 m (90 m) provides a good starting point for the choice of the 
+neighbourhood size. 
+
+To further inform the choice of the neighbourhood size, we caluclated Moran's I 
+for the same lag distances as shown in the variogram (here upper ends of 
+neighbourhood).
+
+```{r morans_i}
+morans_i <- seq(10, 130, 10) %>%
+  pblapply(function(x){
+    kl_nb <- dnearneigh(kl_data, d1 = 0, d2 = x)
+    kl_lb <- nb2listw(kl_nb, style = "W", zero.policy = TRUE)
+    moran <- moran.mc(kl_lm$residuals, kl_lb, nsim = 999, zero.policy = TRUE)
+    data.frame(dist = x,
+               morans_i = moran$statistic)
+  }) %>%
+  bind_rows()
+ggplot(data = morans_i, aes(x = dist, y = morans_i)) +
+  geom_point() +
+  geom_line() +
+  geom_vline(xintercept = 90, linetype = "dashed") +
+  annotate("text", x = 90, y = Inf, label = " variogram range ~ 90 m",
+           hjust = 0, vjust = 2) +
+  geom_hline(yintercept = morans_i[morans_i$dist == 90,"morans_i"]) +
+  annotate("text", x = 10, y = morans_i[morans_i$dist == 90,"morans_i"],
+           label = paste0("Closest Moran's I to varigoram range = ",
+                          round(morans_i[morans_i$dist == 90,"morans_i"],2)),
+           hjust = 0, vjust = 2) +
+  scale_x_continuous(limits = c(10,130), breaks = seq(10,130,10)) +
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.1)) +
+  labs(x = "Uppder neighbourhood distance (m)",
+       y = "Moran's I", 
+       title = "Moran's I for residuals lm(ndvi.max ~ snow.auc)") +
+  theme_cowplot()
+  
+```
+
+A Moran's I value for varigoram range of 0.38 seems like a reasonable value,
+suggesting that there is a moderate level of autocorrelation at this 
+neighborhood distance. 
+
+Let's visualise the residuals in space with a 90 m neigbhourhood as a reference:
+
+```{r residuals_in_space}
+ggplot() +
+  geom_sf(data = kl_data %>% mutate(resid = kl_lm$residuals),
+          aes(colour = resid)) +
+  geom_sf(data = kl_data %>% 
+                        summarize() %>%
+                        st_centroid() %>%
+                        st_buffer(90), fill = NA) +
+  scale_color_continuous_sequential(palette = "plasma") +
+  theme_map()
+```
+
+The neighbourhood seems rather large, but hen it also seems to match the concentration
+of residuals on the lefthand side, where there would be a high reisk of pesudo-
+replication. 
+
+## Fitting a spatial error model with a 90 m neighbourhood
+
+We fit a simple spatial error model using the `errorsarlm()` function from the 
+`spatialreg` package.
+
+```{r spatial_error_model}
+# Define neighbourhood 90
+kl_lw <- dnearneigh(kl_data, d1 = 0, d2 = 90) %>%
+  nb2listw(style = "W", zero.policy = TRUE) 
+# Fit model 
+kl_sem <- errorsarlm(ndvi.max ~ snow.auc, 
+                            data = kl_data, 
+                            listw = kl_lw, 
+                            zero.policy = TRUE)
+```
+
+Model coefficients
+
+```{r coef_table}
+# Summary
+tidy(kl_sem) %>% kbl() %>% kable_classic(full_width = F, html_font = "Cambria")
+```
+
+Model statistics
+
+```{r stat_table}
+# Summary
+glance(kl_sem) %>% kbl() %>% kable_classic(full_width = F, html_font = "Cambria")
+```
+
+Compare to AIC of simple linear model (no spatial error):  `r kl_sem$AIC_lm.model`.
+
+The AIC of the spatial error model is lower, suggesting that it provides a better
+fit. 
+
+## Spatial error model vis
+
+```{r spatial_error_model_vis}
+ggplot(kl_data %>% mutate(fit = fitted(kl_sem))) +
+  geom_point(aes(x = snow.auc, y = ndvi.max), alpha = 0.5) +
+  geom_point(aes(x = snow.auc, y = fit), colour = "blue", alpha = 0.5) +
+  annotate("text", x = 12, y = 0.65, hjust = 1, vjust = 1, 
+           label = "fit in blue") +
+    theme_cowplot()
+```
+
+The spatial error models seems to produce two groupings in the data based
+on the intercept, this seems logical, considering the distribution of residuals
+and neighbourhoods size as discussed earlier (see spatial figure). Let's see
+whether there is still auto correlation in the residuals of the sem.
+
+Moran's I for 90 m neigbhourhoods: 
+
+```{r morans_i_sem_resid_90m}
+moran.mc(kl_sem$residuals, kl_lw, nsim = 999, zero.policy = TRUE)
+```
+
+The spatial error model seems to have successfully accounted for the auto correlation
+at the chosen neighbourhood size.
+
+How does it look like for smaller neighbourhoods?
+
+```{r morans_i_sem_resid, fig.height = 7, fig.width = 7}
+# Moran's I for lagged sitances
+morans_i_sem <- seq(10, 130, 10) %>%
+  pblapply(function(x){
+    kl_nb <- dnearneigh(kl_data, d1 = 0, d2 = x)
+    kl_lb <- nb2listw(kl_nb, style = "W", zero.policy = TRUE)
+    moran <- moran.mc(kl_sem$residuals, kl_lb, nsim = 999, zero.policy = TRUE)
+    data.frame(dist = x,
+               morans_i = moran$statistic)
+  }) %>%
+  bind_rows()
+
+# Variogram
+# Fit variogram residuals
+vario_resid_sem <- kl_data %>% mutate(resid = kl_sem$residuals) %>%
+  as_Spatial() %>% 
+  as("SpatialPointsDataFrame") %>%
+  variogram(resid ~ 1, data = ., cutoff = 130, width = 10)
+vario_resid_sem_fit <- fit.variogram(vario_resid_sem, model = vgm(model = "Sph")) 
+
+# Visualise results
+plot_grid(
+  ggplot(data = morans_i_sem, aes(x = dist, y = morans_i)) +
+  geom_point() +
+  geom_line() +
+  scale_x_continuous(limits = c(10,130), breaks = seq(10,130,10)) +
+  scale_y_continuous(limits = c(-0.1,1), breaks = seq(-0.1,1,0.1)) +
+  labs(x = "Uppder neighbourhood distance (m)",
+       y = "Moran's I") +
+  theme_cowplot(),
+ggplot(vario_resid_sem) +
+  geom_point(aes(x = dist, y = gamma)) +
+  geom_line(aes(x = dist, y = gamma), 
+            data = variogramLine(vario_resid_sem_fit, 
+                                 dist_vector = seq(10,130,10))) +
+  geom_vline(xintercept = vario_resid_sem_fit$range) +
+  annotate("text", x = vario_resid_sem_fit$range, y  = -Inf, 
+           label = paste0(" range = ", round(vario_resid_sem_fit$range, 1), " m"),
+           hjust = 0, vjust = -1.5) +
+  scale_x_continuous(limits = c(10, 130), breaks = seq(10,130,10)) +
+  labs(x = "lag distance (m)", y = "semivariance (gamma)") +
+  theme_cowplot(),
+  labels = c("a) lagged Moran's I resiudals SEM", "b) residual variogram SEM"),
+  hjust = 0,
+  scale = 0.9,
+  nrow = 2,
+  ncol = 1
+)
+
+```
+
+And here is how the residuals of the spatial error model are distributed in space:
+
+```{r spatial_error_resid_in_space}
+ggplot() +
+  geom_sf(data = kl_data %>% mutate(resid = residuals(kl_sem)),
+          mapping = aes(colour = resid)) +
+  geom_sf(data = kl_data %>% 
+                        summarize() %>%
+                        st_centroid() %>%
+                        st_buffer(60), fill = NA) +
+    scale_color_continuous_sequential(palette = "plasma") +
+    theme_map()
+
+```
+
+It looks like there is auto correlations at two different lag sizes. Once at 
+90 m as accounted for in the first SEM and once at a shorter distance (around 60 m?).
+
+Let's try that neighbourhood distance as well.
+
+## Fitting the spatial error model with a 60 m neighbourhood
+
+
+```{r spatial_error_model_60m}
+# Define neighbourhood 60
+kl_lw_60 <- dnearneigh(kl_data, d1 = 0, d2 = 60) %>%
+  nb2listw(style = "W", zero.policy = TRUE) 
+# Fit model 
+kl_sem_60 <- errorsarlm(ndvi.max ~ snow.auc, 
+                            data = kl_data, 
+                            listw = kl_lw_60, 
+                            zero.policy = TRUE)
+```
+
+Model coefficients
+
+```{r coef_table_60m}
+# Summary
+tidy(kl_sem_60) %>% kbl() %>% kable_classic(full_width = F, html_font = "Cambria")
+```
+
+Model statistics
+
+```{r stat_table_60m}
+# Summary
+glance(kl_sem_60) %>% kbl() %>% kable_classic(full_width = F, html_font = "Cambria")
+```
+
+Compare to AIC of simple linear model (no spatial error):  `r kl_sem$AIC_lm.model`.
+And 90 m neighbourhood: `r glance(kl_sem) %>% pull(AIC)`.
+
+The AIC of the 60 m spatial error model is lower than both, suggesting that it provides a better
+fit. 
+
+## Spatial error model vis
+
+```{r spatial_error_model_vis_60m}
+ggplot(kl_data %>% mutate(fit = fitted(kl_sem_60))) +
+  geom_point(aes(x = snow.auc, y = ndvi.max), alpha = 0.5) +
+  geom_point(aes(x = snow.auc, y = fit), colour = "blue", alpha = 0.5)  +
+  annotate("text", x = 12, y = 0.65, hjust = 1, vjust = 1, 
+           label = "fit in blue") +
+    theme_cowplot()
+```
+
+The spatial error models seems to produce two groupings in the data based
+on the intercept, this seems logical, considering the distribution of residuals
+and neighbourhoods size as discussed earlier in the 90 m model. Let's see
+whether there is still auto correlation in the residuals of the sem.
+
+Moran's I for 60 m neigbhourhoods: 
+
+```{r morans_i_sem_resid_60m}
+moran.mc(kl_sem_60$residuals, kl_lw, nsim = 999, zero.policy = TRUE)
+
+```
+
+```{r morans_i_sem_resid_60, fig.height = 7, fig.width = 7}
+# Moran's I for lagged sitances
+morans_i_sem_60 <- seq(10, 130, 10) %>%
+  pblapply(function(x){
+    kl_nb <- dnearneigh(kl_data, d1 = 0, d2 = x)
+    kl_lb <- nb2listw(kl_nb, style = "W", zero.policy = TRUE)
+    moran <- moran.mc(kl_sem_60$residuals, kl_lb, nsim = 999, zero.policy = TRUE)
+    data.frame(dist = x,
+               morans_i = moran$statistic)
+  }) %>%
+  bind_rows()
+
+# Variogram
+# Fit variogram residuals
+vario_resid_sem_60 <- kl_data %>% mutate(resid = kl_sem_60$residuals) %>%
+  as_Spatial() %>% 
+  as("SpatialPointsDataFrame") %>%
+  variogram(resid ~ 1, data = ., cutoff = 130, width = 10)
+vario_resid_sem_fit_60 <- fit.variogram(vario_resid_sem_60, model = vgm(model = "Sph")) 
+
+# Visualise results
+plot_grid(
+  ggplot(data = morans_i_sem_60, aes(x = dist, y = morans_i)) +
+  geom_point() +
+  geom_line() +
+  scale_x_continuous(limits = c(10,130), breaks = seq(10,130,10)) +
+  scale_y_continuous(limits = c(-0.1,1), breaks = seq(-0.1,1,0.1)) +
+  labs(x = "Uppder neighbourhood distance (m)",
+       y = "Moran's I") +
+  theme_cowplot(),
+ggplot(vario_resid_sem_60) +
+  geom_point(aes(x = dist, y = gamma)) +
+  geom_line(aes(x = dist, y = gamma), 
+            data = variogramLine(vario_resid_sem_fit_60, 
+                                 dist_vector = seq(10,130,10))) +
+  geom_vline(xintercept = vario_resid_sem_fit_60$range) +
+  annotate("text", x = vario_resid_sem_fit_60$range, y  = -Inf, 
+           label = paste0(" range = ", round(vario_resid_sem_fit_60$range, 1), " m"),
+           hjust = 0, vjust = -1.5) +
+  scale_x_continuous(limits = c(10, 130), breaks = seq(10,130,10)) +
+  labs(x = "lag distance (m)", y = "semivariance (gamma)") +
+  theme_cowplot(),
+  labels = c("a) lagged Moran's I resiudals SEM", "b) residual variogram SEM"),
+  hjust = 0,
+  scale = 0.9,
+  nrow = 2,
+  ncol = 1
+)
+
+```
+
+And residuals plotted in space:
+
+```{r spatial_error_resid_in_space_60m}
+ggplot() +
+  geom_sf(data = kl_data %>% mutate(resid = residuals(kl_sem_60)),
+          mapping = aes(colour = resid)) +
+  geom_sf(data = kl_data %>% 
+                        summarize() %>%
+                        st_centroid() %>%
+                        st_buffer(60), fill = NA) +
+    scale_color_continuous_sequential(palette = "plasma") +
+    theme_map()
+
+```
+
+Again the model seems to be capturing the spatial autocorellation and perhaps,
+even better than the 90 m neighbourhood mpdel, but some residual autocorellation 
+remains in the residuals.
+
+Eye-balling the variogram and residual in space plot it seems like that this 
+autocorellation seems to be highest at around a 30 m distance (Moran's I 0.4,
+and semivariance reaches sill).
+
+Let's have a a look at that: 
+
+## Fitting a spatial error model with a 30 m neighbourhood
+
+```{r spatial_error_model_30m}
+# Define neighbourhood 30
+kl_lw_30 <- dnearneigh(kl_data, d1 = 0, d2 = 30) %>%
+  nb2listw(style = "W", zero.policy = TRUE) 
+# Fit model 
+kl_sem_30 <- errorsarlm(ndvi.max ~ snow.auc, 
+                            data = kl_data, 
+                            listw = kl_lw_30, 
+                            zero.policy = TRUE)
+```
+
+Model coefficients
+
+```{r coef_table_30m}
+# Summary
+tidy(kl_sem_30) %>% kbl() %>% kable_classic(full_width = F, html_font = "Cambria")
+```
+
+Model statistics
+
+```{r stat_table_30m}
+# Summary
+glance(kl_sem_30) %>% kbl() %>% kable_classic(full_width = F, html_font = "Cambria")
+```
+
+Compare to AIC of simple linear model (no spatial error):  `r kl_sem$AIC_lm.model`.
+And 90 m neighbourhood: `r glance(kl_sem) %>% pull(AIC)`.
+And 60 m neighbourhood: `r glance(kl_sem_60) %>% pull(AIC)`.
+
+The AIC of the 30 m spatial error model is lower than both, suggesting that it provides a better
+fit. 
+
+## Spatial error model vis
+```{r spatial_error_model_vis_30m}
+ggplot(kl_data %>% mutate(fit = fitted(kl_sem_30))) +
+  geom_point(aes(x = snow.auc, y = ndvi.max), alpha = 0.5) +
+  geom_point(aes(x = snow.auc, y = fit), colour = "blue", alpha = 0.5) +
+    theme_cowplot()
+```
+
+The spatial error models seems to produce two groupings in the data based
+on the intercept, this seems logical, considering the distribution of residuals
+and neighbourhoods size as discussed earlier in the 90 m model. Let's see
+whether there is still auto correlation in the residuals of the sem.
+
+Moran's I for 30 m neigbhourhoods: 
+
+```{r morans_i_sem_resid_30m}
+moran.mc(kl_sem_30$residuals, kl_lw, nsim = 999, zero.policy = TRUE)
+
+```
+
+```{r morans_i_sem_resid_30, fig.height = 7, fig.width = 7}
+# Moran's I for lagged sitances
+morans_i_sem_30 <- seq(10, 130, 10) %>%
+  pblapply(function(x){
+    kl_nb <- dnearneigh(kl_data, d1 = 0, d2 = x)
+    kl_lb <- nb2listw(kl_nb, style = "W", zero.policy = TRUE)
+    moran <- moran.mc(kl_sem_30$residuals, kl_lb, nsim = 999, zero.policy = TRUE)
+    data.frame(dist = x,
+               morans_i = moran$statistic)
+  }) %>%
+  bind_rows()
+
+# Variogram
+# Fit variogram residuals
+vario_resid_sem_30 <- kl_data %>% mutate(resid = kl_sem_30$residuals) %>%
+  as_Spatial() %>% 
+  as("SpatialPointsDataFrame") %>%
+  variogram(resid ~ 1, data = ., cutoff = 130, width = 10)
+vario_resid_sem_fit_30 <- fit.variogram(vario_resid_sem_30, model = vgm(model = "Sph")) 
+
+# Visualise results
+plot_grid(
+  ggplot(data = morans_i_sem_30, aes(x = dist, y = morans_i)) +
+  geom_point() +
+  geom_line() +
+  scale_x_continuous(limits = c(10,130), breaks = seq(10,130,10)) +
+  scale_y_continuous(limits = c(-0.1,1), breaks = seq(-0.1,1,0.1)) +
+  labs(x = "Uppder neighbourhood distance (m)",
+       y = "Moran's I") +
+  theme_cowplot(),
+ggplot(vario_resid_sem_30) +
+  geom_point(aes(x = dist, y = gamma)) +
+  geom_line(aes(x = dist, y = gamma), 
+            data = variogramLine(vario_resid_sem_fit_30, 
+                                 dist_vector = seq(10,130,10))) +
+  geom_vline(xintercept = vario_resid_sem_fit_30$range) +
+  annotate("text", x = vario_resid_sem_fit_30$range, y  = -Inf, 
+           label = paste0(" range = ", round(vario_resid_sem_fit_30$range, 1), " m"),
+           hjust = 0, vjust = -1.5) +
+  scale_x_continuous(limits = c(10, 130), breaks = seq(10,130,10)) +
+  labs(x = "lag distance (m)", y = "semivariance (gamma)") +
+  theme_cowplot(),
+  labels = c("a) lagged Moran's I resiudals SEM", "b) residual variogram SEM"),
+  hjust = 0,
+  scale = 0.9,
+  nrow = 2,
+  ncol = 1
+)
+
+```
+
+And residuals plotted in space:
+
+```{r spatial_error_resid_in_space_30m}
+ggplot() +
+  geom_sf(data = kl_data %>% mutate(resid = residuals(kl_sem_30)),
+          mapping = aes(colour = resid)) +
+  geom_sf(data = kl_data %>% 
+                        summarize() %>%
+                        st_centroid() %>%
+                        st_buffer(30), fill = NA) +
+    scale_color_continuous_sequential(palette = "plasma") +
+    theme_map()
+
+```
+
+## Check Hausman test
+
+(Does the spatial error model make more sense than the normal linear model):
+
+```{r hausman_test_30m}
+Hausman.test(kl_sem_30)
+```
+
+The test is significant (p <= 0.05), suggesting that neither the OLS or the SEM
+are a good choice. However, I think the latter makes more sense. 
+
+## Final plot of the 30 m model
+
+```{r final_model_plot}
+ggplot() +
+  geom_point(aes(x = snow.auc, y = ndvi.max), alpha = 0.5, 
+             data = kl_data %>% mutate(fit = fitted(kl_sem_30))) +
+  geom_point(aes(x = snow.auc, y = fit), colour = "blue", alpha = 0.5,
+             data = kl_data %>% mutate(fit = fitted(kl_sem_30))) +
+  geom_line(aes(x = 0:12, y = kl_sem_30$coefficients[1] + (0:12 * kl_sem_30$coefficients[2])),
+            col = "blue") +
+  annotate("text", x = 12, y = 0.65, hjust = 1, vjust = 1, 
+           label = "fit & predictions in blue") +
+    theme_cowplot()
+```
+
+End. 
