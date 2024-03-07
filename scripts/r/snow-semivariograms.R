@@ -54,7 +54,6 @@ s2.kh <- read.csv('../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv') %>%
 
 # Linear models
 
-
 # Variograms ----
 
 # Fit variogram snow
@@ -79,4 +78,4 @@ plot <- ggplot(data = vario_snow) +
 plot
 
 
-cowplot::save_plot('../../plots/snow-semivariograms/blaesedalen.png', plot, base_height = 140, base_width = 260, units = 'mm', bg = 'white')
+cowplot::save_plot('../../plots/snow-semivariograms/kluane-low.png', plot, base_height = 140, base_width = 260, units = 'mm', bg = 'white')
