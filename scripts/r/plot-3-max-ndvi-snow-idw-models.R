@@ -22,13 +22,6 @@ s2.bl <- read.csv('../../data/combined-ndvi-snow/s2-bl-smooth-joined.csv') %>%
   filter(row_number() == 7) %>%
   ungroup()
 
-library(mgcv)
-b <- gam(ndvi.max ~ s(snow.auc) + s(X,Y,k=400),method="REML",data=s2.bl)
-plot(b)
-par(mfrow=c(2,2))
-gam.check(b)
-b
-
 # Kluane low
 s2.kl <- read.csv('../../data/combined-ndvi-snow/s2-kl-smooth-joined.csv') %>%
   st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
@@ -43,6 +36,13 @@ s2.kh <- read.csv('../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv') %>%
   filter(row_number() == 7) %>%
   ungroup()
 
+# Stats help sessioj, GAM model
+library(mgcv)
+b <- gam(ndvi.max ~ s(snow.auc) + s(X,Y,k=400),method="REML",data=s2.bl)
+plot(b)
+par(mfrow=c(2,2))
+gam.check(b)
+b
 
 # Create linear models for later testing with Moran's I ----
 
@@ -64,7 +64,7 @@ sensit.df <- data.frame()
 sensit_check <- function(site.name, model, data) {
   # Empty vector for storage of Moran's I values
   moran.I <- c()
-  for (d in seq(10, 50, 10)) {
+  for (d in seq(10, 200, 10)) {
     s2.sens.nb <- dnearneigh(data, d1 = 0, d2 = d)
     s2.sens.lw <- nb2listw(s2.sens.nb, style = 'W', zero.policy = TRUE)
     moran <- moran.mc(model$residuals, s2.sens.lw, 
@@ -123,7 +123,7 @@ colnames(aic.df) <- var.names
 dist2 <- 60
 
 # For loop to iterate through increasing neighbourhood dist and produce plots
-for (dist2 in seq(10, 30, 10)) {
+for (dist2 in seq(10, 200, 10)) {
 
   ###
   # Blaesedalen Spatial Error Models
@@ -202,7 +202,7 @@ for (dist2 in seq(10, 30, 10)) {
   
   out.plot
   
-  cowplot::save_plot(paste0('../../plots/nb-dist-sensitivity/neighbourhood-invdist-', dist2, '-metres.png'), out.plot, base_height = 140, base_width = 260, units = 'mm')
+  cowplot::save_plot(paste0('../../plots/nb-dist-sensitivity/idw-neighbour/neighbourhood-invdist-', dist2, '-metres.png'), out.plot, base_height = 140, base_width = 260, units = 'mm')
   
   
   # Maps of observed and fitted data
@@ -321,18 +321,20 @@ stat.summary <- plot_grid(
     geom_line(data = aic.df, aes(x = dist, y = sig2, group = site, colour = site)),
   ggplot() +
     geom_line(data = aic.df, aes(x = dist, y = walds, group = site, colour = site)) +
-    geom_point(data = aic.df, aes(x = dist, y = walds, colour = site, size = waldp)) +
-    scale_size_continuous(breaks = c(0, 0.005, 0.01)),
+    geom_point(data = aic.df, aes(x = dist, y = walds, colour = site, size = ifelse(waldp < 0.005, 0.01, 2))),# +
+    #scale_size_continuous(breaks = c(0.005, 0.01, 0.02)),
   ggplot() +
     geom_line(data = aic.df, aes(x = dist, y = lograts, group = site, colour = site)) +
-    geom_point(data = aic.df, aes(x = dist, y = lograts, colour = site, size = logratp)) +
-    scale_size_continuous(breaks = c(0, 0.005, 0.01)), 
+    geom_point(data = aic.df, aes(x = dist, y = lograts, colour = site, size = ifelse(logratp < 0.005, 0.01, 2))),# +
+    #scale_size_continuous(breaks = c(0.005, 0.01, 0.02), 
+                          #range = c(1, 3)), 
   sens.plot <- ggplot() +
     geom_line(data = sensit.all, aes(x = distance, y = moran, group = site, colour = site)), 
   labels = c('AIC', ' Log Likelihood', 'Sigma^2', 'Wald', 'Log ratio', "Moran's I"), 
   align = 'v'
 )
 
+stat.summary
 cowplot::save_plot('../../plots/nb-dist-sensitivity/nb-sensitivity-model-summaries.png', stat.summary, base_height = 140, base_width = 260, units = 'mm')
 
 
