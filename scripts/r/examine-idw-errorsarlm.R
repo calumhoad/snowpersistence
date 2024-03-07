@@ -153,15 +153,13 @@ for (dist2 in seq(10, 200, 10)) {
             out = paste0('../../plots/nb-dist-sensitivity/idw-neighbour/model-output/bl/model-kh-maxndvi-', dist2, '.html'))
   
   
-  # Extract the residuals from each model
-  resid <- lm.s2.bl.max$residuals
-  mor <- moran.mc(resid, s2.bl.lw, nsim = 999, zero.policy = FALSE)
-  plot(mor)
+# Run moran tests for models   
+comparison_plot <- function(plot.name, data, lw, sem.model, idw.lw, idw.model, lm) {  
+  
+  mor <- moran.mc(lm$residuals, lw, nsim = 999, zero.policy = FALSE)
   mx <- max(mor$res[1:999])
   mn <- min(mor$res)
-
-# Run moran tests for models   
-comparison_plot <- function(plot.name, data, lw, sem.model, idw.lw, idw.model) {  
+  
   sem.moran <- moran.test(sem.model$residuals, lw)
   idw.sem.moran <- moran.test(idw.model$residuals, idw.lw)
   
@@ -194,21 +192,24 @@ bl.comp <- comparison_plot(plot.name = 'blaesedalen',
                 lw = s2.bl.lw, 
                 sem.model = sem.s2.bl.max,
                 idw.lw = idw.s2.bl.lw,
-                idw.model = idw.sem.s2.bl.max)
+                idw.model = idw.sem.s2.bl.max, 
+                lm = lm.s2.bl.max)
 
 kl.comp <- comparison_plot(plot.name = 'kluane-low', 
                 data = s2.kl, 
                 lw = s2.kl.lw, 
                 sem.model = sem.s2.kl.max, 
                 idw.lw = idw.s2.kl.lw,
-                idw.model = idw.sem.s2.kl.max)
+                idw.model = idw.sem.s2.kl.max, 
+                lm = lm.s2.kl.max)
 
 kh.comp <- comparison_plot(plot.name = 'kluane-high', 
                 data = s2.kh,
                 lw = s2.kh.lw, 
                 sem.model = sem.s2.kh.max,
                 idw.lw = idw.s2.kh.lw, 
-                idw.model = idw.sem.s2.kh.max)
+                idw.model = idw.sem.s2.kh.max, 
+                lm = lm.s2.kh.max)
 
 
 # Save out comparison plots
@@ -389,3 +390,51 @@ cowplot::save_plot(paste0('../../plots/nb-dist-sensitivity/idw-neighbour/plots/b
   # Add to AIC df
   aic.df <- rbind(aic.df, bl.new.row, kh.new.row, kl.new.row, idw.bl.new.row, idw.kh.new.row, idw.kl.new.row)
 }
+
+write_csv(aic.df, '../../data/statistical-output/model-summary-output-ndvimax-sem-idw.csv')
+
+aic.df.orig <- aic.df
+
+aic.df <- filter(aic.df.orig, site == 'kh')
+
+stat.summary <- plot_grid(
+  ggplot() +
+    geom_line(data = aic.df, aes(x = dist, y = aic, group = weights, colour = weights)), 
+  ggplot() +
+    geom_line(data = aic.df, aes(x = dist, y = loglike, group = weights, colour = weights)),
+  ggplot() +
+    geom_line(data = aic.df, aes(x = dist, y = sig2, group = weights, colour = weights)),
+  ggplot() +
+    geom_line(data = aic.df, aes(x = dist, y = walds, group = weights, colour = weights)) +
+    geom_point(data = aic.df, aes(x = dist, y = walds, colour = weights)),# +
+  #scale_size_continuous(breaks = c(0.005, 0.01, 0.02)),
+  ggplot() +
+    geom_line(data = aic.df, aes(x = dist, y = lograts, group = weights, colour = weights)) +
+    geom_point(data = aic.df, aes(x = dist, y = lograts, colour = weights)),# +
+  #scale_size_continuous(breaks = c(0.005, 0.01, 0.02), 
+  #range = c(1, 3)), 
+  sens.plot <- ggplot() +
+    geom_line(data = sensit.all, aes(x = distance, y = moran, group = site, colour = site)), 
+  labels = c('AIC', ' Log Likelihood', 'Sigma^2', 'Wald', 'Log ratio', "Moran's I"), 
+  align = 'v'
+)
+
+stat.summary
+
+cowplot::save_plot(paste0('../../plots/nb-dist-sensitivity/idw-neighbour/plots/kh/kh-weight-comparison-model-summaries.png'), stat.summary, base_height = 140, base_width = 260, units = 'mm') 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
