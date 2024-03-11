@@ -1,0 +1,584 @@
+	Read ntt 4 1 with max.threads 8
+	Found num.threads = 4:1 max_threads = 4
+
+	5829a3e4dca069df580255b6c91f39493b31af36 - Fri Feb 9 06:17:02 2024 +0300
+Report bugs to <help@r-inla.org>
+Set reordering to id=[0] and name=[default]
+Process file[C:\Users\s1437405\Documents\PhD_Local\c1-analyses\scripts\r\inla.model-1/Model.ini] threads[4] max.threads[8] blas_threads[1] nested[4:1]
+inla_build...
+	number of sections=[10]
+	parse section=[0] name=[INLA.libR] type=[LIBR]
+	inla_parse_libR...
+		section[INLA.libR]
+			R_HOME=[C:/Users/s1437405/AppData/Local/Programs/R/R-43~1.1]
+	parse section=[7] name=[INLA.Expert] type=[EXPERT]
+	inla_parse_expert...
+		section[INLA.Expert]
+			disable.gaussian.check=[0]
+			Measure dot.product.gain=[No]
+			cpo.manual=[0]
+			jp.file=[(null)]
+			jp.model=[(null)]
+	parse section=[1] name=[INLA.Model] type=[PROBLEM]
+	inla_parse_problem...
+		name=[INLA.Model]
+		R-INLA version = [24.02.09]
+		R-INLA build date = [19762]
+		Build tag = [devel]
+		System memory = [31.3Gb]
+		Cores = (Physical= 8, Logical= 8)
+		'char' is signed
+		openmp.strategy=[default]
+		pardiso-library installed and working? = [no]
+		smtp = [taucs]
+		strategy = [default]
+		store results in directory=[C:\Users\s1437405\Documents\PhD_Local\c1-analyses\scripts\r\inla.model-1/results.files]
+		output:
+			gcpo=[0]
+				num.level.sets=[-1]
+				size.max=[32]
+				strategy=[Posterior]
+				correct.hyperpar=[1]
+				epsilon=[0.005]
+				prior.diagonal=[0.0001]
+				keep=[]
+				remove.fixed=[1]
+				remove=[]
+			cpo=[0]
+			po=[0]
+			dic=[0]
+			kld=[1]
+			mlik=[1]
+			q=[0]
+			graph=[0]
+			hyperparameters=[1]
+			config=[0]
+			config.lite=[0]
+			likelihood.info=[0]
+			internal.opt=[1]
+			save.memory=[0]
+			summary=[1]
+			return.marginals=[1]
+			return.marginals.predictor=[0]
+			nquantiles=[3]  [ 0.025 0.5 0.975 ]
+			ncdf=[0]  [ ]
+	parse section=[3] name=[Predictor] type=[PREDICTOR]
+	inla_parse_predictor ...
+		section=[Predictor]
+		dir=[predictor]
+		PRIOR->name=[loggamma]
+		hyperid=[53001|Predictor]
+		PRIOR->from_theta=[function (x) <<NEWLINE>>exp(x)]
+		PRIOR->to_theta = [function (x) <<NEWLINE>>log(x)]
+		PRIOR->PARAMETERS=[1, 1e-05]
+		initialise log_precision[13.8155]
+		fixed=[1]
+		user.scale=[1]
+		n=[1131]
+		m=[0]
+		ndata=[1131]
+		compute=[1]
+		read offsets from file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e04399f30c2]
+		read n=[2262] entries from file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e04399f30c2]
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e04399f30c2] 0/1131  (idx,y) = (0, 0)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e04399f30c2] 1/1131  (idx,y) = (1, 0)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e04399f30c2] 2/1131  (idx,y) = (2, 0)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e04399f30c2] 3/1131  (idx,y) = (3, 0)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e04399f30c2] 4/1131  (idx,y) = (4, 0)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e04399f30c2] 5/1131  (idx,y) = (5, 0)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e04399f30c2] 6/1131  (idx,y) = (6, 0)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e04399f30c2] 7/1131  (idx,y) = (7, 0)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e04399f30c2] 8/1131  (idx,y) = (8, 0)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e04399f30c2] 9/1131  (idx,y) = (9, 0)
+		A=[(null)]
+		Aext=[(null)]
+		AextPrecision=[1e+08]
+		output:
+			summary=[1]
+			return.marginals=[1]
+			return.marginals.predictor=[0]
+			nquantiles=[3]  [ 0.025 0.5 0.975 ]
+			ncdf=[0]  [ ]
+	parse section=[2] name=[INLA.Data1] type=[DATA]
+	inla_parse_data [section 1]...
+		tag=[INLA.Data1]
+		family=[GAUSSIAN]
+		likelihood=[GAUSSIAN]
+		file->name=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e043ebd269a]
+		file->name=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e043ba54a3]
+		file->name=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0455bad33]
+		file->name=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0475b73103]
+		read n=[2484] entries from file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e043ebd269a]
+		mdata.nattributes = 0
+			0/828  (idx,a,y,d) = (0, 1, 0.259348, 1)
+			1/828  (idx,a,y,d) = (1, 1, 0.227558, 1)
+			2/828  (idx,a,y,d) = (2, 1, 0.220656, 1)
+			3/828  (idx,a,y,d) = (3, 1, 0.218911, 1)
+			4/828  (idx,a,y,d) = (4, 1, 0.255019, 1)
+			5/828  (idx,a,y,d) = (5, 1, 0.209842, 1)
+			6/828  (idx,a,y,d) = (6, 1, 0.159845, 1)
+			7/828  (idx,a,y,d) = (39, 1, 0.252458, 1)
+			8/828  (idx,a,y,d) = (40, 1, 0.242817, 1)
+			9/828  (idx,a,y,d) = (41, 1, 0.203227, 1)
+		likelihood.variant=[0]
+		initialise log_precision[4]
+		fixed0=[0]
+		PRIOR0->name=[loggamma]
+		hyperid=[65001|INLA.Data1]
+		PRIOR0->from_theta=[function (x) <<NEWLINE>>exp(x)]
+		PRIOR0->to_theta = [function (x) <<NEWLINE>>log(x)]
+		PRIOR0->PARAMETERS0=[1, 5e-05]
+		initialise log_precision offset[72.0873]
+		fixed1=[1]
+		PRIOR1->name=[none]
+		hyperid=[65002|INLA.Data1]
+		PRIOR1->from_theta=[function (x) <<NEWLINE>>exp(x)]
+		PRIOR1->to_theta = [function (x) <<NEWLINE>>log(x)]
+		PRIOR1->PARAMETERS1=[]
+		Link model   [IDENTITY]
+		Link order   [-1]
+		Link variant [-1]
+		Link a       [1]
+		Link ntheta  [0]
+		mix.use[0]
+	parse section=[5] name=[node] type=[FFIELD]
+	inla_parse_ffield...
+		section=[node]
+		dir=[random.effect00000001]
+		model=[matern2d]
+		PRIOR0->name=[loggamma]
+		hyperid=[35001|node]
+		PRIOR0->from_theta=[function (x) <<NEWLINE>>exp(x)]
+		PRIOR0->to_theta = [function (x) <<NEWLINE>>log(x)]
+		PRIOR0->PARAMETERS0=[1, 5e-05]
+		PRIOR1->name=[loggamma]
+		hyperid=[35002|node]
+		PRIOR1->from_theta=[function (x) <<NEWLINE>>exp(x)]
+		PRIOR1->to_theta = [function (x) <<NEWLINE>>log(x)]
+		PRIOR1->PARAMETERS1=[1, 0.01]
+		vb.correct n[1]  -1
+		correct=[-1]
+		constr=[0]
+		diagonal=[0]
+		id.names=<not present>
+		compute=[1]
+		nrep=[1]
+		ngroup=[1]
+		nrow[29] x ncol[39] = n[1131] 
+		cyclic=[0]
+		bvalue=[Default]
+		read covariates from file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0453bf6ff4]
+		read n=[2262] entries from file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0453bf6ff4]
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0453bf6ff4] 0/1131  (idx,y) = (0, 0)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0453bf6ff4] 1/1131  (idx,y) = (1, 1)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0453bf6ff4] 2/1131  (idx,y) = (2, 2)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0453bf6ff4] 3/1131  (idx,y) = (3, 3)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0453bf6ff4] 4/1131  (idx,y) = (4, 4)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0453bf6ff4] 5/1131  (idx,y) = (5, 5)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0453bf6ff4] 6/1131  (idx,y) = (6, 6)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0453bf6ff4] 7/1131  (idx,y) = (7, 7)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0453bf6ff4] 8/1131  (idx,y) = (8, 8)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0453bf6ff4] 9/1131  (idx,y) = (9, 9)
+		file for locations=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e04f18323f]
+			nlocations=[1131]
+			locations[0]=[1]
+			locations[1]=[2]
+			locations[2]=[3]
+			locations[3]=[4]
+			locations[4]=[5]
+			locations[5]=[6]
+			locations[6]=[7]
+			locations[7]=[8]
+			locations[8]=[9]
+			locations[9]=[10]
+		nu = [1]
+		initialise log_precision[4]
+		fixed=[0]
+		initialise range_intern[2]
+		fixed=[0]
+		computed/guessed rank-deficiency = [0]
+		output:
+			summary=[1]
+			return.marginals=[1]
+			return.marginals.predictor=[0]
+			nquantiles=[3]  [ 0.025 0.5 0.975 ]
+			ncdf=[0]  [ ]
+	section=[4] name=[(Intercept)] type=[LINEAR]
+	inla_parse_linear...
+		section[(Intercept)]
+		dir=[fixed.effect00000001]
+		file for covariates=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0437567c14]
+		read n=[2262] entries from file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0437567c14]
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0437567c14] 0/1131  (idx,y) = (0, 1)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0437567c14] 1/1131  (idx,y) = (1, 1)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0437567c14] 2/1131  (idx,y) = (2, 1)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0437567c14] 3/1131  (idx,y) = (3, 1)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0437567c14] 4/1131  (idx,y) = (4, 1)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0437567c14] 5/1131  (idx,y) = (5, 1)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0437567c14] 6/1131  (idx,y) = (6, 1)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0437567c14] 7/1131  (idx,y) = (7, 1)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0437567c14] 8/1131  (idx,y) = (8, 1)
+		file=[C:/Users/s1437405/Documents/PhD_Local/c1-analyses/scripts/r/inla.model-1/data.files/file4e0437567c14] 9/1131  (idx,y) = (9, 1)
+		prior mean=[0]
+		prior precision=[0]
+		compute=[1]
+		output:
+			summary=[1]
+			return.marginals=[1]
+			return.marginals.predictor=[0]
+			nquantiles=[3]  [ 0.025 0.5 0.975 ]
+			ncdf=[0]  [ ]
+	parse section=[9] name=[INLA.pardiso] type=[PARDISO]
+	inla_parse_pardiso...
+		section[INLA.pardiso]
+		verbose[0]
+		debug[0]
+		parallel.reordering[1]
+		nrhs[-1]
+	parse section=[8] name=[INLA.lp.scale] type=[LP.SCALE]
+	inla_parse_lp_scale...
+		section[INLA.lp.scale]
+
+	Index table: number of entries[3], total length[2263]
+		tag                            start-index     length
+		Predictor                               0       1131
+		node                                 1131       1131
+		(Intercept)                          2262          1
+	List of hyperparameters: 
+		theta[0] = [Log precision for the Gaussian observations]
+		theta[1] = [Log precision for node]
+		theta[2] = [Range_intern for node]
+
+	parse section=[6] name=[INLA.Parameters] type=[INLA]
+	inla_parse_INLA...
+		section[INLA.Parameters]
+			lincomb.derived.correlation.matrix = [No]
+		global_node.factor = 2.000
+		global_node.degree = 2147483647
+		reordering = -1
+		constr.marginal.diagonal = 1.49e-08
+Contents of ai_param 000001aa1a67c150
+	Optimiser: DEFAULT METHOD
+		Option for GSL-BFGS2: tol  = 0.1
+		Option for GSL-BFGS2: step_size = 1
+		Option for GSL-BFGS2: epsx = 0.001
+		Option for GSL-BFGS2: epsf = 0.002
+		Option for GSL-BFGS2: epsg = 0.005
+		Restart: 0
+		Optimise: try to be smart: Yes
+		Optimise: use directions: Yes
+		Mode known: No
+		parallel linesearch [0]
+	Gaussian approximation:
+		tolerance_func = 0.0005
+		tolerance_step = 0.001
+		optpar_fp = 0
+		optpar_nr_step_factor = -0.1
+	Gaussian data: Yes
+	Strategy: 	Use a mean-skew corrected Gaussian by fitting a Skew-Normal
+	Fast mode: 	On
+	Use linear approximation to log(|Q +c|)? Yes
+		Method:	 Compute the derivative exact
+	Parameters for improved approximations
+		Number of points evaluate:	 9
+		Step length to compute derivatives numerically:	 0.0001
+		Stencil to compute derivatives numerically:	 5
+		Cutoff value to construct local neigborhood:	 0.0001
+	Log calculations:	 On
+	Log calculated marginal for the hyperparameters:	 On
+	Integration strategy:	 Automatic (GRID for dim(theta)=1 and 2 and otherwise CCD)
+		f0 (CCD only):	 1.100
+		dz (GRID only):	 0.750
+		Adjust weights (GRID only):	 On
+		Difference in log-density limit (GRID only):	 6.000
+		Skip configurations with (presumed) small density (GRID only):	 On
+	Gradient is computed using Central difference with step-length 0.005000
+	Hessian is computed using Central difference with step-length 0.070711
+	Hessian matrix is forced to be a diagonal matrix? [No]
+	Compute effective number of parameters? [Yes]
+	Perform a Monte Carlo error-test? [No]
+	Interpolator [Auto]
+	CPO required diff in log-density [3]
+	Stupid search mode:
+		Status     [On]
+		Max iter   [1000]
+		Factor     [1.05]
+	Numerical integration of hyperparameters:
+		Maximum number of function evaluations [100000]
+		Relative error ....................... [1e-05]
+		Absolute error ....................... [1e-06]
+	To stabilise the numerical optimisation:
+		Minimum value of the -Hessian [-inf]
+		Strategy for the linear term [Keep]
+	CPO manual calculation[No]
+	VB correction is [Enabled]
+		strategy                    = [mean]
+		verbose                     = [Yes]
+		f_enable_limit_mean         = [30]
+		f_enable_limit_var          = [25]
+		f_enable_limit_mean_max     = [1024]
+		f_enable_limit_variance_max = [768]
+		iter_max                    = [25]
+		emergency                   = [25.00]
+		hessian_update              = [2]
+		hessian_strategy            = [full]
+	Misc options: 
+		Hessian correct skewness only [1]
+inla_build: check for unused entries in[C:\Users\s1437405\Documents\PhD_Local\c1-analyses\scripts\r\inla.model-1/Model.ini]
+inla_INLA_preopt_experimental...
+	Strategy = [DEFAULT]
+	Mode....................... [Compact]
+	Setup...................... [0.07s]
+	Sparse-matrix library...... [taucs]
+	OpenMP strategy............ [large]
+	num.threads................ [4:1]
+	blas.num.threads........... [1]
+	Density-strategy........... [Low]
+	Size of graph.............. [1132]
+	Number of constraints...... [0]
+	Optimizing sort2_id........ [178]
+	Optimizing sort2_dd........ [125]
+	Optimizing Qx-strategy..... serial[0.462] parallel [0.538] choose[serial]
+	Optimizing pred-strategy... plain [0.761] data-rich[0.239] choose[data-rich]
+	Optimizing dot-products.... serial[0.480] group[0.520]
+	                            ==> optimal.mix.strategy[0.039]
+	                                serial[85.0] group[15.0]
+	Found optimal reordering=[metis] nnz(L)=[59959] and use_global_nodes(user)=[no]
+
+	List of hyperparameters: 
+		theta[0] = [Log precision for the Gaussian observations]
+		theta[1] = [Log precision for node]
+		theta[2] = [Range_intern for node]
+
+
+Compute initial values...
+	Iter[0] RMS(err) = 1.000, update with step-size = 0.727
+	Iter[1] RMS(err) = 0.355, update with step-size = 1.603
+	Iter[2] RMS(err) = 0.355, update with step-size = 0.727
+	Iter[3] RMS(err) = 0.355, update with step-size = 1.603
+	Iter[4] RMS(err) = 0.355, update with step-size = 0.727
+	Iter[5] RMS(err) = 0.355, update with step-size = 1.603
+	Iter[6] RMS(err) = 0.355, update with step-size = 0.727
+	Iter[7] RMS(err) = 0.355, update with step-size = 1.592
+	Iter[8] RMS(err) = 0.355, update with step-size = 0.723
+	Iter[9] RMS(err) = 0.365, update with step-size = 1.119
+	Initial values computed in 0.0028 seconds
+		x[0] = 0.0633
+		x[1] = 0.0364
+		x[2] = 0.0306
+		x[3] = 0.0291
+		x[4] = 0.0596
+		x[1127] = -0.1559
+		x[1128] = -0.1559
+		x[1129] = -0.1559
+		x[1130] = -0.1559
+		x[1131] = 0.1559
+
+Optimise using DEFAULT METHOD
+Smart optimise part I: estimate gradient using forward differences
+maxld= 677.036 fn=  1 theta= 4.005 4.000 2.000 [0.37, 0.145]
+maxld= 932.167 fn=  5 theta= 4.933 4.212 2.289 [0.36, 0.135]
+maxld= 932.167 fn=  6 theta= 4.933 4.212 2.289 [0.36, 0.126]
+maxld= 932.382 fn=  7 theta= 4.933 4.217 2.289 [0.36, 0.121]
+maxld= 932.481 fn=  8 theta= 4.933 4.212 2.294 [0.36, 0.117]
+maxld= 933.109 fn=  9 theta= 4.938 4.212 2.289 [0.36, 0.115]
+maxld= 1033.689 fn= 10 theta= 5.962 4.445 2.608 [0.36, 0.111]
+maxld= 1033.689 fn= 11 theta= 5.962 4.445 2.608 [0.36, 0.109]
+maxld= 1039.051 fn= 15 theta= 5.790 4.406 2.555 [0.36, 0.105]
+maxld= 1039.051 fn= 18 theta= 5.790 4.406 2.555 [0.36, 0.102]
+maxld= 1039.147 fn= 19 theta= 5.795 4.406 2.555 [0.36, 0.102]
+New directions for numerical gradient
+	  dir01	  dir02	  dir03
+	  0.933	 -0.359	   . 
+	  0.212	  0.551	  0.807
+	  0.289	  0.753	 -0.591
+Iter=1 |grad|=50.6 |dx|=1.11 |best.dx|=1.11 |df|=363 |best.df|=362 
+maxld= 1054.359 fn= 20 theta= 6.293 4.101 1.746 [0.37, 0.100]
+maxld= 1054.359 fn= 22 theta= 6.293 4.101 1.746 [0.37, 0.099]
+maxld= 1055.029 fn= 23 theta= 6.291 4.103 1.750 [0.37, 0.099]
+maxld= 1055.062 fn= 24 theta= 6.297 4.102 1.748 [0.37, 0.099]
+maxld= 1070.147 fn= 25 theta= 6.133 4.198 2.004 [0.36, 0.098]
+maxld= 1070.178 fn= 26 theta= 6.133 4.202 2.001 [0.36, 0.098]
+maxld= 1070.602 fn= 28 theta= 6.137 4.199 2.005 [0.36, 0.098]
+New directions for numerical gradient
+	  dir01	  dir02	  dir03
+	 -0.497	  0.864	   . 
+	  0.307	  0.266	  0.914
+	  0.812	  0.428	 -0.397
+Iter=2 |grad|=92.6 |dx|=0.392 |best.dx|=0.393 |df|=31.1 |best.df|=31.5 
+maxld= 1077.208 fn= 31 theta= 6.359 4.166 1.851 [0.37, 0.096]
+maxld= 1077.208 fn= 32 theta= 6.359 4.166 1.851 [0.37, 0.096]
+maxld= 1077.463 fn= 33 theta= 6.357 4.168 1.855 [0.37, 0.095]
+maxld= 1077.800 fn= 35 theta= 6.363 4.167 1.853 [0.37, 0.095]
+maxld= 1077.977 fn= 38 theta= 6.398 4.163 1.829 [0.37, 0.095]
+New directions for numerical gradient
+	  dir01	  dir02	  dir03
+	  0.816	  0.551	 -0.176
+	   . 	  0.459	  0.880
+	 -0.566	  0.697	 -0.441
+Iter=3 |grad|=139 |dx|=0.181 |best.dx|=0.183 |df|=7.21 |best.df|=7.37 
+maxld= 1090.026 fn= 41 theta= 6.554 4.196 1.818 [0.37, 0.094]
+maxld= 1090.026 fn= 42 theta= 6.554 4.196 1.818 [0.37, 0.094]
+maxld= 1090.072 fn= 44 theta= 6.553 4.200 1.816 [0.37, 0.094]
+maxld= 1090.630 fn= 45 theta= 6.557 4.198 1.822 [0.37, 0.094]
+maxld= 1118.205 fn= 46 theta= 7.027 4.297 1.792 [0.37, 0.093]
+maxld= 1118.522 fn= 47 theta= 7.030 4.299 1.795 [0.37, 0.093]
+maxld= 1136.942 fn= 51 theta= 7.588 4.417 1.761 [0.37, 0.092]
+maxld= 1137.106 fn= 54 theta= 7.592 4.416 1.758 [0.37, 0.092]
+maxld= 1143.969 fn= 56 theta= 8.150 4.537 1.730 [0.37, 0.091]
+maxld= 1144.319 fn= 58 theta= 8.154 4.536 1.727 [0.37, 0.091]
+New directions for numerical gradient
+	  dir01	  dir02	  dir03
+	  0.976	   . 	 -0.209
+	  0.209	  0.482	  0.851
+	   . 	  0.874	 -0.482
+Iter=4 |grad|=115 |dx|=1.04 |best.dx|=1.04 |df|=66.6 |best.df|=66.3 
+maxld= 1146.535 fn= 61 theta= 9.083 4.593 1.375 [0.37, 0.091]
+maxld= 1146.641 fn= 63 theta= 9.088 4.594 1.375 [0.37, 0.090]
+maxld= 1147.318 fn= 64 theta= 9.083 4.596 1.380 [0.37, 0.090]
+maxld= 1154.754 fn= 66 theta= 8.638 4.566 1.544 [0.37, 0.090]
+maxld= 1154.754 fn= 67 theta= 8.638 4.566 1.544 [0.37, 0.090]
+maxld= 1154.830 fn= 68 theta= 8.643 4.568 1.544 [0.37, 0.091]
+maxld= 1154.968 fn= 70 theta= 8.638 4.569 1.549 [0.37, 0.091]
+New directions for numerical gradient
+	  dir01	  dir02	  dir03
+	  0.934	  0.287	 -0.213
+	   . 	  0.465	  0.883
+	 -0.352	  0.837	 -0.418
+Iter=5 |grad|=47.2 |dx|=0.299 |best.dx|=0.298 |df|=10.8 |best.df|=10.6 
+maxld= 1163.605 fn= 71 theta= 9.592 4.811 1.371 [0.37, 0.091]
+maxld= 1163.795 fn= 74 theta= 9.593 4.813 1.375 [0.37, 0.091]
+maxld= 1166.394 fn= 76 theta= 10.546 5.055 1.197 [0.37, 0.090]
+maxld= 1166.534 fn= 79 theta= 10.547 5.058 1.201 [0.37, 0.090]
+New directions for numerical gradient
+	  dir01	  dir02	  dir03
+	  0.954	   . 	  0.297
+	  0.243	  0.696	 -0.675
+	 -0.176	  0.716	  0.675
+Iter=6 |grad|=29.3 |dx|=1.15 |best.dx|=1.16 |df|=11.6 |best.df|=11.6 
+maxld= 1166.929 fn= 82 theta= 10.511 5.064 1.232 [0.37, 0.090]
+maxld= 1166.943 fn= 84 theta= 10.513 5.061 1.235 [0.37, 0.090]
+maxld= 1166.944 fn= 91 theta= 10.514 5.060 1.234 [0.37, 0.089]
+New directions for numerical gradient
+	  dir01	  dir02	  dir03
+	  0.756	  0.582	 -0.300
+	   . 	  0.586	  0.799
+	 -0.641	  0.564	 -0.521
+Iter=7 |grad|=4.87 |dx|=0.0267 |best.dx|=0.0272 |df|=0.535 |best.df|=0.41 
+maxld= 1167.034 fn= 94 theta= 10.499 5.004 1.275 [0.37, 0.088]
+maxld= 1167.034 fn= 95 theta= 10.497 5.008 1.272 [0.37, 0.088]
+New directions for numerical gradient
+	  dir01	  dir02	  dir03
+	  0.208	  0.736	  0.644
+	  0.794	 -0.512	  0.328
+	 -0.571	 -0.443	  0.691
+Iter=8 |grad|=1.79 |dx|=0.0485 |best.dx|=0.0386 |df|=0.0969 |best.df|=0.0901 
+New directions for numerical gradient
+	  dir01	  dir02	  dir03
+	  0.190	   . 	  0.971
+	  0.869	  0.485	   . 
+	 -0.457	  0.863	  0.217
+Iter=9 |grad|=2.57 |dx|=0.0103 |best.dx|=0(pass) |df|=0.00321(pass) |best.df|=0(pass) 
+Smart optimise part II: estimate gradient using central differences
+Smart optimise part II: restart optimiser
+New directions for numerical gradient
+	  dir01	  dir02	  dir03
+	  0.200	   . 	  0.973
+	  0.780	 -0.583	 -0.228
+	  0.593	  0.804	   . 
+Iter=1 |grad|=0.861 |dx|=0.00144 |best.dx|=0(pass) |df|=0.00744 |best.df|=0(pass) 
+maxld= 1167.038 fn=130 theta= 10.507 5.011 1.269 [0.37, 0.085]
+maxld= 1167.040 fn=133 theta= 10.512 5.010 1.269 [0.37, 0.085]
+maxld= 1167.041 fn=140 theta= 10.514 5.013 1.267 [0.37, 0.085]
+New directions for numerical gradient
+	  dir01	  dir02	  dir03
+	  0.841	   . 	  0.539
+	  0.417	  0.688	 -0.593
+	 -0.343	  0.724	  0.598
+Iter=2 |grad|=0.518 |dx|=0.00863 |best.dx|=0.0109 |df|=0.00464 |best.df|=0.00648 
+maxld= 1167.043 fn=149 theta= 10.518 5.010 1.269 [0.37, 0.084]
+New directions for numerical gradient
+	  dir01	  dir02	  dir03
+	 -0.502	  0.681	  0.533
+	  0.423	  0.731	 -0.536
+	  0.754	   . 	  0.655
+Iter=3 |grad|=1.58 |dx|=0.000524(pass) |best.dx|=0.00297 |df|=0.00592 |best.df|=0.00176(pass) 
+Optim: Number of function evaluations = 153
+Compute the Hessian using central differences and step_size[0.0707107]. Matrix-type [dense]
+Smart optimise part IV: estimate Hessian using central differences
+
+GMRFLib_opt_estimate_hessian: ensure spd for Hessian: mode seems fine
+GMRFLib_opt_estimate_hessian: set tol=[0.001619]. number of negative eigenvalues=[0]
+
+      1.771      2.742      3.369
+      2.742    407.268    493.860
+      3.369    493.860    720.961
+Eigenvectors of the Hessian
+	  0.004	  1.000	 -0.005
+	  0.590	 -0.006	 -0.807
+	  0.807	 -0.000	  0.590
+Eigenvalues of the Hessian
+	    1082.300
+	       1.753
+	      45.947
+StDev/Correlation matrix (scaled inverse Hessian)
+   0.755  -0.039  -0.003
+           0.121  -0.911
+                   0.090
+Compute corrected stdev for theta[0]: negative 1.003  positive 0.997
+Compute corrected stdev for theta[1]: negative 0.934  positive 1.070
+Compute corrected stdev for theta[2]: negative 0.908  positive 1.101
+maxld= 1167.043 fn=180 theta= 10.518 5.010 1.269 [0.37, 0.083]
+config  0/15=[  1.097 -1.028  1.211 ] log(rel.dens)= -2.519, [3] accept, compute, 0.02s
+config  1/15=[  0.000  0.000  0.000 ] log(rel.dens)= -0.000, [0] accept, compute, 0.02s
+config  2/15=[ -0.000 -1.780  0.000 ] log(rel.dens)= -3.426, [1] accept, compute, 0.02s
+config  3/15=[ -1.103 -1.028  1.211 ] log(rel.dens)= -2.446, [2] accept, compute, 0.02s
+config  4/15=[  1.097  1.177 -0.999 ] log(rel.dens)= -2.164, [3] accept, compute, 0.03s
+config  5/15=[  1.900 -0.000 -0.000 ] log(rel.dens)= -1.854, [0] accept, compute, 0.02s
+config  6/15=[ -0.000  0.000  2.098 ] log(rel.dens)= -1.709, [1] accept, compute, 0.02s
+config  7/15=[ -1.103  1.177 -0.999 ] log(rel.dens)= -2.163, [2] accept, compute, 0.02s
+config  8/15=[  1.097  1.177  1.211 ] log(rel.dens)= -2.366, [3] accept, compute, 0.03s
+config  9/15=[ -1.911 -0.000 -0.000 ] log(rel.dens)= -1.771, [0] accept, compute, 0.02s
+config 10/15=[  0.000 -0.000 -1.730 ] log(rel.dens)= -1.906, [1] accept, compute, 0.03s
+config 11/15=[ -1.103  1.177  1.211 ] log(rel.dens)= -2.309, [2] accept, compute, 0.02s
+config 12/15=[  0.000  2.039 -0.000 ] log(rel.dens)= -4.280, [0] accept, compute, 0.02s
+config 13/15=[  1.097 -1.028 -0.999 ] log(rel.dens)= -2.330, [2] accept, compute, 0.02s
+config 14/15=[ -1.103 -1.028 -0.999 ] log(rel.dens)= -2.300, [1] accept, compute, 0.02s
+
+Combine the densities with relative weights:
+config  0/15=[  0.000  0.000  0.000 ] weight=  1.000 adjusted weight=  1.000
+config  1/15=[  1.900 -0.000 -0.000 ] weight=  0.327 adjusted weight=  0.327
+config  2/15=[ -1.911 -0.000 -0.000 ] weight=  0.355 adjusted weight=  0.355
+config  3/15=[  0.000  2.039 -0.000 ] weight=  0.029 adjusted weight=  0.029
+config  4/15=[ -0.000 -1.780  0.000 ] weight=  0.068 adjusted weight=  0.068
+config  5/15=[ -0.000  0.000  2.098 ] weight=  0.378 adjusted weight=  0.378
+config  6/15=[  0.000 -0.000 -1.730 ] weight=  0.310 adjusted weight=  0.310
+config  7/15=[ -1.103 -1.028 -0.999 ] weight=  0.209 adjusted weight=  0.209
+config  8/15=[ -1.103 -1.028  1.211 ] weight=  0.181 adjusted weight=  0.181
+config  9/15=[ -1.103  1.177 -0.999 ] weight=  0.240 adjusted weight=  0.240
+config 10/15=[ -1.103  1.177  1.211 ] weight=  0.207 adjusted weight=  0.207
+config 11/15=[  1.097 -1.028 -0.999 ] weight=  0.203 adjusted weight=  0.203
+config 12/15=[  1.097 -1.028  1.211 ] weight=  0.168 adjusted weight=  0.168
+config 13/15=[  1.097  1.177 -0.999 ] weight=  0.240 adjusted weight=  0.240
+config 14/15=[  1.097  1.177  1.211 ] weight=  0.196 adjusted weight=  0.196
+
+Marginal likelihood: Integration 1162.481 Gaussian-approx 1164.112
+Compute the marginal for each of the 3 hyperparameters
+Interpolation method: Auto
+	Compute the marginal for theta[0] to theta[2] using numerical integration...
+	Compute the marginal for theta[0] to theta[2] using numerical integration... Done.
+Compute the marginal for the hyperparameters... done.
+Store results in directory[C:\Users\s1437405\Documents\PhD_Local\c1-analyses\scripts\r\inla.model-1/results.files]
+
+Wall-clock time used on [C:\Users\s1437405\Documents\PhD_Local\c1-analyses\scripts\r\inla.model-1/Model.ini]
+	Preparations             :   0.033 seconds
+	Approx inference (stage1):   6.874 seconds
+	Approx inference (stage2):   0.000 seconds
+	Approx inference (total) :   6.874 seconds
+	Output                   :   0.208 seconds
+	------------------------------------------
+	Total                    :   7.115 seconds
+
+Stage1:	Number of fn-calls= 193 with 0.0356 sec/fn-call
+Stage2:	Number of fn-calls= 0 with 6.8741 sec/fn-call
+
