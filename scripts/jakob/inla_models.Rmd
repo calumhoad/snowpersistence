@@ -1,0 +1,247 @@
+---
+title: "Calum INLA example"
+author: "Jakob J. Assmann"
+date: "2024-03-12"
+output: html_document
+---
+
+```{r setup, echo = TRUE, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Dependencies
+library(tidyverse)
+library(sp)
+library(gstat)
+library(spdep)
+library(spatialreg)
+library(ggplot2)
+library(cowplot)
+library(colorspace)
+library(pbapply)
+library(broom)
+library(kableExtra)
+library(INLA)
+
+# Opttional set to short inal summary
+#inla.setOption(short.summary = TRUE)
+```
+
+## Load data
+
+Note, I made a small change to keep the X and Y coordinates (remove = F). 
+
+```{r data, echo = TRUE, message = FALSE, warning = FALSE}
+# Load data
+kl_data <- read_csv("s2-kl-smooth-joined.csv", show_col_types = FALSE) %>%
+  st_as_sf(coords = c('X', 'Y'), remove = F, crs = 32608) %>%
+  group_by(id) %>%
+  filter(row_number() == 7) %>%
+  ungroup()
+```
+
+## Prepare "node" vector for INLA matern2d model 
+
+INLA nodes are arranged as sequential numbers where numbers ascend column-wise 
+from the top-left corner of the grid towards the bottom-right. See Fig 
+7.1 in this document: https://becarioprecario.bitbucket.io/inla-gitbook/ch-spatial.html
+
+In our case, we can derive the column and row numbers from the UTM coordinates as follows:
+
+col_number = (x - min(x))  / 10
+<br>
+row_number = (max(y) - y) / 10 
+
+We can then assign a regularly increasing index (1:n), by infilling the cells 
+no accounted for. 
+
+```{r fig.height = 7, fig.width = 7}
+# Calculate row and col_numbers
+kl_data <- kl_data %>% 
+  # Calculate min X and max >
+  mutate(min_x = min(.$X),
+         max_y = max(.$Y)) %>%
+  # Calczulate colum and row numbers for each cell (top-left to bottom-right corner)
+  # We shift by one a R is 1- based
+  mutate(col_number = 1 + ((X - min_x) / 10),
+         row_number = 1 + ((max_y - Y) / 10)) %>%
+  # Arrange dataset accordingly
+  arrange(col_number, row_number)
+
+# Derrive spatial index in INLA fashion (running number)
+# Optain number of cols and rows
+n_col = max(kl_data$col_number)
+n_row = max(kl_data$row_number)
+# Expand grid and add index
+complete_grid <- expand.grid(1:n_col, 1:n_row) %>%
+  # Rename columns
+  select(col_number = Var1, row_number = Var2) %>%
+  # Rearrange same as data frame above (top-left to bottom-right)
+  arrange(col_number, row_number) %>%
+  # Generate index ("node")
+  mutate(node = 1:nrow(.))
+
+# Add node to kl_data, skipping those with no data (left_join)
+kl_data <- kl_data %>%
+  left_join(complete_grid, by = c("col_number", "row_number"))
+
+# Plot to visualise
+complete_grid_plot <- ggplot() +
+  geom_text(data = complete_grid, 
+            mapping = aes(x = col_number, y = row_number, label = node),
+            size = 1) +
+  labs(title = "Complete Grid") +
+  scale_y_reverse() +
+  coord_equal() +
+  theme_map()
+kl_node_plot <- ggplot() +
+  geom_sf(data = st_buffer(st_geometry(kl_data), 5, endCapStyle = "SQUARE"),
+          fill = NA) +
+  geom_sf_text(data = kl_data, 
+               aes(label = node),
+               size = 1) +
+  labs(title = "KL data points only") +
+  theme_map()
+
+plot_grid(complete_grid_plot,
+          kl_node_plot,
+          nrow = 2)
+
+```
+
+Now we have a vector ("node") that represents the spatial arrangement of the 
+pixels in a way that INLA can understand.
+
+## Fitting a simple INLA model
+
+Next, we fit a super simple INLA model, not worrying about priors for now. 
+
+```{r fit_INLA}
+# Specify formula
+formula_matern <- ndvi.max ~ snow.auc +
+                  f(node, 
+                    model = "matern2d", 
+                    nrow = n_row,
+                    ncol = n_col)
+# Fit model
+model_matern <- inla(formula = formula_matern, 
+                     data = kl_data,
+                     family = "gaussian",
+                     control.predictor = list(compute = TRUE),
+                     control.compute = list(dic = TRUE, 
+                                            waic = TRUE, 
+                                            cpo = TRUE, 
+                                            return.marginals.predictor = TRUE),
+                     keep = TRUE)
+# Print summary
+summary(model_matern)
+```
+
+The fit returns a more conservative estimate of the slope than the other models
+we have fitted so far, but the result are still "significant". In Bayesian, we'd 
+say "the credible interval does not overlap with zero", or, given the data and 
+model the 95% interval of the posterior distribution indicates a negative slope
+with a mean of -0.003. 
+
+Also the range parameter "Range for node" has a mean posterior estimate of 25. 
+As INLA works in arbitrary distances (i.e., number of neighbours), this seems 
+like rather a lot (250 m?). That said, the results seem to make a lot of sense,
+see below. 
+
+Let's retrieve the fitted values and marginal predictions. 
+
+```{r}
+# Calculate marginal predictions depending on snow.auc only
+kl_data$preds <- model_matern$summary.fixed[1,1] + 
+                 kl_data$snow.auc * model_matern$summary.fixed[2,1]
+# Add model fitted values and residuals to data frame
+kl_data$fitted <- model_matern$summary.linear.predictor$mean
+kl_data$residuals <- kl_data$ndvi.max - model_matern$summary.linear.predictor$mean
+```
+
+Graph fitted values and marginal predictions.
+
+```{r}
+# Graph data, fitted values and predictions
+ggplot(data = kl_data) +
+  geom_point(aes(x = snow.auc, y= ndvi.max)) +
+  geom_point(aes(x = snow.auc, y = fitted),
+             colour = "blue", 
+             alpha = 0.5) +
+  geom_line(aes(x = snow.auc, preds),
+            colour = "blue") +
+  theme_cowplot()
+
+```
+
+The fitted values (blue) are very close to the observed values. Suggesting
+that the model (including the spatial random effect) does manage to account 
+for a lot of the variation in the data (very good!). The fitted slope and 
+intercept seem both reasonable given the observed data. 
+
+Let's have a look at how the predictions are distributed in space:
+
+```{r fig.widht = 7, fig.height = 7}
+plot_grid(ggplot() +
+  geom_sf(data = st_buffer(kl_data, 5, endCapStyle = "SQUARE"), 
+          aes(fill = snow.auc)) +
+  scale_fill_continuous_sequential("blue") +
+  labs(fill = "snow.auc") +
+  theme_map(),
+  ggplot() +
+  geom_sf(data = st_buffer(kl_data, 5, endCapStyle = "SQUARE"), 
+          aes(fill = preds)) +
+  scale_fill_continuous_sequential("viridis", rev = F) +
+  labs(fill = "predictions\nNDVI max") +
+  theme_map(),
+  nrow = 2)
+  
+```
+
+This looks great and seems to make sense given the hypothesised relationship.
+
+Next we need to check whether there is still any autocorrelation in the residuals
+and whether these follow a Gaussian distribution (as assumed). 
+
+## Graph residuals
+
+```{r fig.height = 7, fig.width = 7}
+# Graph residuals as histogram and in space
+plot_grid(ggplot(kl_data) +
+  geom_histogram(aes(x = residuals), bins = 50) +
+  labs(x = "residuals") +
+  theme_cowplot(),
+ggplot() +
+  geom_sf(data = st_buffer(kl_data, 5, endCapStyle = "SQUARE"), aes(fill = residuals)) +
+  scale_fill_continuous_diverging() +
+  theme_map(),
+nrow = 2)
+
+```
+
+The histogram of the residuals follows a nice normal distribution - great!
+
+It also seems like the model does an excellent job at accounting for the spatial 
+autocorrelation. The residual are are seemingly randomly distributed in space. 
+
+As a last check, let's look at the variation accounted for by the latent spatial
+effect.
+
+```{r}
+ggplot() +
+  geom_sf(data = st_buffer(kl_data, 5, endCapStyle = "SQUARE"), 
+          aes(fill = ndvi.max - preds - residuals)) +
+  scale_fill_continuous_diverging() +
+  labs(fill = "spatial effect") +
+  theme_map()
+```
+
+The latent spatial effect of the model manages to account for a lot of the 
+residual variation. That makes a lot of ecological sense, as we'd think that the
+majority in NDVI variation is not explained by our predictor. 
+
+The way I understand the spatial latent effect is that INLA fits an 
+an "random error term" to each individual node where the error term is described
+by a matern function based on the surrounding neighbourhood of the node. I am
+not 100% certain that is really how it works, but will run this past a colleague 
+to dig deeper.
+
+End of file.
