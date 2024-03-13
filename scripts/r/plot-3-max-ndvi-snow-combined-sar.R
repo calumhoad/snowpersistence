@@ -27,6 +27,8 @@ library(broom)
 library(kableExtra)
 library(htmltools)
 
+options(scipen = 999)
+
 # Data ----
 # Read in the data and reduce to unique id
 # Blaesedalen
@@ -64,6 +66,13 @@ lm.s2.kl.doy <- lm(s2.kl$ndvi.max.doy ~ s2.kl$snow.auc)
 lm.s2.kh.max <- lm(s2.kh$ndvi.max ~ s2.kh$snow.auc)
 lm.s2.kh.doy <- lm(s2.kh$ndvi.max.doy ~ s2.kh$snow.auc)
 
+# Run Moran's I on the residuals of the linear models
+bl.lm.mt <- moran.test(residuals(lm.s2.bl.max), s2.bl.lw)
+print(bl.lm.mt)
+kl.lm.mt <- moran.test(residuals(lm.s2.kl.max), s2.kl.lw)
+print(kl.lm.mt)
+kh.lm.mt <- moran.test(residuals(lm.s2.kh.max), s2.kh.lw)
+print(kh.lm.mt)
 
 # Plot semivariogram ----
 # Fit variogram ndvi

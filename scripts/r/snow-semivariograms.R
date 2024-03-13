@@ -57,9 +57,9 @@ s2.kh <- read.csv('../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv') %>%
 # Variograms ----
 
 # Fit variogram snow
-vario_snow <- as_Spatial(s2.kl) %>% as("SpatialPointsDataFrame") %>%
+vario_snow <- as_Spatial(s2.bl) %>% as("SpatialPointsDataFrame") %>%
   variogram(snow.auc ~ 1, data = ., cutoff = 130, width = 10)
-vario_snow.max_fit <- fit.variogram(vario_snow, model = vgm(model = "Sph")) 
+vario_snow.max_fit <- fit.variogram(vario_snow, model = vgm(model = "Mat")) 
 
 
 # Visualise results
