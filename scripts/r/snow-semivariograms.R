@@ -52,12 +52,18 @@ s2.kh <- read.csv('../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv') %>%
   filter(row_number() == 7) %>%
   ungroup()
 
+s30.bl <- read.csv('../../data/combined-ndvi-snow/s30-bl-smooth-joined.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32621) %>%
+  group_by(id) %>%
+  filter(row_number() == 7) %>%
+  ungroup()
+
 # Linear models
 
 # Variograms ----
 
 # Fit variogram snow
-vario_snow <- as_Spatial(s2.bl) %>% as("SpatialPointsDataFrame") %>%
+vario_snow <- as_Spatial(s30.bl) %>% as("SpatialPointsDataFrame") %>%
   variogram(snow.auc ~ 1, data = ., cutoff = 130, width = 10)
 vario_snow.max_fit <- fit.variogram(vario_snow, model = vgm(model = "Mat")) 
 
