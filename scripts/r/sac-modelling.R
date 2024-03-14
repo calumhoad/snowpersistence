@@ -54,6 +54,7 @@ s2.kh <- read.csv('../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv') %>%
 
 
 # Create linear models for later testing with Moran's I ----
+lm.morantest(lm.s2.bl.max)
 
 # Maximum NDVI and NDVI DoY is a function of snow persistence
 # Blaesedalen
