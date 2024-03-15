@@ -47,3 +47,8 @@ plot_grid(
 )
   
 
+# With geom point instead
+ggplot(data = snow.all %>% filter(site == 'BL'), aes(x = yday(date), y = snow.pcnt, group = date), fill = 'blue') +
+  geom_point() +
+  geom_jitter()
+

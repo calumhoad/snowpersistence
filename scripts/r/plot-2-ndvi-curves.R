@@ -44,11 +44,15 @@ plot_data <- function(data, snow.greater, snow.lesser) {
   # # Get the range of max doy from high and low snow
   # s2.data.low <- data %>% filter(snow.auc < snow.lesser)
   # s2.data.high <- data %>% filter(snow.auc > snow.greater)
+  
+  quantile1 <- quantile(data$snow.auc, probs = 0.25)
+  quantile3 <- quantile(data$snow.auc, probs = 0.75)
 
   # Use quantiles to standardise the data plotted for each site
   s2.data.low <- data %>% filter(snow.auc <= quantile(data$snow.auc, probs = 0.25))
   s2.data.high <- data %>% filter(snow.auc >= quantile(data$snow.auc, probs = 0.75))
-  
+  s2.data.mid <- data %>% filter(snow.auc > quantile1) %>%
+    filter(snow.auc < quantile3)
   # Store min and max values
   high.snow.max <- max(s2.data.high$ndvi.max.doy)
   high.snow.min <- min(s2.data.high$ndvi.max.doy)
@@ -63,6 +67,7 @@ plot_data <- function(data, snow.greater, snow.lesser) {
 
   # Plot in the style of the conceptual plot from the beginning of this research proj.
   ggplot() +
+    geom_line(data = s2.data.mid, aes(x = doy, y = ndvi.pred, group = id), colour = 'grey', alpha = 0.05, size = 1) +
     geom_line(data = data %>% filter(snow.auc < snow.lesser), aes(x = doy, y = ndvi.pred, group = id), color = '#9ebc9fff', alpha = 0.1, size = 1) + #size = snow.auc)) +
     geom_line(data = data %>% filter(snow.auc > snow.greater), aes(x = doy, y = ndvi.pred, group = id), color = '#d08c6dff', alpha = 0.1, size = 1) +
     geom_point(data = data %>% filter(snow.auc < snow.lesser), aes(x = ndvi.max.doy, y = ndvi.max), color = '#9ebc9fff', alpha = 0.5, size = 1) +
@@ -86,7 +91,7 @@ plot_data <- function(data, snow.greater, snow.lesser) {
 }
 
 bl <- plot_data(s2.bl, snow.greater = 10, snow.lesser = 10)
-
+bl
 kl <- plot_data(s2.kl, snow.greater = 2, snow.lesser = 2)
 
 kh <- plot_data(s2.kh, snow.greater = 2, snow.lesser = 2)

@@ -33,6 +33,17 @@ s2.kh <- read.csv('../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv') %>%
   group_by(id) %>%
   drop_na(ndvi.max)
 
+check <- quantile(s2.bl$snow.auc, probs = 0.85)
+check
+
+quartile1 <- quantile(s2.bl$snow.auc, probs = 0.15)
+quartile3 <- quantile(s2.bl$snow.auc, probs = 0.85)
+# Averages
+test <- s2.bl %>% filter(snow.auc <= quartile1) %>%
+  group_by(doy) %>%
+  mutate(mean.ndvi = mean(ndvi.pred)) %>%
+  ungroup() %>%
+  filter(id == first(unique(id)))
 
 # Plotting ----
 
@@ -45,9 +56,36 @@ plot_data <- function(data, snow.greater, snow.lesser) {
   # s2.data.low <- data %>% filter(snow.auc < snow.lesser)
   # s2.data.high <- data %>% filter(snow.auc > snow.greater)
 
+  tertile1 <- quantile(data$snow.auc, probs = 0.33)
+  tertile2 <- quantile(data$snow.auc, probs = 0.66)
+  
+  quartile1 <- quantile(data$snow.auc, probs = 0.1)
+  quartile3 <- quantile(data$snow.auc, probs = 0.9)
+  
   # Use quantiles to standardise the data plotted for each site
-  #s2.data.low <- data %>% filter(snow.auc <= quantile(data$snow.auc, probs = 0.25))
-  #s2.data.high <- data %>% filter(snow.auc >= quantile(data$snow.auc, probs = 0.75))
+  data.low <- data %>% filter(snow.auc <= quartile1)
+  data.mid <- s2.bl %>% filter(snow.auc > quartile1) %>%
+                        filter(snow.auc < quartile3)
+  data.high <- data %>% filter(snow.auc >= quartile3)
+  
+  lower.mean <- data %>% filter(snow.auc <= quartile1) %>%
+    group_by(doy) %>%
+    mutate(mean.ndvi = mean(ndvi.pred)) %>%
+    ungroup() %>%
+    filter(id == first(unique(id)))
+  
+  upper.mean <- data %>% filter(snow.auc >= quartile3) %>%
+    group_by(doy) %>%
+    mutate(mean.ndvi = mean(ndvi.pred)) %>%
+    ungroup() %>%
+    filter(id == first(unique(id)))
+  
+  central.mean <- data %>% filter(snow.auc <= quartile3) %>%
+    filter(snow.auc >= quartile1) %>%
+    group_by(doy) %>%
+    mutate(mean.ndvi = mean(ndvi.pred)) %>%
+    ungroup() %>%
+    filter(id == first(unique(id)))
   
   # Store min and max values
   #high.snow.max <- max(s2.data.high$ndvi.max.doy)
@@ -63,9 +101,15 @@ plot_data <- function(data, snow.greater, snow.lesser) {
 
   # Plot in the style of the conceptual plot from the beginning of this research proj.
   ggplot() +
-    geom_line(data = data, aes(x = doy, y = ndvi.pred, group = id, color = snow.auc), alpha = 0.4, size = 1) + #size = snow.auc)) +
-    #geom_line(data = data %>% filter(snow.auc > snow.greater), aes(x = doy, y = ndvi.pred, group = id), color = '#d08c6dff', alpha = 0.1, size = 1) +
-    geom_point(data = data, aes(x = ndvi.max.doy, y = ndvi.max, color = snow.auc), alpha = 0.5, size = 1) +
+   # geom_line(data = data.low, aes(x = doy, y = ndvi.pred, group = id), colour = "#9ebc9fff", alpha = 0.1, size = 1) + #size = snow.auc)) +
+    geom_line(data = data.mid, aes(x = doy, y = ndvi.pred, group = id), colour = "grey", alpha = 0.05, size = 1) +
+    geom_line(data = data.high, aes(x = doy, y = ndvi.pred, group = id), colour = "#d08c6dff", alpha = 0.05, size = 1) +
+    geom_line(data = data.low, aes(x = doy, y = ndvi.pred, group = id), colour = "#9ebc9fff", alpha = 0.05, size = 1) + 
+    geom_line(data = lower.mean, aes(x = doy, y = mean.ndvi, group = id), colour = '#9ebc9fff', alpha = 1, size = 2) +
+    geom_line(data = upper.mean, aes(x = doy, y = mean.ndvi, group = id), colour = "#d08c6dff", alpha = 1, size = 2) +
+    #geom_line(data = central.mean, aes(x = doy, y = mean.ndvi, group = id), colour = "grey", alpha = 1, size = 2) +    
+           #geom_line(data = data %>% filter(snow.auc > snow.greater), aes(x = doy, y = ndvi.pred, group = id), color = '#d08c6dff', alpha = 0.1, size = 1) +
+    #geom_point(data = data, aes(x = ndvi.max.doy, y = ndvi.max, color = snow.auc), alpha = 0.5, size = 1) +
     #geom_point(data = data %>% filter(snow.auc > snow.greater), aes(x = ndvi.max.doy, y = ndvi.max), color = '#d08c6dff', alpha = 0.5, size = 1) +
     #geom_segment(aes(x = high.snow.min, xend = high.snow.max, y = 0.07, yend = 0.07), color = '#d08c6dff', size = 1) +
     #geom_segment(aes(x = low.snow.min, xend = low.snow.max, y = 0.08, yend = 0.08), color = '#9ebc9fff', size = 1) +
@@ -74,8 +118,7 @@ plot_data <- function(data, snow.greater, snow.lesser) {
     #geom_segment(aes(y = high.snow.min.ndvi, yend = high.snow.max.ndvi, x = (low.snow.min -5), xend = (low.snow.min - 5)), color = '#d08c6dff', size = 1) +
     #geom_segment(aes(y = low.snow.min.ndvi, yend = low.snow.max.ndvi, x = (low.snow.min -5), xend = (low.snow.min - 5)), color = '#9ebc9fff', size = 1) +
 
-    scale_color_gradient(high = "#d08c6dff", low  = "#9ebc9fff", name = "Values",
-                         midpoint = quantile(data$snow.auc, probs = 0.25)) +
+    #scale_color_gradient(high = "#d08c6dff", low  = "#9ebc9fff", name = "Values") +
     labs( x = '', 
           y = '') +
     scale_x_continuous(breaks = c(200, 250),
@@ -89,9 +132,9 @@ plot_data <- function(data, snow.greater, snow.lesser) {
 bl <- plot_data(s2.bl, snow.greater = 10, snow.lesser = 10)
 bl
 kl <- plot_data(s2.kl, snow.greater = 2, snow.lesser = 2)
-
+kl
 kh <- plot_data(s2.kh, snow.greater = 2, snow.lesser = 2)
-
+kh
 logo <- ('../../illustration/both-lower-later-03.png')
 
 logo.plot <- ggdraw() + draw_image(logo, scale = 0.4)
