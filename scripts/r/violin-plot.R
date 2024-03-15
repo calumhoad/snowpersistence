@@ -48,7 +48,9 @@ plot_grid(
   
 
 # With geom point instead
-ggplot(data = snow.all %>% filter(site == 'BL'), aes(x = yday(date), y = snow.pcnt, group = date), fill = 'blue') +
+snow.calc <- ggplot(data = snow.all, aes(x = yday(date), y = snow.pcnt, group = date, colour = site, alpha = 0.01)) +
+  scale_colour_manual(values = c('BL' = '#4984BF', 'KL' = '#F5A40C', 'KH' = '#F23835')) +
   geom_point() +
-  geom_jitter()
+  geom_jitter() +
+  theme_cowplot()
 

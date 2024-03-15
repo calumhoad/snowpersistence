@@ -196,12 +196,16 @@ kl.sem.summary <- tidy(kl.sem) %>% kbl() %>% kable_classic(full_width = F, html_
 kl.sem.summary
 kl.sac.summary
 
+kl.lm.summary <- tidy(lm.s2.kl.max) %>% kbl() %>% kable_classic(full_width = F, html_font = "Cambria")
+kl.lm.summary
 # Check for remaining spatial autocorrelation in the residuals
 kl.sem.residuals <- residuals(kl.sem)
 kl.sac.rediduals <- residuals(kl.sac)
 
 kl.sem.moran <- moran.test(kl.sem.residuals, s2.kl.lw)
 kl.sac.moran <- moran.test(kl.sac.rediduals, s2.kl.lw)
+
+kl
 
 print(kl.sem.moran)
 print(kl.sac.moran)
