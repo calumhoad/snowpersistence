@@ -131,7 +131,7 @@ bl.equation
 bl <- ggplot() +
   geom_point(data = s2.bl, aes(x = snow.auc, y = ndvi.max.doy), alpha = 0.5, color = '#4984BF') +
   geom_line(data = bl.pred, aes(x = snow.auc, y = doy), color = 'black', linewidth = 1) +
-  annotate("text", x = max(s2.bl$snow.auc), y = max(s2.bl$ndvi.max.doy) - 13, label = bl.equation, hjust = 1, vjust = 1) +
+  #annotate("text", x = max(s2.bl$snow.auc), y = max(s2.bl$ndvi.max.doy) - 13, label = bl.equation, hjust = 1, vjust = 1) +
   xlab('') +
   ylab('') +
   theme_cowplot()
@@ -143,7 +143,7 @@ kl.equation
 kl <- ggplot() +
   geom_point(data = s2.kl, aes(x = snow.auc, y = ndvi.max.doy), alpha = 0.5, color = '#F5A40C') +
   geom_line(data = kl.pred, aes(x = snow.auc, y = doy), color = 'black', linewidth = 1) +
-  annotate("text", x = max(s2.kl$snow.auc), y = max(s2.kl$ndvi.max.doy) - 10, label = kl.equation, hjust = 1, vjust = 1) +
+  #annotate("text", x = max(s2.kl$snow.auc), y = max(s2.kl$ndvi.max.doy) - 10, label = kl.equation, hjust = 1, vjust = 1) +
    xlab('') +
   ylab('') +
   theme_cowplot()
@@ -155,7 +155,7 @@ kh.equation
 kh <- ggplot() +
   geom_point(data = s2.kh, aes(x = snow.auc, y = ndvi.max.doy), alpha = 0.5, color = '#F23835') +
   geom_line(data = kh.pred, aes(x = snow.auc, y = doy), color = 'black', linewidth = 1) +
-  annotate("text", x = max(s2.kh$snow.auc), y = max(s2.kh$ndvi.max.doy) - 12, label = kh.equation, hjust = 1, vjust = 1) +
+  #annotate("text", x = max(s2.kh$snow.auc), y = max(s2.kh$ndvi.max.doy) - 12, label = kh.equation, hjust = 1, vjust = 1) +
   xlab('') +
   ylab('') +
   theme_cowplot()
@@ -172,8 +172,14 @@ combined.plots <- plot_grid(bl,
                             nrow = 2, 
                             align = 'h')#, 
                             #labels = c('(a)', '', ''))
+
+alternative.plot <- plot_grid(kl,bl,kh,
+                              ncol = 2,
+                              align = 'h')
+
+alternative.plot
 # Show plots
 combined.plots
 
 # Save plots
-cowplot::save_plot('../../plots/figures/figure-4v1.png', combined.plots, base_height = 140, base_width = 180, units = 'mm')
+cowplot::save_plot('../../plots/figures/figure-4v1-samesize.png', alternative.plot, base_height = 140, base_width = 180, units = 'mm')
