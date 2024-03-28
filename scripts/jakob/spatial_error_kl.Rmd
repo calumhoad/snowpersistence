@@ -47,7 +47,7 @@ Each pixel has two attributes of interest:
 
 1) peak-seasons greenness (NDVI)
 
-```{r NDVI}
+```{r NDVI, fig.height = 7, fig.width = 7}
 plot_grid(
   ggplot(st_drop_geometry(kl_data)) + 
     geom_histogram(aes(x = ndvi.max), binwidth = 0.01) +
@@ -60,13 +60,15 @@ plot_grid(
     theme_map(),
   labels = c("a) ndvi distribution", "b) ndvi in space"),
   hjust = 0,
-  scale = 0.9
+  scale = 0.9,
+  ncol = 1,
+  nrow = 2
 )
 ```
 
 2) snow persistence across the season (snow.auc)
 
-```{r snow.auc}
+```{r snow.auc, fig.height = 7, fig.width = 7}
 plot_grid(
   ggplot(st_drop_geometry(kl_data)) + 
     geom_histogram(aes(x = snow.auc), binwidth = 1) +
@@ -79,7 +81,9 @@ plot_grid(
     theme_map(),
   labels = c("a) snow.auc distribution", "b) snow.auc in space"),
   hjust = 0,
-  scale = 0.9
+  scale = 0.9,
+  ncol = 1,
+  nrow = 2
 )
 ``` 
 
@@ -284,7 +288,7 @@ The spatial error model seems to have successfully accounted for the auto correl
 at the chosen neighbourhood size.
 
 How does it look like for smaller neighbourhoods?
-
+dth
 ```{r morans_i_sem_resid, fig.height = 7, fig.width = 7}
 # Moran's I for lagged sitances
 morans_i_sem <- seq(10, 130, 10) %>%
