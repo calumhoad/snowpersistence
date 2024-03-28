@@ -96,14 +96,17 @@ plot_data <- function(data) {
     ungroup()
   
   ggplot() +
+    geom_rug(data = av.snow, sides = "t", inherit.aes = FALSE, length = unit(10, 'npc'), #position = 'jitter',
+             aes(x = ndvi.max.doy, y = 0.05, color = ndvi.max.doy.mean.snow, linewidth = 0.1)) +
+    geom_line(data = s2.bl, 
+              aes(x = doy, y = ndvi.pred, group = id), colour = 'white',
+              linewidth = 10) +
     geom_line(data = data %>% filter(snow.auc == 0), 
               aes(x = doy, y = ndvi.pred, group = id), 
               colour = '#e0f3db', alpha = 0.5, linewidth = 1) +
     geom_line(data = data %>% filter(snow.auc != 0), 
               aes(x = doy, y = ndvi.pred, group = id, colour = snow.auc, alpha = snow.auc),
               linewidth = 1) +
-    geom_rug(data = av.snow, sides = "b", inherit.aes = FALSE, #position = 'jitter',
-             aes(x = ndvi.max.doy, y = 0.05, color = ndvi.max.doy.mean.snow, linewidth = 0.1)) +
     scale_color_gradientn(colors = c('#ccebc5','#a8ddb5','#7bccc4','#4eb3d3','#2b8cbe','#0868ac','#084081')) +
     scale_alpha_continuous(c(0.5, 1)) +# '#f7fcf0','#e0f3db', removed colors
     #scale_color_viridis_c(direction = -1) +
