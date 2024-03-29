@@ -40,7 +40,8 @@ av.snow <- data %>%
   mutate(ndvi.max.doy.mean.snow = mean(snow.auc)) %>%
   ungroup()
 
-data <- s2.bl
+data <- s2.bl %>%
+  filter(row_number() == 7)
 
 test <- data %>% group_by(id) %>%
   filter(doy == ndvi.max.doy)
@@ -49,11 +50,6 @@ mind <- min(test$doy)
 maxd <- max(test$doy)
 
 doys <- seq(mind, maxd, 1)
-
-for (i in doys) {
-  data <- test %>% filter(doy == i)
-  print(paste0('DOY:', i, 'average is:', ))
-}
 
 plot <- ggplot() +
   geom_line(data = data %>% arrange(snow.auc), 
@@ -76,8 +72,30 @@ plot <- ggplot() +
   theme_cowplot() +
   theme(legend.position = 'none')
 
+ggplot() +
+  geom_bin2d(data = data, aes(x = ndvi.max.doy, y = ndvi.max, colour = snow.auc), #alpha = ..count..), 
+             binwidth = c(1, 0.01)) +
+  theme_cowplot()
 
-plot
+
+# Preprocess data: Round ndvi to nearest 0.1 and doy to nearest 1
+data$ndvi_rounded <- as.factor(round(data$ndvi.max * 100) / 100)
+data$ndvi.max.doy <- as.factor(data$ndvi.max.doy)
+
+# Calculate average snow.auc for each bin
+df_bins <- data %>%
+  group_by(ndvi_rounded, ndvi.max.doy) %>%
+  summarise(avg_snow_auc = mean(snow.auc, na.rm = TRUE))
+
+# Create the heatmap
+  ggplot(df_bins, aes(x = ndvi.max.doy, y = ndvi_rounded, fill = avg_snow_auc)) +
+  geom_bin2d(binwidth = c(1, 0.01)) +
+  scale_fill_gradientn(colors = c('#ccebc5','#a8ddb5','#7bccc4','#4eb3d3','#2b8cbe','#0868ac','#084081')) +
+  scale_alpha_continuous(range = c(0.2, 1)) +
+  labs(x = "Day of Year (doy)", y = "NDVI", fill = "Average Snow AUC", alpha = "Count") +
+  theme_cowplot() +
+  theme(legend.position = 'none')
+
 
 # Plotting ----
 
@@ -95,12 +113,12 @@ plot_data <- function(data) {
     mutate(ndvi.max.doy.mean.snow = mean(snow.auc)) %>%
     ungroup()
   
-  ggplot() +
+  top <- ggplot() +
     geom_rug(data = av.snow, sides = "t", inherit.aes = FALSE, length = unit(10, 'npc'), #position = 'jitter',
-             aes(x = ndvi.max.doy, y = 0.05, color = ndvi.max.doy.mean.snow, linewidth = 0.1)) +
-    geom_line(data = s2.bl, 
+             aes(x = ndvi.max.doy, y = 0.05, color = ndvi.max.doy.mean.snow, linewidth = 0.1, alpha = 0.3)) +
+    geom_line(data = data, 
               aes(x = doy, y = ndvi.pred, group = id), colour = 'white',
-              linewidth = 10) +
+              linewidth = 5) +
     geom_line(data = data %>% filter(snow.auc == 0), 
               aes(x = doy, y = ndvi.pred, group = id), 
               colour = '#e0f3db', alpha = 0.5, linewidth = 1) +
@@ -122,9 +140,28 @@ plot_data <- function(data) {
     theme_cowplot() +
     theme(legend.position = 'none')
   
+  # Preprocess data: Round ndvi to nearest 0.1 and doy to nearest 1
+  data$ndvi_rounded <- as.factor(round(data$ndvi.max * 100) / 100)
+  data$ndvi.max.doy <- as.factor(data$ndvi.max.doy)
+  
+  # Calculate average snow.auc for each bin
+  df_bins <- data %>%
+    group_by(ndvi_rounded, ndvi.max.doy) %>%
+    summarise(avg_snow_auc = mean(snow.auc, na.rm = TRUE))
+  
+  bottom <-   ggplot(df_bins, aes(x = ndvi.max.doy, y = ndvi_rounded, fill = avg_snow_auc)) +
+    geom_bin2d(binwidth = c(1, 0.01)) +
+    scale_fill_gradientn(colors = c('#ccebc5','#a8ddb5','#7bccc4','#4eb3d3','#2b8cbe','#0868ac','#084081')) +
+    scale_alpha_continuous(range = c(0.2, 1)) +
+    labs(x = "Day of Year (doy)", y = "NDVI", fill = "Average Snow AUC", alpha = "Count") +
+    theme_cowplot() +
+    theme(legend.position = 'none')
+  
+  plot_grid(top, bottom, nrow = 2, align = 'v')
 }
 
 bl <- plot_data(s2.bl)
+bl
 #bl
 kl <- plot_data(s2.kl)
 #kl
