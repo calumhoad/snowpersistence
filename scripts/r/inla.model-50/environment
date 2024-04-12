@@ -1,6 +1,0 @@
-export INLA_OS='windows'
-export INLA_PATH='C:/Users/s1437405/AppData/Local/Programs/R/R-4.3.1/library/INLA/bin'
-export INLA_RHOME='C:/Users/s1437405/AppData/Local/Programs/R/R-43~1.1'
-export INLA_RVERSION='4.3'
-export INLA_VERSION='24.02.09'
-export PARDISO_LIC_PATH='C:/Users/s1437405'
