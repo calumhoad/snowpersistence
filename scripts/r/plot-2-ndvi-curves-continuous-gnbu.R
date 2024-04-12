@@ -212,6 +212,8 @@ combined.plots <- plot_grid(#logo.plot,
                             labels = c('(a)', '(b)', '(c)'))
 
 
+max(s2.kh$ndvi.max.doy) - min(s2.k$ndvi.max.doy)
+
 #combined.plots
 
 # output the plot
