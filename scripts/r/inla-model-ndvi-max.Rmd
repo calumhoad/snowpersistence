@@ -168,7 +168,8 @@ model_matern <- inla(formula = formula_matern,
 summary(model_matern)
 ```
 
-[Type out summary of model here]
+**Summary:** The mean slope of snow.auc is 0.001 (positive) and the
+credible interval overlaps with 0.
 
 Let's retrieve the fitted values and marginal predictions.
 
@@ -181,11 +182,11 @@ input.data$fitted <- model_matern$summary.linear.predictor$mean
 input.data$residuals <- input.data$ndvi.max - model_matern$summary.linear.predictor$mean
 ```
 
-Produce variograms to better understand the spatial structure of the
+Produce **variograms** to better understand the spatial structure of the
 data and to assess whether the INLA model with non-informative priors
 appropriately accounts for spatial autocorrelation.
 
-```{r warning=FALSE}
+```{r echo=FALSE, warning=FALSE}
 # Fit variogram snow
 vario_snow <- as_Spatial(input.data) %>% as("SpatialPointsDataFrame") %>%
   variogram(snow.auc ~ 1, data = ., cutoff = 130, width = 10)
@@ -370,12 +371,6 @@ the residual variation. That makes a lot of ecological sense, as we'd
 think that the majority in NDVI variation is not explained by our
 predictor.
 
-The way I understand the spatial latent effect is that INLA fits an an
-"random error term" to each individual node where the error term is
-described by a matern function based on the surrounding neighbourhood of
-the node. I am not 100% certain that is really how it works, but will
-run this past a colleague to dig deeper.
-
 ------------------------------------------------------------------------
 
 # Kluane Low, Sentinel-2
@@ -459,7 +454,10 @@ model_matern <- inla(formula = formula_matern,
 summary(model_matern)
 ```
 
-[Type out summary of model here]
+**Jakob's summary:**
+The credible interval does not overlap with zero, or, given the data and
+model the 95% interval of the posterior distribution indicates a
+negative slope with a mean of -0.003.
 
 Let's retrieve the fitted values and marginal predictions.
 
@@ -476,7 +474,7 @@ Produce variograms to better understand the spatial structure of the
 data and to assess whether the INLA model with non-informative priors
 appropriately accounts for spatial autocorrelation.
 
-```{r warning=FALSE}
+```{r echo=FALSE, warning=FALSE}
 # Fit variogram snow
 vario_snow <- as_Spatial(input.data) %>% as("SpatialPointsDataFrame") %>%
   variogram(snow.auc ~ 1, data = ., cutoff = 130, width = 10)
@@ -747,7 +745,9 @@ model_matern <- inla(formula = formula_matern,
 summary(model_matern)
 ```
 
-[Type out summary of model here]
+The credible interval does not overlap with zero, or, given the data and
+model the 95% interval of the posterior distribution indicates a
+negative slope with a mean of -0.003.
 
 Let's retrieve the fitted values and marginal predictions.
 
@@ -764,7 +764,7 @@ Produce variograms to better understand the spatial structure of the
 data and to assess whether the INLA model with non-informative priors
 appropriately accounts for spatial autocorrelation.
 
-```{r warning=FALSE}
+```{r echo=FALSE, warning=FALSE}
 # Fit variogram snow
 vario_snow <- as_Spatial(input.data) %>% as("SpatialPointsDataFrame") %>%
   variogram(snow.auc ~ 1, data = ., cutoff = 130, width = 10)
@@ -906,9 +906,6 @@ plot_grid(ggplot() +
   
 ```
 
-This looks great and seems to make sense given the hypothesised
-relationship.
-
 Next we need to check whether there is still any autocorrelation in the
 residuals and whether these follow a Gaussian distribution (as assumed).
 
@@ -931,9 +928,10 @@ nrow = 2)
 The histogram of the residuals follows a nice normal distribution -
 great!
 
-It also seems like the model does an excellent job at accounting for the
-spatial autocorrelation. The residual are are seemingly randomly
-distributed in space.
+It looks like there may be slight spatial autocorrelation remaining in
+the residuals from their distribution in space. In the South East of the
+plot, there are some obvious lines of spatially grouped residuals, which
+look like they're following water courses.
 
 As a last check, let's look at the variation accounted for by the latent
 spatial effect.
@@ -1049,7 +1047,9 @@ model_matern <- inla(formula = formula_matern,
 summary(model_matern)
 ```
 
-[Type out summary of model here]
+The credible interval does not overlap with zero, or, given the data and
+model the 95% interval of the posterior distribution indicates a
+negative slope with a mean of -0.01.
 
 Let's retrieve the fitted values and marginal predictions.
 
@@ -1066,7 +1066,7 @@ Produce variograms to better understand the spatial structure of the
 data and to assess whether the INLA model with non-informative priors
 appropriately accounts for spatial autocorrelation.
 
-```{r warning=FALSE}
+```{r echo=FALSE, warning=FALSE}
 # Fit variogram snow
 vario_snow <- as_Spatial(input.data) %>% as("SpatialPointsDataFrame") %>%
   variogram(snow.auc ~ 1, data = ., cutoff = 130, width = 10)
@@ -1219,7 +1219,7 @@ residuals and whether these follow a Gaussian distribution (as assumed).
 ```{r fig.height = 7, fig.width = 7}
 # Graph residuals as histogram and in space
 plot_grid(ggplot(input.data) +
-  geom_histogram(aes(x = residuals), bins = 50) +
+  geom_histogram(aes(x = residuals), bins = 20) +
   labs(x = "residuals") +
   theme_cowplot(),
 ggplot() +
@@ -1230,8 +1230,9 @@ nrow = 2)
 
 ```
 
-The histogram of the residuals follows a nice normal distribution -
-great!
+The histogram of the residuals **has an uneven distribution**, it is
+skewed slightly positive but does not appear far from a normal
+(gaussian) distribution.
 
 It also seems like the model does an excellent job at accounting for the
 spatial autocorrelation. The residual are are seemingly randomly

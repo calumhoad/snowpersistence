@@ -173,7 +173,9 @@ model_matern <- inla(formula = formula_matern,
 summary(model_matern)
 ```
 
-[Type out summary of model here]
+The credible interval does not overlap with zero, or, given the data and
+model the 95% interval of the posterior distribution indicates a
+positive slope with a mean of 0.202.
 
 Let's retrieve the fitted values and marginal predictions.
 
@@ -190,7 +192,7 @@ Produce variograms to better understand the spatial structure of the
 data and to assess whether the INLA model with non-informative priors
 appropriately accounts for spatial autocorrelation.
 
-```{r warning=FALSE}
+```{r echo=FALSE, warning=FALSE}
 # Fit variogram snow
 vario_snow <- as_Spatial(input.data) %>% as("SpatialPointsDataFrame") %>%
   variogram(snow.auc ~ 1, data = ., cutoff = 130, width = 10)
@@ -326,12 +328,6 @@ plot_grid(ggplot() +
   
 ```
 
-The predictions are accurate, but the fit of the line is almost at a
-slope of 0. It seems like the model may need to be non-linear, to
-account for the larger number of observations between 0-5 snow.auc and
-the apparent positive relationship between snow.auc and ndvi.max.doy for
-these values.
-
 Next we need to check whether there is still any autocorrelation in the
 residuals and whether these follow a Gaussian distribution (as assumed).
 
@@ -464,7 +460,9 @@ model_matern <- inla(formula = formula_matern,
 summary(model_matern)
 ```
 
-[Type out summary of model here]
+The credible interval does not overlap with zero, or, given the data and
+model the 95% interval of the posterior distribution indicates a
+positive slope with a mean of 0.425.
 
 Let's retrieve the fitted values and marginal predictions.
 
@@ -481,7 +479,7 @@ Produce variograms to better understand the spatial structure of the
 data and to assess whether the INLA model with non-informative priors
 appropriately accounts for spatial autocorrelation.
 
-```{r warning=FALSE}
+```{r echo=FALSE, warning=FALSE}
 # Fit variogram snow
 vario_snow <- as_Spatial(input.data) %>% as("SpatialPointsDataFrame") %>%
   variogram(snow.auc ~ 1, data = ., cutoff = 130, width = 10)
@@ -752,7 +750,9 @@ model_matern <- inla(formula = formula_matern,
 summary(model_matern)
 ```
 
-[Type out summary of model here]
+The credible interval does not overlap with zero, or, given the data and
+model the 95% interval of the posterior distribution indicates a
+positive slope with a mean of 0.408.
 
 Let's retrieve the fitted values and marginal predictions.
 
@@ -769,7 +769,7 @@ Produce variograms to better understand the spatial structure of the
 data and to assess whether the INLA model with non-informative priors
 appropriately accounts for spatial autocorrelation.
 
-```{r warning=FALSE}
+```{r echo=FALSE, warning=FALSE}
 # Fit variogram snow
 vario_snow <- as_Spatial(input.data) %>% as("SpatialPointsDataFrame") %>%
   variogram(snow.auc ~ 1, data = ., cutoff = 130, width = 10)
@@ -1054,7 +1054,9 @@ model_matern <- inla(formula = formula_matern,
 summary(model_matern)
 ```
 
-[Type out summary of model here]
+The credible interval does not overlap with zero, or, given the data and
+model the 95% interval of the posterior distribution indicates a
+positive slope with a mean of 1.399.
 
 Let's retrieve the fitted values and marginal predictions.
 
@@ -1188,11 +1190,10 @@ ggplot(data = input.data) +
 
 ```
 
-The fitted values (blue) are very close to the observed values (red).
-Suggesting that the model (including the spatial random effect) does
-manage to account for a lot of the variation in the data (very good!).
-The fitted slope and intercept seem both reasonable given the observed
-data.
+Something odd is happening here - I think the spatial effect is failing
+to fit and the result is that the model does not account for the spatial
+structure of the data. n_row and n_col are correct for the data, it may
+be that the mean number of nodes (7.8) is too large?
 
 Let's have a look at how the predictions are distributed in space:
 
@@ -1224,7 +1225,7 @@ residuals and whether these follow a Gaussian distribution (as assumed).
 ```{r fig.height = 7, fig.width = 7}
 # Graph residuals as histogram and in space
 plot_grid(ggplot(input.data) +
-  geom_histogram(aes(x = residuals), bins = 50) +
+  geom_histogram(aes(x = residuals), bins = 20) +
   labs(x = "residuals") +
   theme_cowplot(),
 ggplot() +
