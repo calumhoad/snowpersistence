@@ -70,6 +70,55 @@ s30.bl <- read_csv('../../data/combined-ndvi-snow/s30-bl-smooth-joined.csv',
 
 # Blaesedalen, Sentinel-2
 
+## Subset data at 0 and 5 snow.auc, to remove bias from inflation induced by measurement method
+
+The Blaesedalen S2 data contains a bias induced by the measurement
+method, with significant inflation of snow.auc values at 0 and 5. Values
+of 0 represent pixels which never had any snow in them at any point in
+the period of observation, while values of 5 represent pixels which
+contained 100% fractional snow cover at the first observation and 0%
+fractional snow cover at the second observation. In reality,
+observations with a snow.auc of 5 would be distributed between values of
+0 and 5, and many of the observations of 0 snow.auc would have negative
+values. To reduce the bias created by the inflation of 0 and 5 values,
+we will try subsampling observations of 0 and 5 to an observation
+density similar to that of the other snow.auc values.
+
+Find density
+
+```{r}
+# Histogram without filtering
+ggplot() +
+  geom_histogram(data = s2.bl, aes(x = snow.auc), binwidth = 1)
+
+```
+
+It seems like the other snow.auc bins in the range 0-5 have
+approximately 75 observations each. Sample the data in the 0-1 and 4-5
+ranges to have only 75 obs each.
+
+```{r}
+# 0-1
+zero <- s2.bl %>% filter(snow.auc < 1) %>%
+  sample_n(size = 75, replace = FALSE)
+
+# 4-5
+five <- s2.bl %>% filter(snow.auc > 4 & snow.auc <= 5) %>%
+  sample_n(size = 75, replace = FALSE)
+
+# Put the data back together
+s2.bl.balanced <- s2.bl %>% filter(snow.auc > 1) %>%
+  filter(snow.auc < 4 | snow.auc >= 6)
+
+s2.bl.balanced <- rbind(zero, five, s2.bl.balanced)
+
+s2.bl.balanced <- s2.bl %>% filter(snow.auc >= 1) %>% filter(snow.auc < 4 | snow.auc >= 6)
+
+# Hist
+ggplot() +
+  geom_histogram(data = s2.bl.balanced, aes(x = snow.auc), binwidth = 1)
+```
+
 ## Prepare "node" vector for INLA matern2d model
 
 INLA nodes are arranged as sequential numbers where numbers ascend
@@ -87,7 +136,7 @@ cells no accounted for.
 
 ```{r fig.height = 7, fig.width = 7}
 # Calculate row and col_numbers
-input.data <- s2.bl %>% 
+input.data <- s2.bl.balanced %>% 
   # Calculate min X and max >
   mutate(min_x = min(.$X),
          max_y = max(.$Y)) %>%
@@ -150,6 +199,7 @@ now.
 ```{r fit_INLA_s2.bl}
 # Specify formula
 formula_matern <- ndvi.max ~ snow.auc +
+                  #f(I(snow.auc^2)) +
                   f(node, 
                     model = "matern2d", 
                     nrow = n_row,
@@ -454,10 +504,9 @@ model_matern <- inla(formula = formula_matern,
 summary(model_matern)
 ```
 
-**Jakob's summary:**
-The credible interval does not overlap with zero, or, given the data and
-model the 95% interval of the posterior distribution indicates a
-negative slope with a mean of -0.003.
+**Jakob's summary:** The credible interval does not overlap with zero,
+or, given the data and model the 95% interval of the posterior
+distribution indicates a negative slope with a mean of -0.003.
 
 Let's retrieve the fitted values and marginal predictions.
 
@@ -1109,7 +1158,7 @@ vario.doy <- ggplot(data = vario_doy) +
     labs(x = "lag distance (m)", y = "ndvi.max") +
     theme_cowplot() +
     theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
+vario.doy
 # LM residuals variogram
 
 # Fit variogram linear model
