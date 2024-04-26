@@ -11,6 +11,7 @@ library(broom)
 library(INLA)
 library(rlang)
 library(stargazer)
+library(ggnewscale)
 
 # Functions ----
 ## Helper function to generate INLA grid
@@ -431,7 +432,7 @@ kh <- fit_plot(s2.kh_fit, s2.kh, 10,
 
 # Create panel plot
 top <- plot_grid(kl, kh, ncol = 2, align = 'h')
-bottom <- plot_grid(bl, bl, ncol = 2, align = 'h')
+bottom <- plot_grid(bl, time.plot, ncol = 2, align = 'h')
 combined <- plot_grid(top, bottom, nrow = 2, align = 'v')
 
 #Check the plot
@@ -454,3 +455,57 @@ s30.bl.plot
 cowplot::save_plot('../../plots/figures/figure-5-ndvimaxdoy.png', s30.bl.plot, 
                    base_height = 70, base_width = 90, units = 'mm', 
                    bg = 'white')
+
+# Create panel (d) visualising imagery dates
+bl.dates <- c('2023-07-02', '2023-07-12', '2023-07-18', '2023-07-26')
+kl.dates <- c('2022-06-29', '2022-07-05', '2022-07-18', '2022-08-01', '2022-08-14')
+kh.dates <- c('2022-07-09', '2022-07-19', '2022-07-29', '2022-08-04', '2022-08-13')
+
+bl.dates.df <- tibble(bl.dates) %>% mutate(site = 'BL') %>% rename(date ='bl.dates')
+kl.dates.df <- tibble(kl.dates) %>% mutate(site = 'KL') %>% rename(date = 'kl.dates')
+kh.dates.df <- tibble(kh.dates) %>% mutate(site = 'KH') %>% rename(date = 'kh.dates')
+
+imagery.dates <- rbind(bl.dates.df, kl.dates.df, kh.dates.df) %>%
+  mutate(date = date(date)) %>%
+  mutate(date.no_year = format(date, '%m-%d'))
+
+time.plot <- ggplot() +
+  geom_vline(xintercept = 182, linetype = 'solid', alpha = 0.2) +
+  geom_vline(xintercept = 213, linetype = 'solid', alpha = 0.2) +
+  geom_line(data = imagery.dates, aes(x = yday(date), y = site, group = site, colour = site),
+            linewidth = 2) +
+  geom_point(data = imagery.dates, aes(x = yday(date), y = site, group = site, colour = site), 
+             size = 4) +
+  scale_color_manual(values = c('#4984BF', '#F5A40C', '#F23835'), breaks = c('BL', 'KL', 'KH')) +
+  new_scale_colour() +
+  geom_point(data = imagery.dates, aes(x = yday(date), y = site, group = site, colour = site), 
+             size = 2) +
+  scale_color_manual(values = c('#BECBE7', '#FBCA7F', '#F29580'), breaks = c('BL', 'KL', 'KH')) +
+  scale_x_continuous(breaks = c(182, 189, 196, 203, 210, 213, 217, 224),
+                    labels = c('1\nJuly', '8', '15', '22', '29',
+                               '\nAugust', '5', '12')) +
+  ylab('') +
+  xlab('Date') +
+  theme_cowplot() +
+  theme(legend.position = 'none', 
+        axis.text.y = element_blank(), 
+        axis.ticks.y = element_blank()) 
+
+bl <- fit_plot(s2.bl_fit, s2.bl, 10, 
+               colour.site = '#4984BF', 
+               colour.darker = '#2E5277',
+               colour.lighter = '#9BB2DA',
+               colour.lightest = '#BECBE7', 
+               ymax = 240, ymin = 215)
+kl <- fit_plot(s2.kl_fit, s2.kl, 10, 
+               colour.site = '#F5A40C', 
+               colour.darker = '#946606',
+               colour.lighter = '#FBCA7F',
+               colour.lightest = '#FDDCAC', 
+               ymax = 235, ymin = 210)
+kh <- fit_plot(s2.kh_fit, s2.kh, 10, 
+               colour.site = '#F23835', 
+               colour.darker = '#8D271E',
+               colour.lighter = '#F29580',
+               colour.lightest = '#F8BBAA', 
+               ymax = 235, ymin = 210)
