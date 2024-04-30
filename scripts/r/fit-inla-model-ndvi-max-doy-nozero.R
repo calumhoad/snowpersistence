@@ -319,35 +319,38 @@ write_csv(s30.bl.sensitivity, "../../data/statistical-output/s30-BL-ndvi-doy-pri
 #### Now remove all model data on the hard drive!!! (do that manually for safety)
 #list.dirs() 
 
+# Try removing 0 values from the data, see effect on models
+s2.bl.gt0 <- s2.bl %>% filter(snow.auc > 0)
+
 # Fit final models ----
 s2.bl_fit <- fit_matern(scale_param = 0.01,
                         shape_param = 1,
                         range_site = ranges_df$range[1], 
-                        site_data = s2.bl,
+                        site_data = s2.bl.gt0,
                         return_model = T)
 s2.kl_fit <- fit_matern(scale_param = 0.01,
                         shape_param = 1,
                         range_site = ranges_df$range[2], 
-                        site_data = s2.kl,
+                        site_data = s2.kl %>% filter(snow.auc > 0),
                         return_model = T)
 s2.kh_fit <- fit_matern(scale_param = 0.01,
                         shape_param = 1,
                         range_site = ranges_df$range[3], 
-                        site_data = s2.kh,
+                        site_data = s2.kh %>% filter(snow.auc > 0),
                         return_model = T)
 s30.bl_fit <- fit_matern(scale_param = 0.01,
                          shape_param = 1,
                          range_site = ranges_df$range[4], 
-                         site_data = s30.bl,
+                         site_data = s30.bl %>% filter(snow.auc > 0),
                          return_model = T)
 
 ### Visualise results
 
 # Plot results for all models
-plot_results(s2.bl_fit, s2.bl, 10)
-plot_results(s2.kl_fit, s2.kl, 10)
-plot_results(s2.kh_fit, s2.kh, 10)
-plot_results(s30.bl_fit, s30.bl, 30)
+plot_results(s2.bl_fit, s2.bl.gt0, 10)
+plot_results(s2.kl_fit, s2.kl %>% filter(snow.auc > 0), 10)
+plot_results(s2.kh_fit, s2.kh %>% filter(snow.auc > 0), 10)
+plot_results(s30.bl_fit, s30.bl %>% filter(snow.auc > 0), 30)
 
 
 # S2 KH has a very low intercept compared with the data,
@@ -412,19 +415,19 @@ fit_plot <- function(model_matern, site_data, grid.size,
   return(fit_plot)
 }
 
-bl <- fit_plot(s2.bl_fit, s2.bl, 10, 
+bl <- fit_plot(s2.bl_fit, s2.bl %>% filter(snow.auc > 0), 10, 
                colour.site = '#4984BF', 
                colour.darker = '#2E5277',
                colour.lighter = '#9BB2DA',
                colour.lightest = '#BECBE7', 
                ymax = 240, ymin = 215)
-kl <- fit_plot(s2.kl_fit, s2.kl, 10, 
+kl <- fit_plot(s2.kl_fit, s2.kl %>% filter(snow.auc > 0), 10, 
                colour.site = '#F5A40C', 
                colour.darker = '#946606',
                colour.lighter = '#FBCA7F',
                colour.lightest = '#FDDCAC', 
                ymax = 235, ymin = 210)
-kh <- fit_plot(s2.kh_fit, s2.kh, 10, 
+kh <- fit_plot(s2.kh_fit, s2.kh %>% filter(snow.auc > 0), 10, 
                colour.site = '#F23835', 
                colour.darker = '#8D271E',
                colour.lighter = '#F29580',
