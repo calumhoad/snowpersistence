@@ -58,6 +58,7 @@ rsconnect/
 imagery/
 kluane/
 landsat-imagery/
+met-data/
 
 # Illustrator
 *.ai
