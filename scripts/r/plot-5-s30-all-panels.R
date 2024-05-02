@@ -333,19 +333,20 @@ fit_plot_max <- function(model_matern, site_data, grid.size,
 }
 
 # Function to generate curves plot, as per fig 2
-plot_data_fig2 <- function(data, rectangle.top) {
+plot_data_fig2 <- function(data, rectangle.top, rug.alpha, line.width) {
   
   av.snow <- data %>% 
     filter(row_number() == 7) %>%
     group_by(ndvi.max.doy) %>%
     mutate(ndvi.max.doy.mean.snow = mean(snow.auc)) %>%
+    filter(row_number() == 1) %>%
     ungroup()
   
   ggplot() +
     geom_rect(aes(xmin = (min(data$ndvi.max.doy) - 0.5), xmax = (max(data$ndvi.max.doy) + 0.5), 
                   ymin = -0.1, ymax = rectangle.top), fill = "grey", alpha = 0.2) +
     geom_rug(data = av.snow, sides = "t", inherit.aes = TRUE, length = unit(0.1, 'npc'), #position = 'jitter',
-             aes(x = ndvi.max.doy, y = 0.05, color = ndvi.max.doy.mean.snow, linewidth = 0.01, alpha = 0.3)) +
+             aes(x = ndvi.max.doy, y = 0.05, color = ndvi.max.doy.mean.snow), linewidth = line.width, alpha = rug.alpha) +
     #geom_bar(data = av.snow, aes(x = ndvi.max.doy, y = 0.1, colour = ndvi.max.doy.mean.snow), alpha = 0.3) +
     geom_line(data = data, 
               aes(x = doy, y = ndvi.pred, group = id), colour = 'white',
@@ -438,7 +439,7 @@ s30.bl_doy_plot <- fit_plot_doy(s30.bl_doy_fit, s30.bl, 10,
 s30.bl_max_plot
 s30.bl_doy_plot
 
-s30.fig2 <- plot_data_fig2(s30.bl.full, rectangle.top = 0.845)
+s30.fig2 <- plot_data_fig2(s30.bl.full, rectangle.top = 0.845, rug.alpha = 10, line.width = 1.5)
 s30.fig2
 
 # Maps
@@ -473,3 +474,8 @@ bottom <- plot_grid(s30.fig2, fits, ncol = 2)
 full.fig <- plot_grid(maps, bottom, nrow = 2)
 
 full.fig
+
+# Save plots
+cowplot::save_plot('../../plots/figures/figure-5-revised.png', full.fig, 
+                   base_height = 200, base_width = 180, units = 'mm', 
+                   bg = 'white')
