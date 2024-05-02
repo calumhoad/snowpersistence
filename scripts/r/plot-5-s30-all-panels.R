@@ -13,6 +13,8 @@ library(INLA)
 library(rlang)
 library(stargazer)
 library(ggnewscale)
+library(tidyterra)
+library(terra)
 
 # Functions ----
 ## Helper function to generate INLA grid
@@ -331,36 +333,20 @@ fit_plot_max <- function(model_matern, site_data, grid.size,
 }
 
 # Function to generate curves plot, as per fig 2
-plot_data_fig2 <- function(data) {
+plot_data_fig2 <- function(data, rectangle.top, rug.alpha, line.width) {
   
-  #data <- data %>%
-  # group_by(id) %>%
-  #arrange(snow.auc)
   av.snow <- data %>% 
     filter(row_number() == 7) %>%
     group_by(ndvi.max.doy) %>%
     mutate(ndvi.max.doy.mean.snow = mean(snow.auc)) %>%
+    filter(row_number() == 1) %>%
     ungroup()
-  
-  # earliest <- data %>% filter(row_number() == 7) %>% 
-  #   ungroup() %>%
-  #   filter(snow.auc == min(snow.auc)) %>%
-  #   sample_n(1)
-  # 
-  # highest <- data %>% filter(row_number() == 7) %>%
-  #   ungroup() %>%
-  #   filter(snow.auc == max(snow.auc)) %>%
-  #   sample_n(1)
-  # 
-  # latest <- data %>% filter(row_number() == 7) %>%
-  #   ungroup() %>%
-  #   filter(ndvi.max.doy == max(ndvi.max.doy))
   
   ggplot() +
     geom_rect(aes(xmin = (min(data$ndvi.max.doy) - 0.5), xmax = (max(data$ndvi.max.doy) + 0.5), 
-                  ymin = -0.1, ymax = 0.751), fill = "grey", alpha = 0.2) +
+                  ymin = -0.1, ymax = rectangle.top), fill = "grey", alpha = 0.2) +
     geom_rug(data = av.snow, sides = "t", inherit.aes = TRUE, length = unit(0.1, 'npc'), #position = 'jitter',
-             aes(x = ndvi.max.doy, y = 0.05, color = ndvi.max.doy.mean.snow, linewidth = 0.01, alpha = 0.3)) +
+             aes(x = ndvi.max.doy, y = 0.05, color = ndvi.max.doy.mean.snow), linewidth = line.width, alpha = rug.alpha) +
     #geom_bar(data = av.snow, aes(x = ndvi.max.doy, y = 0.1, colour = ndvi.max.doy.mean.snow), alpha = 0.3) +
     geom_line(data = data, 
               aes(x = doy, y = ndvi.pred, group = id), colour = 'white',
@@ -383,44 +369,14 @@ plot_data_fig2 <- function(data) {
           y = '') +
     scale_x_continuous(breaks = c(200, 225, 250),
                        labels = c('200', '225', '250')) +
-    scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6), 
-                       labels = c('0', '0.2', '0.4', '0.6')) +
+    scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8), 
+                       labels = c('0', '0.2', '0.4', '0.6', '0.8')) +
     # xlim(c(175, 260)) +
     #  ylim(c(0, 0.6)) +
     coord_cartesian(xlim = c(180, 250), ylim = c(0, 0.9)) + # 175, 260
     theme_cowplot() +
     theme(legend.position = 'none')
   
-  # Preprocess data: Round ndvi to nearest 0.1 and doy to nearest 1
-  # data$ndvi_rounded <- as.factor(round(data$ndvi.max * 100) / 100)
-  # data$ndvi.max.doy <- as.factor(data$ndvi.max.doy)
-  
-  # Calculate average snow.auc for each bin
-  # df_bins <- data %>%
-  #   group_by(ndvi_rounded, ndvi.max.doy) %>%
-  #   summarise(avg_snow_auc = mean(snow.auc, na.rm = TRUE),
-  #             n_peaks = n())
-  
-  
-  # bottom <-   ggplot(df_bins, aes(x = ndvi.max.doy, y = ndvi_rounded, fill = avg_snow_auc)) +
-  #   geom_bin2d(binwidth = c(1, 0.01)) +
-  #   #geom_point(data = s2.bl, aes(x = ndvi.max.doy, y = ndvi.max, colour = snow.auc), alpha = 0.3, size = 2) + 
-  #   scale_fill_gradientn(colors = c('#ccebc5','#a8ddb5','#7bccc4','#4eb3d3','#2b8cbe','#0868ac','#084081')) +
-  #   scale_alpha_continuous(range = c(0.2, 1)) +
-  #   #scale_x_discrete(limits = factor(210, 240)) +
-  #   #scale_y_continuous(breaks = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6)) +
-  #   labs(x = "", y = "", fill = "", alpha = "") +
-  #   #coord_cartesian(xlim = c(180, 250), ylim = c(0, 0.6)) +
-  #   theme_cowplot() +
-  #   theme(legend.position = 'none') 
-  # 
-  # 
-  # plot_grid(top, bottom, nrow = 2, align = 'v')
-  # 
-  # aligned_plots <- align_plots(top, bottom, align = "v", axis = "b")
-  # 
-  # # Arrange plots
-  # plot_grid(aligned_plots[[1]], aligned_plots[[2]], ncol = 1, align = 'v')
 }
 
 # Load in data----
@@ -434,9 +390,17 @@ s30.bl <- read_csv('../../data/combined-ndvi-snow/s30-bl-smooth-joined.csv',
 
 s30.bl.full <- read_csv('../../data/combined-ndvi-snow/s30-bl-smooth-joined.csv',
                                  show_col_types = FALSE) %>%
-  st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32621) %>%
   group_by(id) %>%
   drop_na(ndvi.max)
+
+# Sentinel-2 Blaesedalen data for map plots
+s2.bl <- read_csv('../../data/combined-ndvi-snow/s2-bl-smooth-joined.csv',
+                  show_col_types = FALSE) %>%
+  st_as_sf(coords = c('X', 'Y'), remove = F, crs = 32621) %>%
+  group_by(id) %>%
+  filter(row_number() == 7) %>%
+  ungroup()
 
 # Add INLA grid to df
 s30.bl <- get_inla_grid(s30.bl, grid.size = 30)
@@ -475,5 +439,43 @@ s30.bl_doy_plot <- fit_plot_doy(s30.bl_doy_fit, s30.bl, 10,
 s30.bl_max_plot
 s30.bl_doy_plot
 
-s30.fig2 <- plot_data_fig2(s30.bl.full)
+s30.fig2 <- plot_data_fig2(s30.bl.full, rectangle.top = 0.845, rug.alpha = 10, line.width = 1.5)
 s30.fig2
+
+# Maps
+s30.doy.map <- ggplot() +
+  geom_sf(data = st_buffer(s30.bl, 15, endCapStyle = "SQUARE"), aes(fill = ndvi.max.doy)) +
+  scale_fill_viridis_c() +
+  theme_void() +
+  theme(legend.position = 'None')
+
+s2.doy.map <- ggplot() +
+  geom_sf(data = st_buffer(s2.bl, 5, endCapStyle = "SQUARE"), aes(fill = ndvi.max.doy)) +
+  scale_fill_viridis_c() +
+  theme_void() +
+  theme(legend.position = 'None')
+
+s2.snow.map <- ggplot() +
+  geom_sf(data = st_buffer(s2.bl, 5, endCapStyle = "SQUARE"), aes(fill = snow.auc)) +
+  scale_fill_gradientn(colors = c('#ccebc5','#7bccc4','#4eb3d3','#2b8cbe','#0868ac','#084081')) +
+  theme_void() +
+  theme(legend.position = 'None')
+  
+            
+
+# Combine plots
+maps <- plot_grid(s2.doy.map, s2.snow.map, s30.doy.map, ncol = 3, align = 'h')
+maps
+
+fits <- plot_grid(s30.bl_max_plot, s30.bl_doy_plot, nrow = 2, align = 'v')
+
+bottom <- plot_grid(s30.fig2, fits, ncol = 2)
+
+full.fig <- plot_grid(maps, bottom, nrow = 2)
+
+full.fig
+
+# Save plots
+cowplot::save_plot('../../plots/figures/figure-5-revised.png', full.fig, 
+                   base_height = 200, base_width = 180, units = 'mm', 
+                   bg = 'white')

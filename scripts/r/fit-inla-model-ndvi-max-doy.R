@@ -436,16 +436,6 @@ top <- plot_grid(kl, kh, ncol = 2, align = 'h')
 bottom <- plot_grid(bl, time.plot, ncol = 2, align = 'h')
 combined <- plot_grid(top, bottom, nrow = 2, align = 'v')
 
-combined.2 <- plot_grid(kl, kh, bl, time.plot, ncol = 2, nrow = 2, align = 'hv')
-combined.2
-#Check the plot
-combined 
-
-# Save plots
-cowplot::save_plot('../../plots/figures/figure-4-inla.png', combined.2, 
-                   base_height = 140, base_width = 180, units = 'mm', 
-                   bg = 'white')
-
 # S30 plots
 s30.bl.plot <- fit_plot(s30.bl_fit, s30.bl, 10, 
                         colour.site = '#4984BF', 
@@ -512,3 +502,14 @@ kh <- fit_plot(s2.kh_fit, s2.kh, 10,
                colour.lighter = '#F29580',
                colour.lightest = '#F8BBAA', 
                ymax = 235, ymin = 210)
+
+# Plot out the full panel
+combined.2 <- plot_grid(kl, kh, bl, time.plot, ncol = 2, nrow = 2, align = 'hv')
+combined.2
+#Check the plot
+combined 
+
+# Save plots
+cowplot::save_plot('../../plots/figures/figure-4-inla.png', combined.2, 
+                   base_height = 140, base_width = 180, units = 'mm', 
+                   bg = 'white')
