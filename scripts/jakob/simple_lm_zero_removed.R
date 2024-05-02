@@ -7,7 +7,7 @@ library(sf)
 library(ggplot2)
 library(cowplot)
 library(pbapply)
-library(inla)
+library(INLA)
 library(gt)
 
 
@@ -210,14 +210,14 @@ ndvi_max_plots_ln <- map(data_list, function(site_data){
                     colour = unique(site_data$colour),
                    fill = unique(site_data$colour)) +
         labs(x = "snow persistence", y = "ndvi.max", 
-             title = paste0(unique(site_data$site), " (lm y ~ ln(x + 1), no 0s)")) 
+             title = paste0(unique(site_data$site), " (lm y ~ ln(x + 1))")) 
     } else {
       lm_plot <- lm_plot +
         geom_smooth(method = "lm", formula = y ~ x, 
                     colour = unique(site_data$colour),
                     fill = unique(site_data$colour)) +
         labs(x = "snow persistence", y = "ndvi.max", 
-            title = paste0(unique(site_data$site), " (lm y ~ x, no 0s)")) 
+            title = paste0(unique(site_data$site), " (lm y ~ x)")) 
     }
     return(lm_plot)
 })
@@ -237,14 +237,14 @@ max_doy_plots_ln <- map(data_list, function(site_data){
                     colour = unique(site_data$colour),
                    fill = unique(site_data$colour)) +
         labs(x = "snow persistence", y = "ndvi.max.doy", 
-             title = paste0(unique(site_data$site), " (lm y ~ ln(x + 1), no 0s)")) 
+             title = paste0(unique(site_data$site), " (lm y ~ ln(x + 1))")) 
     } else {
       lm_plot <- lm_plot +
         geom_smooth(method = "lm", formula = y ~ x, 
                     colour = unique(site_data$colour),
                     fill = unique(site_data$colour)) +
         labs(x = "snow persistence", y = "ndvi.max.doy", 
-            title = paste0(unique(site_data$site), " (lm y ~ x, no 0s)")) 
+            title = paste0(unique(site_data$site), " (lm y ~ x)")) 
     }
     return(lm_plot)
 })
@@ -344,10 +344,107 @@ max_doy_plots_ln_no <- map(data_list, function(site_data){
     }
     return(lm_plot)
 })
-plot_grid(plotlist = max_doy_plots_ln_np, 
+plot_grid(plotlist = max_doy_plots_ln_no, 
           labels = paste0("(", letters[1:4], ")"),
           label_size = 18)  %>%
     save_plot("no_zero_max_doy_plots_lm_kh-ln.png", ., nrow = 2, ncol = 2, bg = "white")
+
+# Generate lm plots with separate zeros for nvdi.max and log link of kh
+ndvi_max_plots_ln_zero_mean <- map(data_list, function(site_data){
+    zeros <- filter(site_data, snow.auc == 0)
+    if(unique(site_data$site) == "S2 BL") zeros <- filter(site_data, snow.auc <= 5)
+    site_data <- filter(site_data, snow.auc != 0)
+    if(unique(site_data$site) == "S2 BL") site_data <- filter(site_data, snow.auc > 5)
+    lm_plot <- ggplot(site_data, aes(x = snow.auc, y = ndvi.max)) +
+        geom_point(colour = unique(site_data$colour)) +
+        theme_cowplot()
+    if (unique(site_data$site) == "S2 KH") {
+      lm_plot <- lm_plot +
+        geom_smooth(
+          method = "lm", formula = y ~ log(x),
+          colour = unique(site_data$colour),
+          fill = unique(site_data$colour)
+        ) +
+        labs(
+          x = "snow persistence", y = "ndvi.max",
+          title = paste0(unique(site_data$site), " (lm y ~ ln(x), 0s as mean and CI)")
+        )
+    } else {
+      lm_plot <- lm_plot +
+        geom_smooth(
+          method = "lm", formula = y ~ x,
+          colour = unique(site_data$colour),
+          fill = unique(site_data$colour)
+        ) +
+        labs(
+          x = "snow persistence", y = "ndvi.max",
+          title = paste0(unique(site_data$site), " (lm y ~ x, 0s as mean and CI)")
+        )
+    } 
+    # Add zeros and st
+    zero_mean <- lm(ndvi.max ~ 1, zeros)
+    lm_plot <- lm_plot +
+      annotate("point", x = (max(zeros$snow.auc) - min(zeros$snow.auc))/2, 
+                y = coef(zero_mean)[1], colour = "green") +
+      annotate("errorbar", x = (max(zeros$snow.auc) - min(zeros$snow.auc))/2, 
+                ymin = coef(zero_mean)[1] - predict(zero_mean, se = T)$se[1],
+                ymax = coef(zero_mean)[1] + predict(zero_mean, se = T)$se[1], colour = "green")     # Update captions for S2 BL
+        if (unique(site_data$site) == "S2 BL") lm_plot <- lm_plot +
+        labs(title = paste0(unique(site_data$site), " (lm y ~ x, 0-5 as mean and CI)")) +
+        scale_x_continuous(limits = c(0, 12), breaks = seq(0,12,2))
+    return(lm_plot)
+})
+plot_grid(plotlist = ndvi_max_plots_ln_zero_mean, 
+          labels = paste0("(", letters[1:4], ")"),
+          label_size = 18)  %>%
+    save_plot("sep_zero_ndvi_max_plots_lm_kh-ln.png", ., nrow = 2, ncol = 2, bg = "white")
+
+# Generate lm plots with separate zeros for nvdi.max.doy and log link of kh
+max_doy_plots_ln_zero_mean <- map(data_list, function(site_data){
+    zeros <- filter(site_data, snow.auc == 0)
+    site_data <- filter(site_data, snow.auc != 0)
+    lm_plot <- ggplot(site_data, aes(x = snow.auc, y = ndvi.max.doy)) +
+        geom_point(colour = unique(site_data$colour)) +
+        theme_cowplot()
+    if (unique(site_data$site) == "S2 KH") {
+      lm_plot <- lm_plot +
+        geom_smooth(
+          method = "lm", formula = y ~ log(x),
+          colour = unique(site_data$colour),
+          fill = unique(site_data$colour)
+        ) +
+        labs(
+          x = "snow persistence", y = "ndvi.max.doy",
+          title = paste0(unique(site_data$site), " (lm y ~ ln(x), 0s as mean and CI)")
+        )
+    } else {
+      lm_plot <- lm_plot +
+        geom_smooth(
+          method = "lm", formula = y ~ x,
+          colour = unique(site_data$colour),
+          fill = unique(site_data$colour)
+        ) +
+        labs(
+          x = "snow persistence", y = "ndvi.max.doy",
+          title = paste0(unique(site_data$site), " (lm y ~ x, 0s as mean and CI)")
+        )
+    } 
+    # Add zeros and st
+    zero_mean <- lm(ndvi.max.doy ~ 1, zeros)
+    lm_plot <- lm_plot +
+      annotate("point", x = (max(zeros$snow.auc) - min(zeros$snow.auc))/2, 
+                y = coef(zero_mean)[1], colour = "green") +
+      annotate("errorbar", x = (max(zeros$snow.auc) - min(zeros$snow.auc))/2, 
+                ymin = coef(zero_mean)[1] - predict(zero_mean, se = T)$se[1],
+                ymax = coef(zero_mean)[1] + predict(zero_mean, se = T)$se[1], colour = "green") 
+    return(lm_plot)
+})
+plot_grid(plotlist = max_doy_plots_ln_zero_mean, 
+          labels = paste0("(", letters[1:4], ")"),
+          label_size = 18)  %>%
+    save_plot("sep_zero_max_doy_plots_lm_kh-ln.png", ., nrow = 2, ncol = 2, bg = "white")
+
+
 
 # Helper function to generate INLA grid
 get_inla_grid <- function(snow.auc_df){
