@@ -476,6 +476,6 @@ full.fig <- plot_grid(maps, bottom, nrow = 2)
 full.fig
 
 # Save plots
-cowplot::save_plot('../../plots/figures/figure-5-revised.png', full.fig, 
-                   base_height = 200, base_width = 180, units = 'mm', 
-                   bg = 'white')
+cowplot::save_plot('../../plots/figures/figure-5-revised-transp.png', full.fig, 
+                   base_height = 200, base_width = 180, units = 'mm')#, 
+                   #bg = 'white')
