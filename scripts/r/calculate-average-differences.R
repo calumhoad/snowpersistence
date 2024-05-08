@@ -60,20 +60,24 @@ lower <- function(data) {
   data <- data %>% filter(snow.auc <= lower.quartile)
 }
 
+# Calculate the difference between the average for the upper and lower quartile
 bl.max.diff <- (mean(lower(s2.bl)$ndvi.max) - mean(upper(s2.bl)$ndvi.max))
 bl.max.diff
 kl.max.diff <- (mean(lower(s2.kl)$ndvi.max) - mean(upper(s2.kl)$ndvi.max))
 kl.max.diff
 kh.max.diff <- (mean(lower(s2.kh)$ndvi.max) - mean(upper(s2.kh)$ndvi.max))
 kh.max.diff
+# Average the difference between all plots
 all.max.mean <- mean(c(bl.max.diff, kl.max.diff, kh.max.diff))
 all.max.mean
 
+# Calculate the difference between the average for the upper and lower quartile
 bl.doy.diff <- (mean(lower(s2.bl)$ndvi.max.doy) - mean(upper(s2.bl)$ndvi.max.doy))
 bl.doy.diff
 kl.doy.diff <- (mean(lower(s2.kl)$ndvi.max.doy) - mean(upper(s2.kl)$ndvi.max.doy))
 kl.doy.diff
 kh.doy.diff <- (mean(lower(s2.kh)$ndvi.max.doy) - mean(upper(s2.kh)$ndvi.max.doy))
 kh.doy.diff
+# Average the difference between all plots
 all.doy.mean <- mean(c(bl.doy.diff, kl.doy.diff, kh.doy.diff))
 all.doy.mean
