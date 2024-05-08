@@ -92,9 +92,9 @@ kh <- plot_data(s2.kh, line.width = 0.8, rug.alpha = 10, rectangle.top = 0.749)
 #kh
 
 combined.plots <- plot_grid(#logo.plot,
-                            bl,
                             kl,
                             kh,
+                            bl,
                             ncol = 3,
                             align = 'h',
                             labels = c('(a)', '(b)', '(c)'))
@@ -102,4 +102,4 @@ combined.plots <- plot_grid(#logo.plot,
 
 # output the plot
 
-cowplot::save_plot('../../plots/figures/figure-2-r-output.png', combined.plots, base_height = 80, base_width = 180, units = 'mm', bg = 'white')
+cowplot::save_plot('../../plots/figures/figure-2-r-output-klkhbl.png', combined.plots, base_height = 80, base_width = 180, units = 'mm', bg = 'white')
