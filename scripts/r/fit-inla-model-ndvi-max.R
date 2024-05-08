@@ -10,6 +10,7 @@ library(pbapply)
 library(broom)
 library(INLA)
 library(rlang)
+library(gstat)
 
 # Functions ----
 ## Helper function to generate INLA grid
