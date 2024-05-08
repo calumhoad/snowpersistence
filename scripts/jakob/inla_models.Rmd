@@ -115,12 +115,17 @@ pixels in a way that INLA can understand.
 Next, we fit a super simple INLA model, not worrying about priors for now. 
 
 ```{r fit_INLA}
+# Specify priors for hyperparemeter
+log.range = list (initial = log(6), fixed = FALSE)
+hyperpar_matern = list(initial = 2, param = c(50,0.001))
 # Specify formula
 formula_matern <- ndvi.max ~ snow.auc +
                   f(node, 
                     model = "matern2d", 
                     nrow = n_row,
-                    ncol = n_col)
+                    ncol = n_col,
+                    hyper = list(range = log.range,
+                                 prec = hyperpar_matern))
 # Fit model
 model_matern <- inla(formula = formula_matern, 
                      data = kl_data,
@@ -153,8 +158,8 @@ Let's retrieve the fitted values and marginal predictions.
 kl_data$preds <- model_matern$summary.fixed[1,1] + 
                  kl_data$snow.auc * model_matern$summary.fixed[2,1]
 # Add model fitted values and residuals to data frame
-kl_data$fitted <- model_matern$summary.linear.predictor$mean
-kl_data$residuals <- kl_data$ndvi.max - model_matern$summary.linear.predictor$mean
+kl_data$fitted <- model_matern$summary.fitted.values$mean
+kl_data$residuals <- kl_data$ndvi.max - kl_data$fitted
 ```
 
 Graph fitted values and marginal predictions.
