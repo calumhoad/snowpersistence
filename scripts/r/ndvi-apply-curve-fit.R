@@ -145,7 +145,7 @@ st_write(st_as_sf(s30.bl.smooth), '../../data/ndvi/s30-bl-smooth.csv',
 
 # Plot out the data for comparison of model fit ----
 # 100 random pixels overview
-plot.data <- s30.bl.smooth
+plot.data <- s2.bl.smooth
 
 ggplot(
   plot.data %>% filter(id %in% sample(unique(plot.data$id), 100)),
@@ -160,7 +160,7 @@ ggplot(
 rand_id <- sample(plot.data %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
 
 # For one model
-plot.data <- s30.bl.smooth # Which model?
+plot.data <- s2.bl.smooth # Which model?
 
 ggplot(
   plot.data %>% filter(id %in% rand_id),
@@ -212,8 +212,42 @@ ggplot() +
   theme_cowplot() +
   theme(legend.position = "none")  # Remove legend
 
+# Check effect of snow present in pixels on curve fitting ----
+
+# Bring in the snow data
+# Snow data
+s2.bl.snow <- read.csv('../../data/snow/snow-cover-10m-blaesedalen.csv')
+
+# Join data
+s2.bl.joined <- left_join(s2.bl.smooth, s2.bl.snow, by = 'id') %>%
+  drop_na(snow.auc) %>% # drop pixel ids for which we have no snow data
+  # Create var for latest observed snow cover
+  mutate(latest.snow = ifelse(X2023.07.26 != 0,'2023-07-26',
+                              ifelse(X2023.07.18 != 0, '2023-07-18',
+                                     ifelse(X2023.07.12 != 0, '2023-07-12',
+                                            ifelse(X2023.07.02 != 0, '2023-07-02',
+                                            '2023-06-01'))))) # arbitrary date
 
 
+# For one model
+plot.data <- s2.bl.joined %>% filter(latest.snow == '2023-06-01') # Which model?
+
+# 9 random pixels in detail
+rand_id <- sample(plot.data %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
+
+ggplot(
+  plot.data %>% filter(id %in% rand_id),
+  aes(x = doy, group = id)
+) +
+  geom_point(aes(y = ndvi)) +
+  geom_line(aes(y = ndvi.pred)) +
+  #geom_vline(xintercept = yday(plot.data$latest.snow), aes(color =  scale_color_viridis_c(snow.auc))) +
+  # geom_segment(aes(x = yday(latest.snow) - 1, xend = yday(latest.snow) + 1, y = 0, yend = 0.5, color = snow.auc),
+  #              size = 1) +
+  scale_color_viridis_c() +
+  geom_point(aes(x = ndvi.max.doy, y = ndvi.max), color = "red") +
+  facet_wrap(~id) +
+  theme_classic()
 
 
 
