@@ -253,17 +253,20 @@ fit_plot_doy <- function(site_data,
                      colour.darker, 
                      colour.lighter, 
                      colour.lightest, 
-                     ymax, ymin){
+                     ymax, ymin, yint, 
+                     xmax, xmin, xint){
   lm_plot <- ggplot(site_data, aes(x = snow.auc, y = ndvi.max.doy)) +
     geom_point(aes(x = snow.auc, y = ndvi.max.doy), colour = colour.lightest) +
+    scale_y_continuous(breaks = c(seq(ymin, ymax, yint)), 
+                       labels = c(as.character(seq(ymin, ymax, yint)))) +
+    scale_x_continuous(breaks = c(seq(xmin, xmax, xint)), 
+                       labels = c(as.character(seq(xmin, xmax, xint)))) +
+    coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax)) +
     theme_cowplot() +
       geom_smooth(method = "lm", formula = y ~ x, 
                   colour = colour.site,
                   fill = colour.site, 
-                  linewidth = 1) +
-    coord_cartesian(ylim = c(210, 240)) +
-    scale_y_continuous(breaks = c(210, 220, 230, 240), 
-                       labels = c('210', '220', '230', '240')) 
+                  linewidth = 1)
     #labs(x = "snow persistence", y = "ndvi.max.doy")#, 
     #title = paste0(unique(site_data$site), " (lm y ~ x)")) 
   return(lm_plot)
@@ -274,17 +277,20 @@ fit_plot_max <- function(site_data,
                      colour.darker, 
                      colour.lighter, 
                      colour.lightest, 
-                     ymax, ymin){
+                     ymax, ymin, yint,
+                     xmax, xmin, xint){
   lm_plot <- ggplot(site_data, aes(x = snow.auc, y = ndvi.max)) +
     geom_point(aes(x = snow.auc, y = ndvi.max), colour = colour.lightest) +
+    scale_y_continuous(breaks = c(seq(ymin, ymax, yint)), 
+                       labels = c(as.character(seq(ymin, ymax, yint)))) +
+    scale_x_continuous(breaks = c(seq(xmin, xmax, xint)), 
+                       labels = c(as.character(seq(xmin, xmax, xint)))) +
+    coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax)) +
     theme_cowplot() +
       geom_smooth(method = "lm", formula = y ~ x, 
                   colour = colour.site,
                   fill = colour.site, 
-                  linewidth = 1) +
-    coord_cartesian(ylim = c(0.45, 0.8)) +
-    scale_y_continuous(breaks = c(0.5, 0.6, 0.7, 0.8), 
-                       labels = c('0.5', '0.6', '0.7', '0.8'))
+                  linewidth = 1)
     #labs(x = "snow persistence", y = "ndvi.max.doy")#, 
     #title = paste0(unique(site_data$site), " (lm y ~ x)")) 
   return(lm_plot)
@@ -365,14 +371,16 @@ s30.bl_max_plot <- fit_plot_max(s30.bl,
                             colour.darker = '#2E5277',
                             colour.lighter = '#9BB2DA',
                             colour.lightest = '#BECBE7', 
-                            ymax = 0.8, ymin = 0.45)
+                            ymax = 0.8, ymin = 0.4, yint = 0.1, 
+                            xmax = 12, xmin = 0, xint = 2)
 
 s30.bl_doy_plot <- fit_plot_doy(s30.bl,
                            colour.site = '#4984BF', 
                            colour.darker = '#2E5277',
                            colour.lighter = '#9BB2DA',
                            colour.lightest = '#BECBE7', 
-                           ymax = 240, ymin = 210) 
+                           ymax = 240, ymin = 210, yint = 10,
+                           xmax = 12, xmin = 0, xint = 2) 
 s30.bl_max_plot
 s30.bl_doy_plot
 
@@ -413,6 +421,7 @@ full.fig <- plot_grid(maps, bottom, nrow = 2)
 full.fig
 
 # Save plots
-cowplot::save_plot('../../plots/figures/figure-5-lm.png', full.fig, 
-                   base_height = 200, base_width = 180, units = 'mm')#, 
-                   #bg = 'white')
+cowplot::save_plot('../../plots/figures/figure-5-lm-correctaxis.png', full.fig, 
+                   base_height = 200, base_width = 180, units = 'mm',#)#, 
+                   bg = 'white')
+

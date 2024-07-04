@@ -71,13 +71,13 @@ plot_data <- function(data, rectangle.top, rug.alpha, line.width) {
     #                     direction = 1) +
     labs( x = '', 
           y = '') +
-    scale_x_continuous(breaks = c(200, 225, 250),
-                       labels = c('200', '225', '250')) +
+    scale_x_continuous(breaks = c(175, 200, 225, 250),
+                       labels = c('175', '200', '225', '250')) +
     scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6), 
                        labels = c('0', '0.2', '0.4', '0.6')) +
     # xlim(c(175, 260)) +
     #  ylim(c(0, 0.6)) +
-    coord_cartesian(xlim = c(180, 250), ylim = c(0, 0.8)) + # 175, 260
+    coord_cartesian(xlim = c(174, 250), ylim = c(0, 0.8)) + # 175, 260
     theme_cowplot() +
     theme(legend.position = 'none')
   
@@ -99,7 +99,7 @@ combined.plots <- plot_grid(#logo.plot,
                             align = 'h',
                             labels = c('(a)', '(b)', '(c)'))
 
-
+combined.plots
 # output the plot
 
-cowplot::save_plot('../../plots/figures/figure-2-r-output-klkhbl.png', combined.plots, base_height = 80, base_width = 180, units = 'mm', bg = 'white')
+cowplot::save_plot('../../plots/figures/figure-2-r-output-klkhbl-y07-x175.png', combined.plots, base_height = 80, base_width = 180, units = 'mm', bg = 'white')

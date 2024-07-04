@@ -64,9 +64,16 @@ fit_plot <- function(site_data,
                              colour.darker, 
                              colour.lighter, 
                              colour.lightest, 
-                             ymax, ymin){
+                             ymax, ymin,
+                             xmax, xmin, xint){
   lm_plot <- ggplot(site_data, aes(x = snow.auc, y = ndvi.max.doy)) +
     geom_point(aes(x = snow.auc, y = ndvi.max.doy), colour = colour.lightest) +
+  geom_point(aes(x = snow.auc, y = ndvi.max), colour = colour.lightest) +
+    scale_y_continuous(breaks = c(seq(0, ymax, 5)), 
+                       labels = c(as.character(seq(0, ymax, 5)))) +
+    scale_x_continuous(breaks = c(seq(xmin, xmax, xint)), 
+                       labels = c(as.character(seq(xmin, xmax, xint)))) +
+    coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax)) +
     theme_cowplot()
   if(unique(site_data$site) == "S2 KH") {
     lm_plot <- lm_plot +
@@ -93,19 +100,22 @@ bl <- fit_plot(s2.bl,
                  colour.darker = '#2E5277',
                  colour.lighter = '#9BB2DA',
                  colour.lightest = '#BECBE7', 
-                 ymax = 240, ymin = 215)
+                 ymax = 240, ymin = 215,
+                 xmin = 0, xmax = 25, xint =5)
 kl <- fit_plot(s2.kl, 
                colour.site = '#F5A40C', 
                colour.darker = '#946606',
                colour.lighter = '#FBCA7F',
                colour.lightest = '#FDDCAC', 
-               ymax = 235, ymin = 210)
+               ymax = 230, ymin = 210,
+               xmin = 0, xmax = 15, xint = 5)
 kh <- fit_plot(s2.kh, 
                colour.site = '#F23835', 
                colour.darker = '#8D271E',
                colour.lighter = '#F29580',
                colour.lightest = '#F8BBAA', 
-               ymax = 235, ymin = 210)
+               ymax = 235, ymin = 210,
+               xmin = 0, xmax = 15, xint = 5)
 
 
 # Create panel (d) visualising imagery dates
@@ -151,6 +161,6 @@ combined.2
 combined 
 
 # Save plots
-cowplot::save_plot('../../plots/figures/figure-4-final.png', combined.2, 
+cowplot::save_plot('../../plots/figures/figure-4-final-correctaxis.png', combined.2, 
                    base_height = 140, base_width = 180, units = 'mm', 
                    bg = 'white')

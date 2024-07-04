@@ -54,9 +54,15 @@ fit_plot <- function(site_data,
                      colour.darker, 
                      colour.lighter, 
                      colour.lightest, 
-                     ymax, ymin){
+                     ymax, ymin,
+                     xmax, xmin, xint){
   lm_plot <- ggplot(site_data, aes(x = snow.auc, y = ndvi.max)) +
     geom_point(aes(x = snow.auc, y = ndvi.max), colour = colour.lightest) +
+    scale_y_continuous(breaks = c(seq(0, ymax, 0.1)), 
+                       labels = c(as.character(seq(0, ymax, 0.1)))) +
+    scale_x_continuous(breaks = c(seq(xmin, xmax, xint)), 
+                       labels = c(as.character(seq(xmin, xmax, xint)))) +
+    coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax)) +
     theme_cowplot()
   if(unique(site_data$site) == "S2 KH") {
     lm_plot <- lm_plot +
@@ -83,19 +89,22 @@ bl <- fit_plot(s2.bl,
                colour.darker = '#2E5277',
                colour.lighter = '#9BB2DA',
                colour.lightest = '#BECBE7', 
-               ymax = 0.6, ymin = 0.1)
+               ymax = 0.6, ymin = 0.1,
+               xmin = 0, xmax = 25, xint = 5)
 kl <- fit_plot(s2.kl, 
                colour.site = '#F5A40C', 
                colour.darker = '#946606',
                colour.lighter = '#FBCA7F',
                colour.lightest = '#FDDCAC', 
-               ymax = 0.7, ymin = 0.4)
+               ymax = 0.7, ymin = 0.4,
+               xmin = 0, xmax = 15, xint = 5)
 kh <- fit_plot(s2.kh, 
                colour.site = '#F23835', 
                colour.darker = '#8D271E',
                colour.lighter = '#F29580',
                colour.lightest = '#F8BBAA', 
-               ymax = 0.6, ymin = 0.15)
+               ymax = 0.6, ymin = 0.1,
+               xmin = 0, xmax = 15, xint = 5)
 
 
 # Plot out the full panel
@@ -105,6 +114,6 @@ combined.2
 combined 
 
 # Save plots
-cowplot::save_plot('../../plots/figures/figure-3-final.png', combined.2, 
+cowplot::save_plot('../../plots/figures/figure-3-final-axiscorrect.png', combined.2, 
                    base_height = 140, base_width = 180, units = 'mm', 
                    bg = 'white')
