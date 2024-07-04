@@ -1,5 +1,17 @@
-# Chapter 1 analyses repo
-This repository contains the analyses and data for Chapter 1 of Calum Hoad's PhD. 
+# Repository for the manuscript: *Snow persistence influences vegetation metrics central to Arctic greening analyses*
+
+## Content:
+This repository contains the code and data necessary to replicate data analysis, figures and tables in:
+
+Hoad, C. G., Myers-Smith, I. H., Kerby, J. T., Colesie, C. and Assmann, J. J. *Snow persistence influences vegetation metrics central to Arctic greening analyses*
+
+## Contact:
+Calum G. Hoad
+
+Email: calum.hoad [at] ed.ac.uk
+
+Website: https://calumhoad.github.io/
+
 
 ## Background, aims and questions:
 The Arctic is shown in a large number of studies to have 'greened' since 1982. This 'greening' is characterised as a generally positive trend in vegetation indices (principly maxNDVI) over the period of observation, with vegetation growth driven by increasing Arctic temperatures frequently cited as the likely cause of the trend. 
