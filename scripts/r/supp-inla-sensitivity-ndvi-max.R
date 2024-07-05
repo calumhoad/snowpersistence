@@ -192,7 +192,7 @@ plot_results <- function(model_matern, site_data, grid.size,
     labs(y = 'Count') +
     scale_y_continuous(breaks = c(seq(0, scountmax-scountint, scountint)),
                        labels = c(as.character(seq(0, scountmax-scountint, scountint)))) +
-    coord_cartesian(ylim = c(0, scountmax)) +
+    coord_cartesian(ylim = c(0, scountmax), xlim = c(-0.002, 0.002)) +
     theme_cowplot()
   resids_space <- ggplot() +
     geom_sf(data = st_buffer(site_data, grid.size/2, endCapStyle = "SQUARE"), aes(fill = residuals)) +
@@ -367,6 +367,7 @@ kh.plot <- plot_results(s2.kh_fit, s2.kh, 10, symin = 0.1, symax = 0.7, syint = 
 bl.s30.plot <- plot_results(s30.bl_fit, s30.bl, 30, symin = 0.4, symax = 1,
                             syint = 0.1, scountmax = 8, scountint = 2)
 
+options(scipen = 999)
 # Output plots
 cowplot::save_plot('../../plots/supplementary/inla-bl-residuals.png', bl.plot,
                    base_height = 180, base_width = 180, units = 'mm', bg = 'white')
@@ -525,7 +526,7 @@ preds_in_space <- ggplot() +
   geom_sf(data = st_buffer(bind_rows(s2.bl_snow_auc_lte5, s2.bl_snow_auc_gt5), 5, endCapStyle = "SQUARE"), 
           aes(fill = preds)) +
   scale_fill_continuous_sequential("viridis", rev = F) +
-  labs(fill = "Predictions\nNDVI max") +
+  labs(fill = "Predictions\npeak NDVI") +
   theme_map()
 data_in_space <- ggplot() +
   geom_sf(data = st_buffer(s2.bl, 5, endCapStyle = "SQUARE"), 
@@ -535,10 +536,10 @@ data_in_space <- ggplot() +
   theme_map()
 plot_grid(preds_in_space, data_in_space)
 
-middle <- cowplot::plot_grid(hist_lte5, hist_gt5, nrow = 1,
-                   ncol = 2, align = 'h', labels = c('(b)', '(c)'))
-bottom <- cowplot::plot_grid(resids_space, preds_in_space, nrow = 1, ncol = 2, 
-                             labels = c('(d)', '(e)'))
+bottom <- cowplot::plot_grid(hist_lte5, hist_gt5, nrow = 1,
+                   ncol = 2, align = 'h', labels = c('(d)', '(e)'))
+middle <- cowplot::plot_grid(preds_in_space, resids_space, nrow = 1, ncol = 2, 
+                             labels = c('(b)', '(c)'))
 combined <- cowplot::plot_grid(bl_plot, middle, bottom, nrow = 3, labels = c('(a)', '', ''))
 combined
 
