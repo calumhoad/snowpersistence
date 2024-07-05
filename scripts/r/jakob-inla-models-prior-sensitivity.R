@@ -9,9 +9,6 @@ library(pbapply)
 library(broom)
 library(INLA)
 
-# Set wd
-setwd("C:/Users/jakob/repositories/c1-analyses/scripts/jakob/")
-
 ### Data Prep ##########
 
 ## Load data

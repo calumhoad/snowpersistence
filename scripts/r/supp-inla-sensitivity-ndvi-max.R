@@ -1,4 +1,5 @@
-# R script to fit final INLA models for Calum
+# R script to test INLA model sensitivity
+# Jakob Assmann, modified by Calum Hoad July 5th 2024
 
 # Dependencies
 library(tidyverse)
@@ -140,7 +141,8 @@ fit_matern <- function(shape_param, scale_param, range_site, site_data, return_m
     ))}
 
 # Helper function to generate plots
-plot_results <- function(model_matern, site_data, grid.size){
+plot_results <- function(model_matern, site_data, grid.size, 
+                         symin, symax, syint, scountmax, scountint){
   # Calculate marginal predictions depending on snow.auc only
   site_data$preds <- model_matern$summary.fixed[1,1] + 
     site_data$snow.auc * model_matern$summary.fixed[2,1]
@@ -168,6 +170,10 @@ plot_results <- function(model_matern, site_data, grid.size){
                     ymax = max_ndvi_pred),
                 data = preds_credible,
                 fill = "blue", alpha = 0.3) +
+    xlab("Snow persistence") +
+    ylab("peak NDVI") +
+    scale_y_continuous(breaks = c(seq(symin, symax-syint, syint))) + 
+    coord_cartesian(ylim = c(symin, symax)) +
     geom_line(aes(x = snow.auc, y = preds), colour = "blue") +
     theme_cowplot()
   
@@ -176,24 +182,30 @@ plot_results <- function(model_matern, site_data, grid.size){
     geom_sf(data = st_buffer(site_data, grid.size/2, endCapStyle = "SQUARE"), 
             aes(fill = preds)) +
     scale_fill_continuous_sequential("viridis", rev = F) +
-    labs(fill = "predictions\nNDVI max") +
+    labs(fill = "Predictions\npeak NDVI") +
     theme_map()
   
   # Residual plotsukc
   resids_hist <- ggplot(site_data) +
     geom_histogram(aes(x = residuals), bins = 50) +
-    labs(x = "residuals") +
+    labs(x = "Residuals") +
+    labs(y = 'Count') +
+    scale_y_continuous(breaks = c(seq(0, scountmax-scountint, scountint)),
+                       labels = c(as.character(seq(0, scountmax-scountint, scountint)))) +
+    coord_cartesian(ylim = c(0, scountmax)) +
     theme_cowplot()
   resids_space <- ggplot() +
     geom_sf(data = st_buffer(site_data, grid.size/2, endCapStyle = "SQUARE"), aes(fill = residuals)) +
     scale_fill_continuous_diverging() +
+    labs(fill = "Residuals") +
     theme_map()
   
   # plot the whole lot
-  print(plot_grid(fit_plot, preds_in_space,
-                  resids_hist, resids_space, nrow = 2))
+  whole.plot <- plot_grid(fit_plot, preds_in_space,
+                  resids_hist, resids_space, nrow = 2, ncol = 2, 
+                  labels = c('(a)', '(b)', '(c)', '(d)'))
   
-  return(NULL)
+  return(whole.plot)
 }
 
 ### Data Prep ----
@@ -346,11 +358,24 @@ s30.bl_fit <- fit_matern(scale_param = 0.01,
 ### Visualise results
 
 # Plot results for all models
-plot_results(s2.bl_fit, s2.bl, 10)
-plot_results(s2.kl_fit, s2.kl, 10)
-plot_results(s2.kh_fit, s2.kh, 10)
-plot_results(s30.bl_fit, s30.bl, 30)
+bl.plot <- plot_results(s2.bl_fit, s2.bl, 10, symin = 0.1, symax = 0.7, syint = 0.1, 
+                        scountmax = 80, scountint = 20)
+kl.plot <- plot_results(s2.kl_fit, s2.kl, 10, symin = 0.3, symax = 0.8, syint = 0.1, 
+                        scountmax = 70, scountint = 10)
+kh.plot <- plot_results(s2.kh_fit, s2.kh, 10, symin = 0.1, symax = 0.7, syint = 0.1, 
+                        scountmax = 160, scountint = 20)
+bl.s30.plot <- plot_results(s30.bl_fit, s30.bl, 30, symin = 0.4, symax = 1,
+                            syint = 0.1, scountmax = 8, scountint = 2)
 
+# Output plots
+cowplot::save_plot('../../plots/supplementary/inla-bl-residuals.png', bl.plot,
+                   base_height = 180, base_width = 180, units = 'mm', bg = 'white')
+cowplot::save_plot('../../plots/supplementary/inla-kl-residuals.png', kl.plot,
+                   base_height = 180, base_width = 180, units = 'mm', bg = 'white')
+cowplot::save_plot('../../plots/supplementary/inla-kh-residuals.png', kh.plot,
+                   base_height = 180, base_width = 180, units = 'mm', bg = 'white')
+cowplot::save_plot('../../plots/supplementary/inla-bl30-residuals.png', bl.s30.plot,
+                   base_height = 180, base_width = 180, units = 'mm', bg = 'white')
 
 ### Alternative for S2 BL: fit a break point model (manually identifited as snow.auc = 5)
 
@@ -446,7 +471,7 @@ s2.bl_snow_auc_gt5$residuals <- s2.bl_snow_auc_gt5$ndvi.max - s2.bl_snow_auc_gt5
 s2.bl_snow_auc_gt5$snow.auc <- s2.bl_snow_auc_gt5$snow.auc + 5
 
 
-# Plot model fits
+  # Plot model fits
 bl_plot <- ggplot() +
   geom_point(data = s2.bl_snow_auc_lte5, aes(x = snow.auc, y= ndvi.max), colour = '#BECBE7') +
   geom_point(data = s2.bl_snow_auc_gt5, aes(x = snow.auc, y= ndvi.max), colour ='#BECBE7') +
@@ -460,17 +485,30 @@ bl_plot <- ggplot() +
               fill = '#4984BF', alpha = 0.5) +
   geom_line(aes(x = snow.auc, y = preds), colour = '#4984BF', data = s2.bl_snow_auc_lte5) +
   geom_line(aes(x = snow.auc, y = preds), colour = '#4984BF', data = s2.bl_snow_auc_gt5) +
+  scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6), 
+                     labels = c('0.0', '0.2', '0.4', '0.6')) +
+  coord_cartesian(ylim = c(0, 0.7), xlim = c(0, 25)) +
+  ylab('peak NDVI') +
+  xlab('Snow persistence') +
   theme_cowplot()
 bl_plot
 
 # Residual plots
 hist_lte5 <- ggplot(s2.bl_snow_auc_lte5) +
   geom_histogram(aes(x = residuals), bins = 50) +
-  labs(x = "residuals") +
+  labs(x = "Residuals\n(Pixels less than or\nequal to the snow\npersistence value of 5)") +
+  ylab('Count') +
+  coord_cartesian( ylim = c(0, 100), xlim = c(-0.002, 0.002)) +
+  scale_y_continuous(breaks = c(0, 20, 40, 60, 80), 
+                     labels = c('0', '20', '40', '60', '80')) +
   theme_cowplot()
 hist_gt5 <- ggplot(s2.bl_snow_auc_gt5) +
   geom_histogram(aes(x = residuals), bins = 50) +
-  labs(x = "residuals") +
+  labs(x = "Residuals\n(Pixels greater than the snow\npersistence value of 5)") +
+  ylab('Count') +
+  scale_y_continuous(breaks = c(0, 4, 8, 12), 
+                     labels = c('0', '4', '8', '12')) +
+  coord_cartesian(ylim = c(0, 14), xlim = c(-0.002, 0.002)) +
   theme_cowplot()
 plot_grid(hist_lte5, hist_gt5, ncol = 2, labels = c('lte5', 'gt5'))
 
@@ -478,6 +516,7 @@ resids_space <- ggplot() +
   geom_sf(data = st_buffer(s2.bl_snow_auc_lte5, 5, endCapStyle = "SQUARE"), aes(fill = residuals)) +
   geom_sf(data = st_buffer(s2.bl_snow_auc_gt5, 5, endCapStyle = "SQUARE"), aes(fill = residuals)) +
   scale_fill_continuous_diverging() +
+  labs(fill = 'Residuals') +
   theme_map()
 resids_space
 
@@ -486,7 +525,7 @@ preds_in_space <- ggplot() +
   geom_sf(data = st_buffer(bind_rows(s2.bl_snow_auc_lte5, s2.bl_snow_auc_gt5), 5, endCapStyle = "SQUARE"), 
           aes(fill = preds)) +
   scale_fill_continuous_sequential("viridis", rev = F) +
-  labs(fill = "predictions\nNDVI max") +
+  labs(fill = "Predictions\nNDVI max") +
   theme_map()
 data_in_space <- ggplot() +
   geom_sf(data = st_buffer(s2.bl, 5, endCapStyle = "SQUARE"), 
@@ -496,7 +535,15 @@ data_in_space <- ggplot() +
   theme_map()
 plot_grid(preds_in_space, data_in_space)
 
+middle <- cowplot::plot_grid(hist_lte5, hist_gt5, nrow = 1,
+                   ncol = 2, align = 'h', labels = c('(b)', '(c)'))
+bottom <- cowplot::plot_grid(resids_space, preds_in_space, nrow = 1, ncol = 2, 
+                             labels = c('(d)', '(e)'))
+combined <- cowplot::plot_grid(bl_plot, middle, bottom, nrow = 3, labels = c('(a)', '', ''))
+combined
 
+cowplot::save_plot('../../plots/supplementary/inla-bl-break-residuals.png', combined,
+                   base_height = 180, base_width = 180, units = 'mm', bg = 'white')
 # Final plots ----
 fit_plot <- function(model_matern, site_data, grid.size, 
                      colour.site, 

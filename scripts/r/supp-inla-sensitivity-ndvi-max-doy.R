@@ -141,7 +141,8 @@ fit_matern <- function(shape_param, scale_param, range_site, site_data, return_m
     ))}
 
 # Helper function to generate plots
-plot_results <- function(model_matern, site_data, grid.size){
+plot_results <- function(model_matern, site_data, grid.size, 
+                         symin, symax, syint, scountmax, scountint){
   # Calculate marginal predictions depending on snow.auc only
   site_data$preds <- model_matern$summary.fixed[1,1] + 
     site_data$snow.auc * model_matern$summary.fixed[2,1]
@@ -153,10 +154,10 @@ plot_results <- function(model_matern, site_data, grid.size){
     map(function(parameters) {
       data.frame(snow.auc =  seq((floor(min(site_data$snow.auc) * 10) / 10),
                                  (ceiling(max(site_data$snow.auc) * 10) / 10), 0.01),
-                 ndvi_pred = parameters$intercept + seq((floor(min(site_data$snow.auc) * 10) / 10),
+                 ndvi_doy_pred = parameters$intercept + seq((floor(min(site_data$snow.auc) * 10) / 10),
                                                         (ceiling(max(site_data$snow.auc) * 10) / 10), 0.01) * parameters$slope[1])
     }) %>% bind_rows() %>%
-    group_by(snow.auc) %>% summarise(min_ndvi_pred = min(ndvi_pred), max_ndvi_pred = max(ndvi_pred))
+    group_by(snow.auc) %>% summarise(min_ndvi_doy_pred = min(ndvi_doy_pred), max_ndvi_doy_pred = max(ndvi_doy_pred))
   
   # Add model fitted values and residuals to data frame
   site_data$fitted <- model_matern$summary.fitted.values$mean
@@ -165,10 +166,14 @@ plot_results <- function(model_matern, site_data, grid.size){
   # Plot model fit
   fit_plot <- ggplot(data = site_data) +
     geom_point(aes(x = snow.auc, y= ndvi.max.doy)) +
-    geom_ribbon(aes(x = snow.auc, ymin = min_ndvi_pred,
-                    ymax = max_ndvi_pred),
+    geom_ribbon(aes(x = snow.auc, ymin = min_ndvi_doy_pred,
+                    ymax = max_ndvi_doy_pred),
                 data = preds_credible,
                 fill = "blue", alpha = 0.3) +
+    xlab("Snow persistence") +
+    ylab("peak NDVI DoY") +
+    scale_y_continuous(breaks = c(seq(symin, symax-syint, syint))) + 
+    coord_cartesian(ylim = c(symin, symax)) +
     geom_line(aes(x = snow.auc, y = preds), colour = "blue") +
     theme_cowplot()
   
@@ -177,24 +182,30 @@ plot_results <- function(model_matern, site_data, grid.size){
     geom_sf(data = st_buffer(site_data, grid.size/2, endCapStyle = "SQUARE"), 
             aes(fill = preds)) +
     scale_fill_continuous_sequential("viridis", rev = F) +
-    labs(fill = "predictions\nNDVI max") +
+    labs(fill = "Predictions\npeak NDVI DoY") +
     theme_map()
   
   # Residual plotsukc
   resids_hist <- ggplot(site_data) +
     geom_histogram(aes(x = residuals), bins = 50) +
-    labs(x = "residuals") +
+    labs(x = "Residuals") +
+    labs(y = 'Count') +
+    scale_y_continuous(breaks = c(seq(0, scountmax-scountint, scountint)),
+                       labels = c(as.character(seq(0, scountmax-scountint, scountint)))) +
+    coord_cartesian(ylim = c(0, scountmax), xlim = c(-0.0002, 0.0002)) +
     theme_cowplot()
   resids_space <- ggplot() +
     geom_sf(data = st_buffer(site_data, grid.size/2, endCapStyle = "SQUARE"), aes(fill = residuals)) +
     scale_fill_continuous_diverging() +
+    labs(fill = "Residuals") +
     theme_map()
   
   # plot the whole lot
-  print(plot_grid(fit_plot, preds_in_space,
-                  resids_hist, resids_space, nrow = 2))
+  whole.plot <- plot_grid(fit_plot, preds_in_space,
+                          resids_hist, resids_space, nrow = 2, ncol = 2, 
+                          labels = c('(a)', '(b)', '(c)', '(d)'))
   
-  return(NULL)
+  return(whole.plot)
 }
 
 ### Data Prep ----
@@ -344,10 +355,25 @@ s30.bl_fit <- fit_matern(scale_param = 0.01,
 ### Visualise results
 
 # Plot results for all models
-plot_results(s2.bl_fit, s2.bl, 10)
-plot_results(s2.kl_fit, s2.kl, 10)
-plot_results(s2.kh_fit, s2.kh, 10)
-plot_results(s30.bl_fit, s30.bl, 30)
+# Plot results for all models
+bl.plot <- plot_results(s2.bl_fit, s2.bl, 10, symin = 210, symax = 250, syint = 10, 
+                        scountmax = 100, scountint = 20)
+kl.plot <- plot_results(s2.kl_fit, s2.kl, 10, symin = 200, symax = 250, syint = 10, 
+                        scountmax = 100, scountint = 10)
+kh.plot <- plot_results(s2.kh_fit, s2.kh, 10, symin = 210, symax = 250, syint = 10, 
+                        scountmax = 140, scountint = 20)
+bl.s30.plot <- plot_results(s30.bl_fit, s30.bl, 30, symin = 210, symax = 250,
+                            syint = 10, scountmax = 8, scountint = 2)
+
+# Output plots
+cowplot::save_plot('../../plots/supplementary/inla-bl-doy-residuals.png', bl.plot,
+                   base_height = 180, base_width = 180, units = 'mm', bg = 'white')
+cowplot::save_plot('../../plots/supplementary/inla-kl-doy-residuals.png', kl.plot,
+                   base_height = 180, base_width = 180, units = 'mm', bg = 'white')
+cowplot::save_plot('../../plots/supplementary/inla-kh-doy-residuals.png', kh.plot,
+                   base_height = 180, base_width = 180, units = 'mm', bg = 'white')
+cowplot::save_plot('../../plots/supplementary/inla-bl30-doy-residuals.png', bl.s30.plot,
+                   base_height = 180, base_width = 180, units = 'mm', bg = 'white')
 
 
 # S2 KH has a very low intercept compared with the data,
