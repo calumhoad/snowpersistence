@@ -21,7 +21,9 @@ s2.bl <- read_csv('../../data/combined-ndvi-snow/s2-bl-smooth-joined.csv',
   group_by(id) %>%
   filter(row_number() == 7) %>%
   ungroup() %>%
-  mutate(site = "S2 BL", range = round(51.6/10), colour = '#4984BF')
+  mutate(site = "Sentinel-2 BL", range = round(51.6/10), colour = '#4984BF',
+         ymin = 0, ymax = 0.7, 
+         dymin = 215, dymax = 250)
 
 # Kluane low
 s2.kl <- read_csv('../../data/combined-ndvi-snow/s2-kl-smooth-joined.csv',
@@ -30,7 +32,9 @@ s2.kl <- read_csv('../../data/combined-ndvi-snow/s2-kl-smooth-joined.csv',
   group_by(id) %>%
   filter(row_number() == 7) %>%
   ungroup() %>%
-  mutate(site = "S2 KL", range = round(61.9/10), colour = '#F5A40C')
+  mutate(site = "Sentinel-2 KL", range = round(61.9/10), colour = '#F5A40C', 
+         ymin = 0.3, ymax = 0.8,
+         dymin = 210, dymax = 240)
 
 # Kluane high
 s2.kh <- read_csv('../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv',
@@ -39,7 +43,9 @@ s2.kh <- read_csv('../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv',
   group_by(id) %>%
   filter(row_number() == 7) %>%
   ungroup() %>%
-  mutate(site = "S2 KH", range = round(38.5/10), colour = '#F23835')
+  mutate(site = "Sentinel-2 KH", range = round(38.5/10), colour = '#F23835', 
+         ymin = 0.1, ymax = 0.75, 
+         dymin = 210, dymax = 240)
 
 # Blaesedalen, S30
 s30.bl <- read_csv("../../data/combined-ndvi-snow/s30-bl-smooth-joined.csv",
@@ -49,16 +55,20 @@ s30.bl <- read_csv("../../data/combined-ndvi-snow/s30-bl-smooth-joined.csv",
   group_by(id) %>%
   filter(row_number() == 7) %>%
   ungroup() %>%
-  mutate(site = "S30 BL", range = round(110/30), colour = '#4984BF')
+  mutate(site = "HLSS30 BL", range = round(110/30), colour = '#4984BF', 
+         ymin = 0.4, ymax = 0.9, 
+         dymin = 200, dymax = 250)
 
 # Combine into one data object (keeping order of Calum's plots)
 data_list <- list(s2.kl, s2.kh, s2.bl, s30.bl)
+
+
 
 # Generate binned scatter plots with zeros in separate categories
 hist_plots_max.ndvi <- map(data_list, function(site_data){
   # Set bin width
   bin_width <- 2
-  if (unique(site_data$site) == "S2 BL") bin_width <- 4
+  if (unique(site_data$site) == "Sentinel-2 BL") bin_width <- 4
   # Remove geoms for easy handling
   site_data <- st_drop_geometry(site_data)
   # Separate and lable zeros
@@ -83,25 +93,38 @@ hist_plots_max.ndvi <- map(data_list, function(site_data){
   # Plot and return
   ggplot() +
     geom_jitter(aes(x = snow_auc_cat, y = ndvi.max, colour = snow_auc_cat), data = site_data) +
-    geom_text(aes(x = snow_auc_cat, y = Inf, label = paste0("n = ", n)), vjust = 1.5, 
+    geom_text(aes(x = snow_auc_cat, y = site_data$ymax[[1]] - 0.03, label = paste0("n = ", n)), vjust = 1.5, size = 4,
+              angle = 45,
               data = filter(distinct(site_data, snow_auc_cat, n))) +
     scale_x_discrete(labels = unique(site_data$scale_name)) +
-    labs(x = "snow persistance (numerical range)", y = "ndvi.max", 
+    labs(x = "Snow persistence\n(numerical range)", y = "peak NDVI", 
          title = paste0(unique(site_data$site), " ")) +
+    coord_cartesian(ylim = c(site_data$ymin[[1]], site_data$ymax[[1]])) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
     theme_cowplot() +
-    theme(legend.position = "none")
+    theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
 })
-plot_grid(plotlist = hist_plots_max.ndvi, 
-          labels = paste0("(", letters[1:4], ")"),
-          label_size = 18)  %>%
-  save_plot("../../plots/supplementary/binned_scatter_max.ndvi.png", ., nrow = 2, ncol = 2, bg = "white",
+
+plot_grid(hist_plots_max.ndvi[[1]], hist_plots_max.ndvi[[2]],
+          hist_plots_max.ndvi[[3]], hist_plots_max.ndvi[[4]],
+          labels = c("(a)", "(b)", "(c)", "(d)"), 
+          ncol = 2, nrow = 2) %>%
+save_plot("../../plots/supplementary/binned_scatter_max.ndvi.png", .,
+          units = 'mm', base_height = 180, base_width = 180, bg = 'white')
+ 
+plot_grid(hist_plots_max.ndvi[1], hist_plots_max.ndvi[2],
+          hist_plots_max.ndvi[3], hist_plots_max.ndvi[4],
+          ncol = 2, nrow = 2,
+          labels = c("(a)", "(b)", "(c)", "(d)"),
+          bg = 'white') %>%
+  save_plot("../../plots/supplementary/binned_scatter_max.ndvi.png", .,
             units = 'mm', base_height = 140, base_width = 180)
 
 # Same for max.ndvi.doy
 hist_plots_max.ndvi.doy <- map(data_list, function(site_data){
   # Set bin width
   bin_width <- 2
-  if(unique(site_data$site) == "S2 BL") bin_width <- 4
+  if(unique(site_data$site) == "Sentinel-2 BL") bin_width <- 4
   # Remove geom
   site_data <- st_drop_geometry(site_data)
   # Separate and label zeros
@@ -126,16 +149,19 @@ hist_plots_max.ndvi.doy <- map(data_list, function(site_data){
   # Plot and return
   ggplot() +
     geom_jitter(aes(x = snow_auc_cat, y = ndvi.max.doy, colour = snow_auc_cat), data = site_data) +
-    geom_text(aes(x = snow_auc_cat, y = Inf, label = paste0("n = ", n)), vjust = 1.5, 
+    geom_text(aes(x = snow_auc_cat, y = site_data$dymax[[1]] - 4, label = paste0("n = ", n)), vjust = 1,
+              size = 4, angle = 90,
               data = filter(distinct(site_data, snow_auc_cat, n))) +
     scale_x_discrete(labels = unique(site_data$scale_name)) +
-    labs(x = "snow persistance (numerical range)", y = "ndvi.max.doy", 
+    labs(x = "Snow persistence\n(numerical range)", y = "Peak NDVI DoY", 
          title = paste0(unique(site_data$site), "")) +
+    coord_cartesian(ylim = c(site_data$dymin[[1]], site_data$dymax[[1]])) +
     theme_cowplot() +
-    theme(legend.position = "none")
+    theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
 })
-plot_grid(plotlist = hist_plots_max.ndvi.doy, 
-          labels = paste0("(", letters[1:4], ")"),
-          label_size = 18)  %>%
-  save_plot("../../plots/supplementary/binned_scatter_max.ndvi.doy.png", ., nrow = 2, ncol = 2, bg = "white",
-            units = 'mm', base_height = 140, base_width = 180)
+
+plot_grid(hist_plots_max.ndvi.doy[[1]], hist_plots_max.ndvi.doy[[2]], 
+          hist_plots_max.ndvi.doy[[3]], hist_plots_max.ndvi.doy[[4]],
+          labels = c("(a)", "(b)", "(c)", "(d)"), nrow = 2, ncol = 2)  %>%
+  save_plot("../../plots/supplementary/binned_scatter_max.ndvi.doy.png", ., bg = "white",
+            units = 'mm', base_height = 180, base_width = 180)
