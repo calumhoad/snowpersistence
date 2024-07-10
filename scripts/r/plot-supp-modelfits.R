@@ -148,29 +148,55 @@ nrow(s2.bl.snow)
 nrow(snow.remains)/nrow(s2.bl.snow)*100/1
 
 # For one model
-plot.data <- s2.bl.joined %>% filter(latest.snow == '2023-07-26') # Which model?
-
+high.data <- s2.bl.joined %>% filter(latest.snow == '2023-07-26') # Which model?
+low.data <- s2.bl.joined %>% filter(latest.snow == '2023-06-01')
 # 9 random pixels in detail
-rand_id <- sample(plot.data %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
+high_rand_id <- sample(high.data %>% st_drop_geometry() %>% pull(id) %>% unique(), 3)
+low_rand_id <- sample(low.data %>% st_drop_geometry() %>% pull(id) %>% unique(), 3)
 
-snowplot<- ggplot(
-  plot.data %>% filter(id %in% rand_id),
+lowplot <- ggplot(
+  low.data %>% filter(id %in% low_rand_id),
   aes(x = doy, group = id)
 ) +
-  geom_point(aes(y = ndvi)) +
-  geom_line(aes(y = ndvi.pred)) +
-  geom_vline(xintercept = yday(plot.data$latest.snow), aes(color =  scale_color_viridis_c(snow.auc))) +
-   geom_segment(aes(x = yday(latest.snow) - 1, xend = yday(latest.snow) + 1, y = 0, yend = 0.5, color = snow.auc),
-                size = 1) +
+  geom_point(aes(y = ndvi), shape = 4) +
+  geom_line(aes(y = ndvi.pred), colour = '#a8ddb5', linewidth = 1) +
+  #geom_vline(xintercept = yday(plot.data$latest.snow), aes(color =  scale_color_viridis_c(snow.auc))) +
+   #geom_segment(aes(x = yday(latest.snow) - 1, xend = yday(latest.snow) + 1, y = 0, yend = 0.5, color = snow.auc),
+    #            size = 1) +
   scale_color_viridis_c() +
   geom_point(aes(x = ndvi.max.doy, y = ndvi.max), color = "red") +
-  facet_wrap(~id) +
+  facet_wrap(~id, ncol = 3, nrow = 1) +
+  scale_x_continuous(breaks = c(100, 150, 200, 250, 300, 350), 
+                    labels = c('100', '150', '200', '250', '300', '350')) +
   ylab('NDVI') +
   xlab('Day of Year') +
-  coord_cartesian(ylim = c(0, 0.6)) +
+  coord_cartesian(ylim = c(0, 0.6), xlim = c(100, 370)) +
   theme_cowplot()
-snowplot
-cowplot::save_plot('../../plots/supplementary/snow-ndvi-curves.png', snowplot, 
+
+highplot <- ggplot(
+  high.data %>% filter(id %in% c(1105, 1196, 327)),
+  aes(x = doy, group = id)
+) +
+  geom_vline(xintercept = yday('2023-07-26'), colour = 'grey', alpha = 0.5, linewidth = 2) +
+  geom_point(aes(y = ndvi), shape = 4) +
+  geom_line(aes(y = ndvi.pred), colour = '#084081', linewidth = 1) +
+  #geom_segment(aes(x = yday(latest.snow) - 1, xend = yday(latest.snow) + 1, y = 0, yend = 0.5, color = snow.auc),
+   #            size = 1) +
+  scale_color_viridis_c() +
+  geom_point(aes(x = ndvi.max.doy, y = ndvi.max), color = "red") +
+  facet_wrap(~id, ncol = 3, nrow = 1) +
+  scale_x_continuous(breaks = c(100, 150, 200, 250, 300, 350), 
+                     labels = c('100', '150', '200', '250', '300', '350')) +
+  ylab('NDVI') +
+  xlab('Day of Year') +
+  coord_cartesian(ylim = c(0, 0.6), xlim = c(100, 370)) +
+  theme_cowplot()
+
+combined <- plot_grid(lowplot, highplot, nrow = 2,
+                      labels = c('(a)', '(b)'))
+combined
+
+cowplot::save_plot('../../plots/supplementary/snow-ndvi-curves.png', combined, 
                    base_width = 180, base_height = 180, units = 'mm',bg = 'white')
 
 # For plotting, run curve fit again, but without the additional autumn synthetic 
