@@ -24,6 +24,20 @@ Funding for this research was provided by NERC through a SENSE CDT studentship (
 
 We thank Kluane First Nation, Champagne and Aishihik First Nations and the people of Qeqertarsuaq for their permission to work on their lands. We thank Outpost Research Station and Arctic Station for logistical support.
 
+## Usage guidance
+All code provided for data preparation and analysis is licensed under a Creative Commons Attribution 4.0 International License (CC-BY). In accordance with the license the code is available to be shared and adapted, but requires attribution to the authors, e.g. through citation of the above manuscript, and indications where changes were made. Although not mandatory, we additionally suggest that code users contact and collaborate with contributors should the code form a substantial proportion of a particular publication or analysis.
+
+Shield: [![CC BY 4.0][cc-by-shield]][cc-by]
+
+This work is licensed under a
+[Creative Commons Attribution 4.0 International License][cc-by].
+
+[![CC BY 4.0][cc-by-image]][cc-by]
+
+[cc-by]: http://creativecommons.org/licenses/by/4.0/
+[cc-by-image]: https://i.creativecommons.org/l/by/4.0/88x31.png
+[cc-by-shield]: https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg
+
 ## Data
 
 Due to the limitations of GitHub, imagery from drones and satellites are not stored in this repository. We intend to make drone data publicly available upon conclusion of Calum Hoad's PhD, however this may be made available upon request by contacting Calum directly (see contact details above). All satellite imagery can be downloaded from either [Copernicus browser](https://browser.dataspace.copernicus.eu/?zoom=5&lat=50.16282&lng=20.78613&themeId=DEFAULT-THEME&visualizationUrl=https%3A%2F%2Fsh.dataspace.copernicus.eu%2Fogc%2Fwms%2Fa91f72b5-f393-4320-bc0f-990129bd9e63&datasetId=S2_L2A_CDAS&demSource3D=%22MAPZEN%22&cloudCoverage=30&dateMode=SINGLE) or [NASA EarthData Search](https://search.earthdata.nasa.gov/search), as per the manuscript. 
