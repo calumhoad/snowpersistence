@@ -24,10 +24,8 @@ Funding for this research was provided by NERC through a SENSE CDT studentship (
 
 We thank Kluane First Nation, Champagne and Aishihik First Nations and the people of Qeqertarsuaq for their permission to work on their lands. We thank Outpost Research Station and Arctic Station for logistical support.
 
-## Usage guidance
+## Usage guidance and license [![CC BY 4.0][cc-by-shield]][cc-by]
 All code provided for data preparation and analysis is licensed under a Creative Commons Attribution 4.0 International License (CC-BY). In accordance with the license the code is available to be shared and adapted, but requires attribution to the authors, e.g. through citation of the above manuscript, and indications where changes were made. Although not mandatory, we additionally suggest that code users contact and collaborate with contributors should the code form a substantial proportion of a particular publication or analysis.
-
-Shield: [![CC BY 4.0][cc-by-shield]][cc-by]
 
 This work is licensed under a
 [Creative Commons Attribution 4.0 International License][cc-by].
