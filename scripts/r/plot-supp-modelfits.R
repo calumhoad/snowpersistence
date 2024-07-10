@@ -153,19 +153,25 @@ plot.data <- s2.bl.joined %>% filter(latest.snow == '2023-07-26') # Which model?
 # 9 random pixels in detail
 rand_id <- sample(plot.data %>% st_drop_geometry() %>% pull(id) %>% unique(), 9)
 
-ggplot(
+snowplot<- ggplot(
   plot.data %>% filter(id %in% rand_id),
   aes(x = doy, group = id)
 ) +
   geom_point(aes(y = ndvi)) +
   geom_line(aes(y = ndvi.pred)) +
-  #geom_vline(xintercept = yday(plot.data$latest.snow), aes(color =  scale_color_viridis_c(snow.auc))) +
-  # geom_segment(aes(x = yday(latest.snow) - 1, xend = yday(latest.snow) + 1, y = 0, yend = 0.5, color = snow.auc),
-  #              size = 1) +
+  geom_vline(xintercept = yday(plot.data$latest.snow), aes(color =  scale_color_viridis_c(snow.auc))) +
+   geom_segment(aes(x = yday(latest.snow) - 1, xend = yday(latest.snow) + 1, y = 0, yend = 0.5, color = snow.auc),
+                size = 1) +
   scale_color_viridis_c() +
   geom_point(aes(x = ndvi.max.doy, y = ndvi.max), color = "red") +
   facet_wrap(~id) +
-  theme_classic()
+  ylab('NDVI') +
+  xlab('Day of Year') +
+  coord_cartesian(ylim = c(0, 0.6)) +
+  theme_cowplot()
+snowplot
+cowplot::save_plot('../../plots/supplementary/snow-ndvi-curves.png', snowplot, 
+                   base_width = 180, base_height = 180, units = 'mm',bg = 'white')
 
 # For plotting, run curve fit again, but without the additional autumn synthetic 
 # dates
@@ -269,5 +275,4 @@ cowplot::save_plot('../../plots/supplementary/s30-bl-extraobs-plot.png', extra.o
 
 # possible.dates <- c(329, 331) BL
 # k.possible.dates <- c(315, 324) KL
-
 
