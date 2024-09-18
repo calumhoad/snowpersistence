@@ -49,14 +49,13 @@ s30.bl <- read_csv('../../data/combined-ndvi-snow/s30-bl-smooth-joined.csv',
 
 # Filter the data to obtain the upper and lower quartile of snow.auc
 upper <- function(data) {
-  lower.quartile <- quantile(s2.bl$snow.auc, probs = 0.25)
-  upper.quartile <- quantile(s2.bl$snow.auc, probs = 0.75)
+  data.no.zero <- data %>% filter(snow.auc != 0)
+  upper.quartile <- quantile(data.no.zero$snow.auc, probs = 0.9)
   data <- data %>% filter(snow.auc >= upper.quartile)
 }
 
 lower <- function(data) {
-  lower.quartile <- quantile(s2.bl$snow.auc, probs = 0.25)
-  upper.quartile <- quantile(s2.bl$snow.auc, probs = 0.75)
+  lower.quartile <- quantile(data$snow.auc, probs = 0.1)
   data <- data %>% filter(snow.auc <= lower.quartile)
 }
 
@@ -67,6 +66,7 @@ kl.max.diff <- (mean(lower(s2.kl)$ndvi.max) - mean(upper(s2.kl)$ndvi.max))
 kl.max.diff
 kh.max.diff <- (mean(lower(s2.kh)$ndvi.max) - mean(upper(s2.kh)$ndvi.max))
 kh.max.diff
+
 # Average the difference between all plots
 all.max.mean <- mean(c(bl.max.diff, kl.max.diff, kh.max.diff))
 all.max.mean
@@ -78,6 +78,13 @@ kl.doy.diff <- (mean(lower(s2.kl)$ndvi.max.doy) - mean(upper(s2.kl)$ndvi.max.doy
 kl.doy.diff
 kh.doy.diff <- (mean(lower(s2.kh)$ndvi.max.doy) - mean(upper(s2.kh)$ndvi.max.doy))
 kh.doy.diff
+
 # Average the difference between all plots
 all.doy.mean <- mean(c(bl.doy.diff, kl.doy.diff, kh.doy.diff))
 all.doy.mean
+
+# Create a dataframe from the results
+max.diff <- c(bl = bl.max.diff, kl = kl.max.diff, kh = kh.max.diff, av.diff = all.max.mean)
+doy.diff <- c(bl = bl.doy.diff, kl = kl.doy.diff, kh = kh.doy.diff, av.diff = all.doy.mean)
+
+diff.df <- data.frame(max.diff, doy.diff)

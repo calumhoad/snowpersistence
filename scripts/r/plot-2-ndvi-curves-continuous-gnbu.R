@@ -34,6 +34,22 @@ s2.kh <- read.csv('../../data/combined-ndvi-snow/s2-kh-smooth-joined.csv') %>%
   group_by(id) %>%
   drop_na(ndvi.max)
 
+# Functions for filtering the data
+# Filter the data to obtain the upper and lower quartile of snow.auc
+upper <- function(data) {
+  data.no.zero <- data %>% filter(snow.auc != 0)
+  upper.quartile <- quantile(data$snow.auc, probs = 0.75)
+  data <- data %>% filter(snow.auc >= upper.quartile)
+  return(data)
+}
+
+lower <- function(data) {
+  lower.quartile <- quantile(data$snow.auc, probs = 0.25)
+  data <- data %>% filter(snow.auc <= lower.quartile)
+  #data <- data %>% filter(snow.auc == 0)
+  return(data)
+}
+
 # Plotting ----
 
 # Function for plotting the data
@@ -45,6 +61,19 @@ plot_data <- function(data, rectangle.top, rug.alpha, line.width) {
     mutate(ndvi.max.doy.mean.snow = mean(snow.auc)) %>%
     filter(row_number() == 1) %>%
     ungroup()
+  
+  # Get standard deviation and mean for peak NDVI and peak NDVI doy in each group
+  lower.q.max = mean(lower(data)$ndvi.max)
+  lower.q.doy = mean(lower(data)$ndvi.max.doy)
+  sd.lower.q.max = sd(lower(data)$ndvi.max)
+  sd.lower.q.doy = sd(lower(data)$ndvi.max.doy)
+  
+  upper.q.max = mean(upper(data)$ndvi.max)
+  upper.q.doy = mean(upper(data)$ndvi.max.doy)
+  sd.upper.q.max = sd(upper(data)$ndvi.max)
+  sd.upper.q.doy = sd(upper(data)$ndvi.max.doy)
+  
+  
   
   ggplot() +
     geom_rect(aes(xmin = (min(data$ndvi.max.doy) - 0.5), xmax = (max(data$ndvi.max.doy) + 0.5), 
@@ -61,6 +90,18 @@ plot_data <- function(data, rectangle.top, rug.alpha, line.width) {
     geom_line(data = data %>% filter(snow.auc != 0), 
               aes(x = doy, y = ndvi.pred, group = id, colour = snow.auc, alpha = snow.auc),
               linewidth = 1) +
+    annotate("point", x = upper.q.doy, y = upper.q.max, colour = "white", size = 3) +
+    annotate("point", x = lower.q.doy, y = lower.q.max, colour = "white", size = 3) +
+    geom_errorbar(aes(x = upper.q.doy, y = upper.q.max, ymin = upper.q.max + sd.upper.q.max, ymax = upper.q.max - sd.upper.q.max), linewidth = 2, colour = 'white' ) +
+    geom_errorbar(aes(x = lower.q.doy, y = lower.q.max, ymin = lower.q.max + sd.lower.q.max, ymax = lower.q.max - sd.lower.q.max), linewidth = 2, colour = 'white' ) +
+    geom_errorbarh(aes(y = upper.q.max, xmin = upper.q.doy + sd.upper.q.doy, xmax = upper.q.doy - sd.upper.q.doy), height = 0.005, linewidth = 2, colour = 'white' ) +
+    geom_errorbarh(aes(y = lower.q.max, xmin = lower.q.doy + sd.lower.q.doy, xmax = lower.q.doy - sd.lower.q.doy), height = 0.005, linewidth = 2, colour = 'white' ) +
+    annotate("point", x = lower.q.doy, y = lower.q.max, colour = "#a8ddb5", size = 2) +
+    annotate("point", x = upper.q.doy, y = upper.q.max, colour = "#084081", size = 2) +
+    geom_errorbar(aes(x = upper.q.doy, y = upper.q.max, ymin = upper.q.max + sd.upper.q.max, ymax = upper.q.max - sd.upper.q.max), linewidth = 0.5, colour = 'black' ) +
+    geom_errorbar(aes(x = lower.q.doy, y = lower.q.max, ymin = lower.q.max + sd.lower.q.max, ymax = lower.q.max - sd.lower.q.max), linewidth = 0.5, colour = 'black' ) +
+    geom_errorbarh(aes(y = upper.q.max, xmin = upper.q.doy + sd.upper.q.doy, xmax = upper.q.doy - sd.upper.q.doy), height = 0.005, linewidth = 0.5, colour = 'black' ) +
+    geom_errorbarh(aes(y = lower.q.max, xmin = lower.q.doy + sd.lower.q.doy, xmax = lower.q.doy - sd.lower.q.doy), height = 0.005, linewidth = 0.5, colour = 'black' ) +
     #geom_segment(aes(x = earliest$ndvi.max.doy, y = earliest$ndvi.max, xend = earliest$ndvi.max.doy, yend = 0.75), color = "black", linetype = "solid") +
     #geom_segment(aes(x = highest$ndvi.max.doy, y = highest$ndvi.max, xend = highest$ndvi.max.doy, yend = 0.75), color = "black", linetype = "solid") + 
     #geom_segment(aes(x = latest$ndvi.max.doy, y = latest$ndvi.max, xend = latest$ndvi.max.doy, yend = 0.8), color = "red", linetype = "solid") +
@@ -102,4 +143,4 @@ combined.plots <- plot_grid(#logo.plot,
 combined.plots
 # output the plot
 
-cowplot::save_plot('../../plots/figures/figure-2-r-output-klkhbl-y07-x175.png', combined.plots, base_height = 80, base_width = 180, units = 'mm', bg = 'white')
+cowplot::save_plot('../../plots/figures/figure-2-r-output-klkhbl-y07-x175-lowp25-highp75withzeros.png', combined.plots, base_height = 80, base_width = 180, units = 'mm', bg = 'white')

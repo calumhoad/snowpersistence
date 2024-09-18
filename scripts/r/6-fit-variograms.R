@@ -13,6 +13,8 @@ library(INLA)
 library(rlang)
 library(gstat)
 
+source('b-modelling-helper-functions.R')
+
 # Functions ----
 ## Helper function to generate INLA grid
 get_inla_grid <- function(snow.auc_df, grid.size){
