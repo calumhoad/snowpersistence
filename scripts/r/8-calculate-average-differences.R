@@ -52,11 +52,14 @@ upper <- function(data) {
   data.no.zero <- data %>% filter(snow.auc != 0)
   upper.quartile <- quantile(data.no.zero$snow.auc, probs = 0.9)
   data <- data %>% filter(snow.auc >= upper.quartile)
+  return(data)
 }
 
 lower <- function(data) {
   lower.quartile <- quantile(data$snow.auc, probs = 0.1)
-  data <- data %>% filter(snow.auc <= lower.quartile)
+  #data <- data %>% filter(snow.auc <= lower.quartile)
+  data <- data %>% filter(snow.auc == 0)
+  return(data)
 }
 
 # Calculate the difference between the average for the upper and lower quartile
@@ -87,4 +90,4 @@ all.doy.mean
 max.diff <- c(bl = bl.max.diff, kl = kl.max.diff, kh = kh.max.diff, av.diff = all.max.mean)
 doy.diff <- c(bl = bl.doy.diff, kl = kl.doy.diff, kh = kh.doy.diff, av.diff = all.doy.mean)
 
-diff.df <- data.frame(max.diff, doy.diff)
+diff.df <- data.frame(max.diff, doy.diff) 
