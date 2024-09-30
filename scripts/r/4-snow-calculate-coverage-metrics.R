@@ -307,6 +307,17 @@ s30.poly <- st_buffer(s30.data, 15, endCapStyle = "SQUARE")
 # plot to check
 ggplot() + geom_sf(data = s30.poly) + geom_sf(data = s30.data)
 
+# Kluane HLSS30
+kl.s30.data <- read_csv('../../data/ndvi/s30-kluanelow-ndvi-ts-pt.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
+  select(id, geometry) %>%
+  st_buffer(dist = 15, endCapStyle = "SQUARE")
+
+kh.s30.data <- read_csv('../../data/ndvi/s30-kluanehigh-ndvi-ts-pt.csv') %>%
+  st_as_sf(coords = c('X', 'Y'), crs = 32608) %>%
+  select(id, geometry) %>%
+  st_buffer(dist = 15, endCapStyle = "SQUARE")
+
 
 # Sentinel-2, bring in the list of pixel centres from S2 script
 # Blaesedalen
@@ -351,6 +362,11 @@ bl.s30.snow.cover <- terra::extract(bl.snow, s30.poly, fun = 'sum', ID = TRUE, b
 # Extract number of pixels per polygon, using num.pixels raster (all pix = 1)
 bl.s30.snow.cover <- terra::extract(bl.num.pixels, bl.s30.snow.cover, fun = 'sum', ID = TRUE, bind = TRUE)
 
+kl.s30.snow.cover <- terra::extract(kl.snow, kl.s30.data, fun = 'sum', ID = TRUE, bind = TRUE)
+kl.s30.snow.cover <- terra::extract(kl.num.pixels, kl.s30.snow.cover, fun = 'sum', ID = TRUE, bind = TRUE)
+
+kh.s30.snow.cover <- terra::extract(kh.snow, kh.s30.data, fun = 'sum', ID = TRUE, bind = TRUE)
+kh.s30.snow.cover <- terra::extract(kh.num.pixels, kh.s30.snow.cover, fun = 'sum', ID = TRUE, bind = TRUE)
 
 # Calculate snow cover as percentage ----
 check <- st_as_sf(bl.s2.snow.cover)
@@ -379,7 +395,7 @@ bl.convert.snow <- function(data){
   #        '2023-07-26' = snow.t4)
 }
 
-kl.convert.snow <- function(data){
+kl.convert.snow <- function(data, d1, d2, d3, d4, d5){
   st_as_sf(data) %>%
     select(id, geometry, tot.pixels, !!d1, !!d2, !!d3, !!d4, !!d5) %>%
     # Calculate percentage cover per S2 pixel
@@ -408,6 +424,10 @@ kl.s2.snow.ts <- kl.convert.snow(kl.s2.snow.cover)
 kh.s2.snow.ts <- kl.convert.snow(kh.s2.snow.cover)
 bl.s30.snow.ts <- bl.convert.snow(bl.s30.snow.cover)
 
+st_as_sf(kl.s30.snow.cover)
+klt1
+kl.s30.snow.ts <- kl.convert.snow(kl.s30.snow.cover, d1 = kld1, d2 = kld2, d3 = kld3, d4 = kld4, d5 = kld5)
+kh.s30.snow.ts <- kl.convert.snow(kh.s30.snow.cover, d1 = khd1, d2 = khd2, d3 = khd3, d4 = khd4, d5 = khd5)
 
 # Interpolate between observations and calculate the area under the curve ----
 
@@ -425,6 +445,9 @@ bl.s2.snow.ts <- format.snow.data(bl.s2.snow.ts)
 kl.s2.snow.ts <- format.snow.data(kl.s2.snow.ts)
 kh.s2.snow.ts <- format.snow.data(kh.s2.snow.ts)
 bl.s30.snow.ts <- format.snow.data(bl.s30.snow.ts)
+
+kl.s30.snow.ts <- format.snow.data(kl.s30.snow.ts)
+kh.s30.snow.ts <- format.snow.data(kh.s30.snow.ts)
 
 # Plot the data to check
 ggplot() +
@@ -483,6 +506,20 @@ end <- lubridate::yday(khd5)
 kh.s2.snow.auc <- kh.s2.snow.ts %>%
   group_modify(~ calc_auc(.x))
 
+## KLUANE LOW, S30
+start <- lubridate::yday(kld1)
+end <- lubridate::yday(kld5)
+
+kl.s30.snow.auc <- kl.s30.snow.ts %>%
+  group_modify(~calc_auc(.x))
+
+# KLUANE HIGH, S30
+start <- lubridate::yday(khd1)
+end <- lubridate::yday(khd5)
+
+kh.s30.snow.auc <- kh.s30.snow.ts %>%
+  group_modify(~calc_auc(.x))
+
 # Plot the output ----
 
 # Histogram
@@ -515,6 +552,8 @@ bl.s30.snow.auc <- format.output.data(bl.s30.snow.auc)
 kl.s2.snow.auc <- format.output.data(kl.s2.snow.auc)
 kh.s2.snow.auc <- format.output.data(kh.s2.snow.auc)
 
+kl.s30.snow.auc <- format.output.data(kl.s30.snow.auc)
+kh.s30.snow.auc <- format.output.data(kh.s30.snow.auc)
 
 # Write all output files
 st_write(bl.s2.snow.auc, "../../data/snow/snow-cover-10m-blaesedalen.csv",
@@ -526,9 +565,44 @@ st_write(kl.s2.snow.auc, "../../data/snow/snow-cover-10m-kluane-low.csv",
 st_write(kh.s2.snow.auc, "../../data/snow/snow-cover-10m-kluane-high.csv",
          layer_options = "GEOMETRY=AS_XY")
 
+st_write(kl.s30.snow.auc, "../../data/snow/snow-cover-30m-kluane-low.csv",
+         layer_options = "GEOMETRY=AS_XY")
+st_write(kh.s30.snow.auc, "../../data/snow/snow-cover-30m-kluane-high.csv",
+         layer_options = "GEOMETRY=AS_XY")
 
 
 
+# Supplementary plot
+bl.data <- read_csv('../../data/snow/snow-cover-30m-blaesedalen.csv')
+
+kl.s30.plot <- ggplot() +
+  geom_histogram(data = kl.s30.snow.auc, aes(x = snow.auc), fill = '#F5A40C') +
+  xlab('Snow persistence') +
+  ylab('Count') +
+  geom_text(aes(x = 3, y = 75, label = paste0("n = ", nrow(kl.s30.snow.auc)))) +
+  coord_cartesian(ylim = c(0, 105)) +
+  theme_cowplot()
+
+nrow(kl.s30.snow.auc %>% filter(snow.auc != 0))
+kh.s30.plot <- ggplot() +
+  geom_histogram(data = kh.s30.snow.auc, aes(x = snow.auc), fill = '#F23835') +
+  xlab('Snow persistence') +
+  ylab('Count') +
+  geom_text(aes(x = 3, y = 75, label = paste0("n = ", nrow(kh.s30.snow.auc)))) +
+  coord_cartesian(ylim = c(0, 105)) +
+  theme_cowplot()
+
+bl.s30.plot <- ggplot() +
+  geom_histogram(data = bl.data, aes(x = snow.auc), fill = '#4984BF') +
+  xlab('Snow persistence') +
+  ylab('Count') +
+  geom_text(aes(x = 5, y = 75, label = paste0("n = ", nrow(bl.data)))) +
+  coord_cartesian(ylim = c(0, 105)) +
+  theme_cowplot()
+
+compiled.hist <- plot_grid(kl.s30.plot, kh.s30.plot, bl.s30.plot, nrow = 1, ncol = 3, labels = c('(a)', '(b)', '(c)'))
+
+cowplot::save_plot('../../plots/figures/supp-fig-snow-in-s30-allplots.png', compiled.hist, base_height = 80, base_width = 180, units = 'mm', bg = 'white') 
 
 
 

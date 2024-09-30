@@ -91,3 +91,27 @@ max.diff <- c(bl = bl.max.diff, kl = kl.max.diff, kh = kh.max.diff, av.diff = al
 doy.diff <- c(bl = bl.doy.diff, kl = kl.doy.diff, kh = kh.doy.diff, av.diff = all.doy.mean)
 
 diff.df <- data.frame(max.diff, doy.diff) 
+
+# Comparison of S2 and HLSS30 model outputs
+s2.peak.ols <- -0.005
+s2.peak.inla <- -0.002
+s2.doy.ols <- 0.38
+s2.doy.inla <- 0.24
+
+s30.peak.ols <- -0.01
+s30.peak.inla <- -0.01
+s30.doy.ols <- 1.399
+s30.doy.inla <- 1.385
+
+peak.ols.diff <- s30.peak.ols / s2.peak.ols
+peak.inla.diff <- s30.peak.inla / s2.peak.inla
+doy.ols.diff <- s30.doy.ols / s2.doy.ols
+doy.inla.diff <- s30.doy.inla / s2.doy.ols
+
+doy.ols.diff
+
+# As percentage
+(peak.ols.diff/s2.peak.ols)*2
+(peak.inla.diff/s2.peak.inla)*2
+(doy.ols.diff/s2.doy.ols)*100
+(doy.inla.diff/s2.doy.inla)*100

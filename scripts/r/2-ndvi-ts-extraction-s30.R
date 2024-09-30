@@ -77,51 +77,51 @@ s30.bl.data <- list(d20230406,
                  d20230923,
                  d20231003)
 
-# # Kluane ###
-# 
-# # Create a list of the S30 files for each S30 scene
-# d20220404 <- list.files('../../data/nasa-hls/kluane/s30/2022-04-04/', full.names = TRUE)
-# d20220512 <- list.files('../../data/nasa-hls/kluane/s30/2022-05-12/', full.names = TRUE)
-# d20220529 <- list.files('../../data/nasa-hls/kluane/s30/2022-05-29/', full.names = TRUE)
-# d20220608 <- list.files('../../data/nasa-hls/kluane/s30/2022-06-08/', full.names = TRUE)
-# d20220708 <- list.files('../../data/nasa-hls/kluane/s30/2022-07-08/', full.names = TRUE)
-# d20220721 <- list.files('../../data/nasa-hls/kluane/s30/2022-07-21/', full.names = TRUE)
-# d20220726 <- list.files('../../data/nasa-hls/kluane/s30/2022-07-26/', full.names = TRUE)
-# d20220812 <- list.files('../../data/nasa-hls/kluane/s30/2022-08-12/', full.names = TRUE)
-# d20220916 <- list.files('../../data/nasa-hls/kluane/s30/2022-09-16/', full.names = TRUE)
-# d20220924 <- list.files('../../data/nasa-hls/kluane/s30/2022-09-24/', full.names = TRUE)
-# d20220929 <- list.files('../../data/nasa-hls/kluane/s30/2022-09-29/', full.names = TRUE)
-# d20221006 <- list.files('../../data/nasa-hls/kluane/s30/2022-10-06/', full.names = TRUE)
-# 
-# 
-# # List of imagery dates, for later use
-# k.dates <- c('2022-04-04',
-#            '2022-05-12',
-#            '2022-05-29',
-#            '2022-06-08',
-#            '2022-07-08',
-#            '2022-07-21',
-#            '2022-07-26',
-#            '2022-08-12',
-#            '2022-09-16',
-#            '2022-09-24', 
-#            '2022-09-29', 
-#            '2022-10-06')
-# 
-# # Create list where each item in the list is another list,
-# #   containing the filepath to each imagery band
-# s30.k.data <- list(d20220404,
-#                 d20220512,
-#                 d20220529,
-#                 d20220608,
-#                 d20220708,
-#                 d20220721,
-#                 d20220726,
-#                 d20220812,
-#                 d20220916,
-#                 d20220924, 
-#                 d20220929, 
-#                 d20221006)
+# Kluane ###
+
+# Create a list of the S30 files for each S30 scene
+d20220404 <- list.files('../../data/nasa-hls/kluane/s30/2022-04-04/', full.names = TRUE)
+d20220512 <- list.files('../../data/nasa-hls/kluane/s30/2022-05-12/', full.names = TRUE)
+d20220529 <- list.files('../../data/nasa-hls/kluane/s30/2022-05-29/', full.names = TRUE)
+d20220608 <- list.files('../../data/nasa-hls/kluane/s30/2022-06-08/', full.names = TRUE)
+d20220708 <- list.files('../../data/nasa-hls/kluane/s30/2022-07-08/', full.names = TRUE)
+d20220721 <- list.files('../../data/nasa-hls/kluane/s30/2022-07-21/', full.names = TRUE)
+d20220726 <- list.files('../../data/nasa-hls/kluane/s30/2022-07-26/', full.names = TRUE)
+d20220812 <- list.files('../../data/nasa-hls/kluane/s30/2022-08-12/', full.names = TRUE)
+d20220916 <- list.files('../../data/nasa-hls/kluane/s30/2022-09-16/', full.names = TRUE)
+d20220924 <- list.files('../../data/nasa-hls/kluane/s30/2022-09-24/', full.names = TRUE)
+d20220929 <- list.files('../../data/nasa-hls/kluane/s30/2022-09-29/', full.names = TRUE)
+d20221006 <- list.files('../../data/nasa-hls/kluane/s30/2022-10-06/', full.names = TRUE)
+
+
+# List of imagery dates, for later use
+k.dates <- c('2022-04-04',
+           '2022-05-12',
+           '2022-05-29',
+           '2022-06-08',
+           '2022-07-08',
+           '2022-07-21',
+           '2022-07-26',
+           '2022-08-12',
+           '2022-09-16',
+           '2022-09-24',
+           '2022-09-29',
+           '2022-10-06')
+
+# Create list where each item in the list is another list,
+#   containing the filepath to each imagery band
+s30.k.data <- list(d20220404,
+                d20220512,
+                d20220529,
+                d20220608,
+                d20220708,
+                d20220721,
+                d20220726,
+                d20220812,
+                d20220916,
+                d20220924,
+                d20220929,
+                d20221006)
 
 
 # Import UAV data for each site, to give area for NDVI time series extraction
@@ -130,10 +130,10 @@ s30.bl.data <- list(d20230406,
 bl.uav <- rast('../../data/uav/orthomosaics/m3m/5cm/2023-07-02-5cm-clipped.tif')
 
 # # Kluane, low, get uav imagery
-# kl.uav <- rast('../../data/uav/orthomosaics/maia/kluane-low/5cm/2022-07-05-5cm-clipped.tif')
+kl.uav <- rast('../../data/uav/orthomosaics/maia/kluane-low/5cm/2022-07-05-5cm-clipped.tif')
 # 
 # # Kluane, high, get UAV imagery
-# kh.uav <- rast('../../data/uav/orthomosaics/maia/kluane-high/5cm/2022-07-09-5cm-clipped.tif')
+kh.uav <- rast('../../data/uav/orthomosaics/maia/kluane-high/5cm/2022-07-09-5cm-clipped.tif')
 
 
 # Create function for stacking rasters from lists of filepaths, then cropping to extent of UAV imagery
@@ -144,8 +144,8 @@ import_s30 <- function(x, plot) {
 
 # Import the data
 s30.bl.import <- pblapply(s30.bl.data, import_s30, plot = bl.uav) # Blaesedalen
-#s30.kl.import <- pblapply(s30.k.data, import_s30, plot = kl.uav) # Kluane-low
-#s30.kh.import <- pblapply(s30.k.data, import_s30, plot = kh.uav) # Kluane-high
+s30.kl.import <- pblapply(s30.k.data, import_s30, plot = kl.uav) # Kluane-low
+s30.kh.import <- pblapply(s30.k.data, import_s30, plot = kh.uav) # Kluane-high
 
 # Check import function works by plotting rasters from list
 ggplot() +
@@ -160,18 +160,18 @@ s30_ndvi <- function(x) {
 
 # Apply function to calculate S2 NDVI
 s30.bl.ndvi <- pblapply(s30.bl.import, s30_ndvi)
-#s30.kl.ndvi <- pblapply(s30.kl.import, s30_ndvi)
-#s30.kh.ndvi <- pblapply(s30.kh.import, s30_ndvi)
+s30.kl.ndvi <- pblapply(s30.kl.import, s30_ndvi)
+s30.kh.ndvi <- pblapply(s30.kh.import, s30_ndvi)
 
 # Stack NDVI rasters into single spatRast
 s30.bl.ndvi <- rast(s30.bl.ndvi)
-#s30.kl.ndvi <- rast(s30.kl.ndvi)
-#s30.kh.ndvi <- rast(s30.kh.ndvi)
+s30.kl.ndvi <- rast(s30.kl.ndvi)
+s30.kh.ndvi <- rast(s30.kh.ndvi)
 
 # Name spatRaster layers with dates
 names(s30.bl.ndvi) <- bl.dates
-#names(s30.kl.ndvi) <- k.dates
-#names(s30.kh.ndvi) <- k.dates
+names(s30.kl.ndvi) <- k.dates
+names(s30.kh.ndvi) <- k.dates
 
 # Plot to check
 ggplot() +
@@ -183,11 +183,11 @@ ggplot() +
 s30.bl.ndvi.points <- st_as_sf(as.points(s30.bl.ndvi, values = TRUE)) %>%
   mutate(id = row_number())
 
-#s30.kl.ndvi.points <- st_as_sf(as.points(s30.kl.ndvi, values = TRUE)) %>%
-#  mutate(id = row_number())
+s30.kl.ndvi.points <- st_as_sf(as.points(s30.kl.ndvi, values = TRUE)) %>%
+  mutate(id = row_number())
 
-#s30.kh.ndvi.points <- st_as_sf(as.points(s30.kh.ndvi, values = TRUE)) %>%
-#  mutate(id = row_number())
+s30.kh.ndvi.points <- st_as_sf(as.points(s30.kh.ndvi, values = TRUE)) %>%
+  mutate(id = row_number())
 
 
 # Synthesise 0 values for days late in year, due to assymetry of the datasets ----
@@ -284,6 +284,10 @@ cowplot::save_plot('../../plots/figures/supp-fig-hlss30-ndvi-erratic.png', two,
 
 # Wide format
 st_write(st_as_sf(s30.bl.ndvi.points),  '../../data/ndvi/s30-blaesedalen-ndvi-ts-pt.csv', 
+         layer_options = "GEOMETRY=AS_XY")
+st_write(st_as_sf(s30.kl.ndvi.points), '../../data/ndvi/s30-kluanelow-ndvi-ts-pt.csv',
+         layer_options = "GEOMETRY=AS_XY")
+st_write(st_as_sf(s30.kh.ndvi.points), '../../data/ndvi/s30-kluanehigh-ndvi-ts-pt.csv',
          layer_options = "GEOMETRY=AS_XY")
 
 # Long format
