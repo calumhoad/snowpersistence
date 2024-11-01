@@ -305,6 +305,17 @@ plot_data_fig2 <- function(data, rectangle.top, rug.alpha, line.width) {
     filter(row_number() == 1) %>%
     ungroup()
   
+  # Get standard deviation and mean for peak NDVI and peak NDVI doy in each group
+  lower.q.max = mean(lower(data)$ndvi.max)
+  lower.q.doy = mean(lower(data)$ndvi.max.doy)
+  sd.lower.q.max = sd(lower(data)$ndvi.max)
+  sd.lower.q.doy = sd(lower(data)$ndvi.max.doy)
+  
+  upper.q.max = mean(upper(data)$ndvi.max)
+  upper.q.doy = mean(upper(data)$ndvi.max.doy)
+  sd.upper.q.max = sd(upper(data)$ndvi.max)
+  sd.upper.q.doy = sd(upper(data)$ndvi.max.doy)
+  
   ggplot() +
     geom_rect(aes(xmin = (min(data$ndvi.max.doy) - 0.5), xmax = (max(data$ndvi.max.doy) + 0.5), 
                   ymin = -0.1, ymax = rectangle.top), fill = "grey", alpha = 0.2) +
@@ -320,6 +331,14 @@ plot_data_fig2 <- function(data, rectangle.top, rug.alpha, line.width) {
     geom_line(data = data %>% filter(snow.auc != 0), 
               aes(x = doy, y = ndvi.pred, group = id, colour = snow.auc, alpha = snow.auc),
               linewidth = 1) +
+    annotate("point", x = upper.q.doy, y = upper.q.max, colour = "white", size = 3) +
+    annotate("point", x = lower.q.doy, y = lower.q.max, colour = "black", size = 3) +
+    #geom_errorbar(aes(x = upper.q.doy, y = upper.q.max, ymin = upper.q.max + sd.upper.q.max, ymax = upper.q.max - sd.upper.q.max), linewidth = 2, colour = 'white' ) +
+    #geom_errorbar(aes(x = lower.q.doy, y = lower.q.max, ymin = lower.q.max + sd.lower.q.max, ymax = lower.q.max - sd.lower.q.max), linewidth = 2, colour = 'white' ) +
+    #geom_errorbarh(aes(y = upper.q.max, xmin = upper.q.doy + sd.upper.q.doy, xmax = upper.q.doy - sd.upper.q.doy), height = 0.005, linewidth = 2, colour = 'white' ) +
+    #geom_errorbarh(aes(y = lower.q.max, xmin = lower.q.doy + sd.lower.q.doy, xmax = lower.q.doy - sd.lower.q.doy), height = 0.005, linewidth = 2, colour = 'white' ) +
+    annotate("point", x = lower.q.doy, y = lower.q.max, colour = "#a8ddb5", size = 2) +
+    annotate("point", x = upper.q.doy, y = upper.q.max, colour = "#084081", size = 2) +
     #geom_segment(aes(x = earliest$ndvi.max.doy, y = earliest$ndvi.max, xend = earliest$ndvi.max.doy, yend = 0.75), color = "black", linetype = "solid") +
     #geom_segment(aes(x = highest$ndvi.max.doy, y = highest$ndvi.max, xend = highest$ndvi.max.doy, yend = 0.75), color = "black", linetype = "solid") + 
     #geom_segment(aes(x = latest$ndvi.max.doy, y = latest$ndvi.max, xend = latest$ndvi.max.doy, yend = 0.8), color = "red", linetype = "solid") +
@@ -341,6 +360,23 @@ plot_data_fig2 <- function(data, rectangle.top, rug.alpha, line.width) {
     theme(legend.position = 'none')
   
 }
+
+# Functions for filtering the data
+# Filter the data to obtain the upper and lower quartile of snow.auc
+upper <- function(data) {
+  data.no.zero <- data %>% filter(snow.auc != 0)
+  upper.quartile <- quantile(data.no.zero$snow.auc, probs = 0.9)
+  data <- data %>% filter(snow.auc >= upper.quartile)
+  return(data)
+}
+
+lower <- function(data) {
+  lower.quartile <- quantile(data$snow.auc, probs = 0.1)
+  data <- data %>% filter(snow.auc <= lower.quartile)
+  #data <- data %>% filter(snow.auc == 0)
+  return(data)
+}
+
 
 # Load in data----
 # Blaesedalen, S30
@@ -421,7 +457,7 @@ full.fig <- plot_grid(maps, bottom, nrow = 2)
 full.fig
 
 # Save plots
-cowplot::save_plot('../../plots/figures/figure-5-lm-correctaxis.png', full.fig, 
+cowplot::save_plot('../../plots/figures/figure-5-lm-correctaxis-points.png', full.fig, 
                    base_height = 200, base_width = 180, units = 'mm',#)#, 
                    bg = 'white')
 
