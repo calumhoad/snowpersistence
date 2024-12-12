@@ -74,6 +74,9 @@ kh.max.diff
 all.max.mean <- mean(c(bl.max.diff, kl.max.diff, kh.max.diff))
 all.max.mean
 
+all.max.stdev <- sd(c(bl.max.diff, kl.max.diff, kh.max.diff))
+all.max.stdev
+
 # Calculate the difference between the average for the upper and lower quartile
 bl.doy.diff <- (mean(lower(s2.bl)$ndvi.max.doy) - mean(upper(s2.bl)$ndvi.max.doy))
 bl.doy.diff
@@ -85,6 +88,9 @@ kh.doy.diff
 # Average the difference between all plots
 all.doy.mean <- mean(c(bl.doy.diff, kl.doy.diff, kh.doy.diff))
 all.doy.mean
+
+all.doy.stdev <- sd(c(bl.doy.diff, kl.doy.diff, kh.doy.diff))
+all.doy.stdev
 
 # Create a dataframe from the results
 max.diff <- c(bl = bl.max.diff, kl = kl.max.diff, kh = kh.max.diff, av.diff = all.max.mean)
