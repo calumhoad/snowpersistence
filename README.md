@@ -40,9 +40,9 @@ This work is licensed under a
 
 ## Data
 
-Drone imagery orthomosaics, which support the calculation of the snow persistence metric, are available on Zenodo [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14810206.svg)](https://doi.org/10.5281/zenodo.14810206).
+Drone imagery orthomosaics, which support the calculation of the snow persistence metric, are available from Zenodo [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14810206.svg)](https://doi.org/10.5281/zenodo.14810206).
 
-All satellite imagery can be downloaded from either [Copernicus browser](https://browser.dataspace.copernicus.eu/?zoom=5&lat=50.16282&lng=20.78613&themeId=DEFAULT-THEME&visualizationUrl=https%3A%2F%2Fsh.dataspace.copernicus.eu%2Fogc%2Fwms%2Fa91f72b5-f393-4320-bc0f-990129bd9e63&datasetId=S2_L2A_CDAS&demSource3D=%22MAPZEN%22&cloudCoverage=30&dateMode=SINGLE) or [NASA EarthData Search](https://search.earthdata.nasa.gov/search), as per the manuscript. 
+All satellite imagery can be downloaded from either [Copernicus browser](https://browser.dataspace.copernicus.eu/?zoom=5&lat=50.16282&lng=20.78613&themeId=DEFAULT-THEME&visualizationUrl=https%3A%2F%2Fsh.dataspace.copernicus.eu%2Fogc%2Fwms%2Fa91f72b5-f393-4320-bc0f-990129bd9e63&datasetId=S2_L2A_CDAS&demSource3D=%22MAPZEN%22&cloudCoverage=30&dateMode=SINGLE) or [NASA EarthData Search](https://search.earthdata.nasa.gov/search). The details of each satellite image used in the analyses can be found in the supplementary materials of the published manuscript.
 
 The data we derived from satellite and drone imagery are stored within this repository in tabular (.csv) format. These data enable the statistical analyses to be run without first downloading and processing the drone orthomosaics and satellite imagery.
 
